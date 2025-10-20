@@ -84,7 +84,7 @@ export const WinnerListSection = (): JSX.Element => {
                 src="https://c.animaapp.com/O1XpzcZm/img/logo-3.svg"
               />
 
-              <h2 className="w-fit mt-[-1.00px] bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] [font-family:'Ria_Sans-Bold',Helvetica] font-bold text-transparent text-[32px] tracking-[0] leading-[normal]">
+              <h2 className="w-fit mt-[-1.00px] bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent text-[32px] tracking-[0] leading-[normal] font-ria-sans">
                 Winner List
               </h2>
 
@@ -168,7 +168,7 @@ export const WinnerListSection = (): JSX.Element => {
                       />
                     </div>
                     <div className="absolute top-[-20px] left-1/2 -translate-x-1/2 bg-[#1a1f26] border-2 border-[#21e786] rounded-full px-4 py-1">
-                      <span className="[font-family:'Ria_Sans-Bold',Helvetica] font-bold text-[#21e786] text-sm">
+                      <span className="font-bold text-[#21e786] text-sm font-ria-sans">
                         목표 달성!
                       </span>
                     </div>
@@ -177,7 +177,7 @@ export const WinnerListSection = (): JSX.Element => {
               ) : (
                 <div className="absolute top-5 left-0 w-full h-[215px]">
                   <Card className="w-full h-[215px] border-0 bg-transparent">
-                    <CardContent className="flex flex-col items-start gap-2.5 pt-[37px] pb-[30px] px-[30px] relative h-full p-0">
+                    <CardContent className="flex flex-col items-start gap-2.5 pt-[30px] pb-[30px] px-[30px] relative h-full p-0">
                       <img
                         className="absolute w-full h-full top-0 left-0"
                         alt="Background"
@@ -185,29 +185,20 @@ export const WinnerListSection = (): JSX.Element => {
                       />
 
                       <div className="flex flex-col w-full max-w-[422px] h-[148px] items-start gap-6 relative z-10">
-                        <div className="flex h-[52px] items-end gap-[13px] w-full">
+                        <div className="flex items-center gap-[13px] w-full">
                           <img
-                            className="w-[51px] h-[51px] mb-[-0.50px] ml-[-0.50px] aspect-[1] object-cover"
+                            className="w-[51px] h-[51px] aspect-[1] object-cover rounded-full"
                             alt={`${winner.name} profile`}
                             src={winner.profileImage}
                           />
 
-                          <div className="inline-flex items-center justify-end gap-[38px]">
-                            <div className="flex flex-col w-full max-w-[359px] h-[52px] items-start gap-[3.3px] pt-0 pb-px px-0 relative">
-                              <h3 className="flex items-center justify-center self-stretch mt-[-1.00px] [font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-surface-main text-[22px] tracking-[-0.66px] leading-[26.4px]">
-                                {winner.title}
-                              </h3>
-
-                              <p className="flex items-center justify-center w-fit [font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-base tracking-[-0.48px] leading-[19.2px] whitespace-nowrap">
-                                {winner.name}
-                              </p>
-
-                              <img
-                                className="absolute -top-0.5 left-[285px] w-[74px] h-[74px] object-cover"
-                                alt="Background decoration"
-                                src="https://c.animaapp.com/O1XpzcZm/img/bgsub-11@2x.png"
-                              />
-                            </div>
+                          <div className="flex flex-col items-start">
+                            <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-surface-main text-[22px] tracking-[-0.66px] leading-[26.4px]">
+                              {winner.title}
+                            </h3>
+                            <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-base tracking-[-0.48px] leading-[19.2px] whitespace-nowrap">
+                              {winner.name}
+                            </p>
                           </div>
                         </div>
 
@@ -215,20 +206,20 @@ export const WinnerListSection = (): JSX.Element => {
                           {winner.description}
                         </p>
                       </div>
+
+                      <Button
+                        variant="ghost"
+                        className="absolute w-[51px] h-[51px] top-[calc(50%_+_47px)] right-[30px] p-0 hover:bg-transparent"
+                        aria-label="Inspire button"
+                      >
+                        <img
+                          className="w-full h-full"
+                          alt="Inspire button"
+                          src={winner.buttonImage}
+                        />
+                      </Button>
                     </CardContent>
                   </Card>
-
-                  <Button
-                    variant="ghost"
-                    className="absolute w-[10.37%] top-[calc(50.00%_+_47px)] left-[89.52%] h-[51px] p-0 hover:bg-transparent"
-                    aria-label="Inspire button"
-                  >
-                    <img
-                      className="w-full h-full"
-                      alt="Inspire button"
-                      src={winner.buttonImage}
-                    />
-                  </Button>
                 </div>
               )}
 
@@ -241,7 +232,7 @@ export const WinnerListSection = (): JSX.Element => {
                       src="https://c.animaapp.com/O1XpzcZm/img/iconmedal-3@2x.png"
                     />
 
-                    <span className="[text-shadow:0px_0px_40px_#b0ffd8] [font-family:'Ria_Sans-Bold',Helvetica] font-bold text-[#75ffbb] leading-[19.2px] w-fit text-base tracking-[-0.48px] whitespace-nowrap">
+                    <span className="[text-shadow:0px_0px_40px_#b0ffd8] font-bold text-[#75ffbb] leading-[19.2px] w-fit text-base tracking-[-0.48px] whitespace-nowrap font-ria-sans">
                       목표 달성!
                     </span>
                   </div>

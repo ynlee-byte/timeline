@@ -1,8 +1,7 @@
 module.exports = {
   content: [
-    "./src/**/*.{html,js,ts,jsx,tsx}",
-    "app/**/*.{ts,tsx}",
-    "components/**/*.{ts,tsx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -49,6 +48,7 @@ module.exports = {
       },
       fontFamily: {
         "button-big": "var(--button-big-font-family)",
+        "ria-sans": ["Ria Sans", "Helvetica"], // Add Ria Sans
         sans: [
           "ui-sans-serif",
           "system-ui",

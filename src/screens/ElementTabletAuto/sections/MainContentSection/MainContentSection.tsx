@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "../../../../components/ui/badge";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { useWindowWidth } from "../../../../breakpoints";
+import { ReviewCardModal } from "../../../../components/ReviewCardModal";
 
 const cardData = [
   {
@@ -32,9 +33,15 @@ export const MainContentSection = (): JSX.Element => {
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth >= 768 && screenWidth < 1280;
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <section className={`flex flex-col items-center justify-center gap-[50px] ${isMobile ? 'px-5' : isTablet ? 'px-10' : 'px-[120px]'} py-20 relative w-full bg-[#040b11]`}>
+    <>
+      <ReviewCardModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+      <section className={`flex flex-col items-center justify-center gap-[50px] ${isMobile ? 'px-5' : isTablet ? 'px-10' : 'px-[120px]'} py-20 relative w-full bg-[#040b11]`}>
       <header className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
         <img
           className="relative w-6 h-6"
@@ -42,7 +49,7 @@ export const MainContentSection = (): JSX.Element => {
           src="https://c.animaapp.com/O1XpzcZm/img/logo-1.svg"
         />
 
-        <h1 className="relative w-fit mt-[-1.00px] [font-family:'Ria_Sans-Bold',Helvetica] font-bold text-white text-[32px] tracking-[0] leading-[normal]">
+        <h1 className="relative w-fit mt-[-1.00px] font-bold text-white text-[32px] tracking-[0] leading-[normal] font-ria-sans">
           나의 카드
         </h1>
 
@@ -142,7 +149,10 @@ export const MainContentSection = (): JSX.Element => {
                           </h2>
                         </div>
                       </div>
-                      <Button className="inline-flex items-center justify-center gap-2 px-6 py-3 absolute top-[243px] left-[77px] bg-[#21e786] hover:bg-[#1bc970] h-auto">
+                      <Button
+                        onClick={() => setIsModalOpen(true)}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 absolute top-[243px] left-[77px] bg-[#21e786] hover:bg-[#1bc970] h-auto z-10 cursor-pointer"
+                      >
                         <span className="relative w-fit mt-[-2.00px] [font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#111111] text-lg tracking-[-0.54px] leading-6 whitespace-nowrap">
                           리뷰 카드 생성하기
                         </span>
@@ -245,7 +255,7 @@ export const MainContentSection = (): JSX.Element => {
                     </>
                   )}
                   <img
-                    className="absolute w-[353px] h-[367px] -top-3 -left-3"
+                    className="absolute w-[353px] h-[367px] -top-3 -left-3 pointer-events-none"
                     alt="Hover"
                     src="https://c.animaapp.com/O1XpzcZm/img/hover-5@2x.png"
                   />
@@ -262,5 +272,6 @@ export const MainContentSection = (): JSX.Element => {
         src="https://c.animaapp.com/O1XpzcZm/img/bgdeco.png"
       />
     </section>
+    </>
   );
 };

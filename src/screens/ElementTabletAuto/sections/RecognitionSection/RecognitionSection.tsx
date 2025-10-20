@@ -107,7 +107,7 @@ export const RecognitionSection = (): JSX.Element => {
               alt="Logo"
               src="https://c.animaapp.com/O1XpzcZm/img/logo-1.svg"
             />
-            <h2 className="[font-family:'Ria_Sans-Bold',Helvetica] font-bold text-white text-[32px] tracking-[0] leading-[normal]">
+            <h2 className="font-bold text-white text-[32px] tracking-[0] leading-[normal] font-ria-sans">
               인정과 응원 보내기
             </h2>
             <img

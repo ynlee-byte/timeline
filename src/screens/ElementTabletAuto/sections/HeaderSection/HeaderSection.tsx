@@ -18,7 +18,7 @@ export const HeaderSection = (): JSX.Element => {
               src="https://c.animaapp.com/O1XpzcZm/img/logo.svg"
             />
             {!isMobile && (
-              <h1 className="[font-family:'Bakbak_One',Helvetica] font-normal text-white text-[32px] tracking-[0] leading-[42px] whitespace-nowrap">
+              <h1 className="[font-family:'Bakbak One',Helvetica] font-normal text-white text-[32px] tracking-[0] leading-[42px] whitespace-nowrap">
                 Binabox
               </h1>
             )}
@@ -75,7 +75,7 @@ export const HeaderSection = (): JSX.Element => {
 
           <div className="absolute top-[437px] left-1/2 -translate-x-1/2 inline-flex flex-col items-center gap-12">
             <div className="inline-flex flex-col items-center gap-3">
-              <h2 className={`[text-shadow:0px_4px_10px_#00000080] [font-family:'Ria_Sans-ExtraBold',Helvetica] font-extrabold text-white ${isMobile ? 'text-[32px] leading-[32px]' : 'text-[80px] leading-[80px]'} tracking-[0] whitespace-nowrap`}>
+              <h2 className={`[text-shadow:0px_4px_10px_#00000080] font-extrabold text-white ${isMobile ? 'text-[32px] leading-[32px]' : 'text-[80px] leading-[80px]'} tracking-[0] whitespace-nowrap font-ria-sans`}>
                 타임라인
               </h2>
               <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-on-surface ${isMobile ? 'text-xs leading-[18px]' : 'text-xl leading-[30px]'} tracking-[-0.60px] whitespace-nowrap`}>

@@ -8,6 +8,17 @@
     <meta content="width=device-width, initial-scale=1" name="viewport" />
     <style>
       @import url("https://fonts.googleapis.com/css?family=Bakbak+One:var(--button-big-font-weight),400");
+      /*
+        Ria Sans 폰트를 적용하려면, 해당 폰트 파일(.woff2, .ttf 등)의 직접적인 URL이 필요합니다.
+        아래 src URL을 실제 폰트 파일 경로로 교체해주세요.
+      */
+      @font-face {
+        font-family: "Ria Sans";
+        src: url("YOUR_RIA_SANS_FONT_FILE_URL.woff2") format("woff2"),
+             url("YOUR_RIA_SANS_FONT_FILE_URL.ttf") format("truetype");
+        font-weight: normal;
+        font-style: normal;
+      }
       @font-face {
         font-family: "Pretendard-Regular";
         src: url("https://anima-uploads.s3.amazonaws.com/projects/681c02510381d3a49b99eb95/fonts/pretendard-regular.otf")

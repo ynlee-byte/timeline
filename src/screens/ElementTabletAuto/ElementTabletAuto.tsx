@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { useWindowWidth } from "../../breakpoints";
 import { CalendarSection } from "./sections/CalendarSection";

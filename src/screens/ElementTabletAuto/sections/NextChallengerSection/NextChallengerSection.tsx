@@ -132,7 +132,7 @@ export const NextChallengerSection = (): JSX.Element => {
                 src="https://c.animaapp.com/O1XpzcZm/img/logo-5.svg"
               />
 
-              <h2 className="w-fit mt-[-1.00px] bg-[linear-gradient(131deg,rgba(109,36,200,1)_0%,rgba(229,43,80,1)_71%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] [font-family:'Ria_Sans-Bold',Helvetica] font-bold text-transparent text-[32px] tracking-[0] leading-[normal]">
+              <h2 className="w-fit mt-[-1.00px] bg-[linear-gradient(131deg,rgba(109,36,200,1)_0%,rgba(229,43,80,1)_71%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent text-[32px] tracking-[0] leading-[normal] font-ria-sans">
                 Next Challenger
               </h2>
 
@@ -273,7 +273,7 @@ export const NextChallengerSection = (): JSX.Element => {
           ))}
         </div>
 
-        <div className={`${isMobile || isTablet ? 'mx-auto' : 'ml-[120px]'}`}>
+        <div className={`${isMobile || isTablet ? 'mx-auto' : 'mx-auto'}`}> {/* Changed ml-[120px] to mx-auto for desktop */}
           <img
             className="mb-[-0.50px]"
             alt="Pagination"
