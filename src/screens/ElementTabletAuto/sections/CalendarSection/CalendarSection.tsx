@@ -1,152 +1,225 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { useWindowWidth } from "../../../../breakpoints";
 
+// 전체 이벤트 리스트 (여러 날에 걸친 이벤트)
+// 이전 달(9월) 날짜는 음수로 표시
+const events = [
+  { id: 1, text: "앵크레 에세이", startDate: -29, endDate: 1, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📓" },
+  { id: 2, text: "중앙 시작 브리핑", startDate: -29, endDate: -29, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📢" },
+  { id: 3, text: "엥크레 Wisdom", startDate: 1, endDate: 2, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "▼" },
+  { id: 4, text: "중앙 중간 브리핑", startDate: 1, endDate: 1, color: "-29일 bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📢" },
+  { id: 5, text: "주차 결과물 제출", startDate: 2, endDate: 2, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "🗓️" },
+  { id: 6, text: "중앙 마감 브리핑", startDate: 4, endDate: 4, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📢" },
+  { id: 7, text: "크루 상호 피드백", startDate: 6, endDate: 8, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]", icon: "📝" },
+  { id: 8, text: "중앙 시작 브리핑", startDate: 6, endDate: 6, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📢" },
+  { id: 9, text: "앵크레 Wisdom", startDate: 8, endDate: 9, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 10, text: "중앙 중간 브리핑", startDate: 8, endDate: 8, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📢" },
+  { id: 11, text: "앵크레 인포데스크", startDate: 9, endDate:11, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "💬" },
+  { id: 12, text: "중앙 마감 브리핑", startDate: 11, endDate: 11, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📢" },
+  { id: 13, text: "앵고라 주제 공모", startDate: 13, endDate: 15, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 14, text: "콘텐츠 초안 제출", startDate: 13, endDate: 13, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]", icon: "📝" },
+  { id: 15, text: "클럽 캘린더 공표", startDate: 15, endDate: 15, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📅" },
+  { id: 16, text: "앵고라 주제 공표", startDate: 16, endDate: 16, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 17, text: "커리어 일정 공표", startDate: 16, endDate: 16, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📄" },
+  { id: 18, text: "주차 결과물 제출", startDate: 16, endDate: 16, color: "bg-[#e6feee]", textColor: "text-[#04ae3e]", icon: "🗓️" },
+  { id: 19, text: "앵고라 진행", startDate: 17, endDate: 17, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 20, text: "콘텐츠 최종 제출", startDate: 17, endDate: 17, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]", icon: "📝" },
+  { id: 21, text: "앵무새 발표", startDate: 18, endDate: 18, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+];
+
 const calendarData = [
-  // Week 1
+  // Week 1 (이전 달 날짜는 음수로 표시)
   [
-    { date: 28, isCurrentMonth: false, events: [] },
-    { date: 29, isCurrentMonth: false, events: [] },
-    {
-      date: 30,
-      isCurrentMonth: false,
-      events: [
-        { text: "🍞 엥크레 예세이", icon: "🍞", color: "bg-[#555555]", textColor: "text-[#aaaaaa]" }
-      ]
-    },
-    {
-      date: 1,
-      isCurrentMonth: true,
-      events: [
-        { text: "🍞 중상 시작 브리핑", icon: "🍞", color: "bg-[#555555]", textColor: "text-[#aaaaaa]" },
-        { text: "▼ 엥크레 Wisdom", icon: "▼", color: "bg-[#555555]", textColor: "text-[#aaaaaa]" },
-        { text: "🌊 중앙 중간 브리핑", icon: "🌊", color: "bg-[#555555]", textColor: "text-[#aaaaaa]" }
-      ]
-    },
-    {
-      date: 2,
-      isCurrentMonth: true,
-      events: [
-        { text: "💡 주차 결과물 제출", icon: "💡", color: "bg-[#555555]", textColor: "text-[#aaaaaa]" }
-      ]
-    },
-    {
-      date: 3,
-      isCurrentMonth: true,
-      events: [
-        { text: "🌊 중앙 마감 브리핑", icon: "🌊", color: "bg-[#555555]", textColor: "text-[#aaaaaa]" }
-      ]
-    },
-    { date: 4, isCurrentMonth: true, events: [] },
+    { date: -28, isCurrentMonth: false },
+    { date: -29, isCurrentMonth: false },
+    { date: -30, isCurrentMonth: false },
+    { date: 1, isCurrentMonth: true },
+    { date: 2, isCurrentMonth: true },
+    { date: 3, isCurrentMonth: true },
+    { date: 4, isCurrentMonth: true },
   ],
   // Week 2
   [
-    { date: 5, isCurrentMonth: true, events: [] },
-    {
-      date: 6,
-      isCurrentMonth: true,
-      isToday: true,
-      events: [
-        { text: "오늘", icon: "오늘", color: "bg-[#21e786]", textColor: "text-[#040b11]" },
-        { text: "🌊 중앙 시작 브리핑", icon: "🌊", color: "bg-[#fdece7]", textColor: "text-[#b54800]" }
-      ]
-    },
-    { date: 7, isCurrentMonth: true, events: [] },
-    {
-      date: 8,
-      isCurrentMonth: true,
-      events: [
-        { text: "▼ 엥크레 Wisdom", icon: "▼", color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" }
-      ]
-    },
-    {
-      date: 9,
-      isCurrentMonth: true,
-      events: [
-        { text: "💜 엥크레 인포데스크", icon: "💜", color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" }
-      ]
-    },
-    { date: 10, isCurrentMonth: true, events: [] },
-    {
-      date: 11,
-      isCurrentMonth: true,
-      events: [
-        { text: "🌊 중앙 마감 브리핑", icon: "🌊", color: "bg-[#fdece7]", textColor: "text-[#b54800]" }
-      ]
-    },
+    { date: 5, isCurrentMonth: true },
+    { date: 6, isCurrentMonth: true, isToday: true },
+    { date: 7, isCurrentMonth: true },
+    { date: 8, isCurrentMonth: true },
+    { date: 9, isCurrentMonth: true },
+    { date: 10, isCurrentMonth: true },
+    { date: 11, isCurrentMonth: true },
   ],
   // Week 3
   [
-    { date: 12, isCurrentMonth: true, events: [] },
-    {
-      date: 13,
-      isCurrentMonth: true,
-      events: [
-        { text: "💜 엥고라 주제 공모", icon: "💜", color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" },
-        { text: "✓ 콘텐츠 초안 제출", icon: "✓", color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]" }
-      ]
-    },
-    { date: 14, isCurrentMonth: true, events: [] },
-    {
-      date: 15,
-      isCurrentMonth: true,
-      events: [
-        { text: "🏅 클럽 캘린더 공표", icon: "🏅", color: "bg-[#fdece7]", textColor: "text-[#b54800]" }
-      ]
-    },
-    {
-      date: 16,
-      isCurrentMonth: true,
-      events: [
-        { text: "💜 엥고라 주제 공표", icon: "💜", color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" },
-        { text: "🏅 커리어 일정 공표", icon: "🏅", color: "bg-[#fdece7]", textColor: "text-[#b54800]" },
-        { text: "💡 주차 결과물 제출", icon: "💡", color: "bg-[#e6feee]", textColor: "text-[#04ae3e]" }
-      ]
-    },
-    {
-      date: 17,
-      isCurrentMonth: true,
-      events: [
-        { text: "💜 엥고라 진행", icon: "💜", color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" },
-        { text: "✓ 콘텐츠 최종 제출", icon: "✓", color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]" }
-      ]
-    },
-    {
-      date: 18,
-      isCurrentMonth: true,
-      events: [
-        { text: "💜 엥무새 발표", icon: "💜", color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" }
-      ]
-    },
+    { date: 12, isCurrentMonth: true },
+    { date: 13, isCurrentMonth: true },
+    { date: 14, isCurrentMonth: true },
+    { date: 15, isCurrentMonth: true },
+    { date: 16, isCurrentMonth: true },
+    { date: 17, isCurrentMonth: true },
+    { date: 18, isCurrentMonth: true },
   ],
 ];
 
 export const CalendarSection = (): JSX.Element => {
   const screenWidth = useWindowWidth();
-  const isMobile = screenWidth >= 320 && screenWidth < 768;
-  const isTablet = screenWidth >= 768 && screenWidth < 1280;
+  const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
+  const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
+  const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+
+  const handleEventClick = (eventId: number) => {
+    setSelectedEvents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        // 이미 선택된 경우 선택 해제
+        newSet.delete(eventId);
+      } else {
+        // 선택되지 않은 경우
+        if (newSet.size < 3) {
+          // 3개 미만이면 추가
+          newSet.add(eventId);
+        }
+        // 3개 이상이면 아무것도 하지 않음
+      }
+      return newSet;
+    });
+  };
+
+  const handleConfirm = () => {
+    setIsModalOpen(false);
+    setIsConfirmed(true);
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 4000);
+  };
 
   return (
-    <section className={`flex flex-col items-center ${isMobile ? 'px-5' : isTablet ? 'px-10' : 'px-[120px]'} py-20 w-full bg-[#040b11]`}>
-        <div className="w-full max-w-[1680px] mx-auto">
-          {/* Header */}
-          {isMobile ? (
-            <div className="relative flex flex-col items-center gap-8 mb-8">
-              <Button className={`inline-flex items-center justify-center gap-2 px-6 py-2 h-auto rounded-full shadow-[0px_0px_15px_#33ff0080] bg-[linear-gradient(90deg,rgba(135,230,135,1)_0%,rgba(165,234,53,1)_100%)] hover:bg-[linear-gradient(90deg,rgba(135,230,135,1)_0%,rgba(165,234,53,1)_100%)]`}>
-                <span className="text-base">👀</span>
-                <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-[#2e7351] text-base">
-                  일정 확인 필요
-                </span>
-              </Button>
+    <section className={`flex flex-col items-center ${isMobile ? 'px-5' : isTablet ? 'px-10' : 'px-[120px]'} py-20 w-full bg-[#040b11] relative`}>
+      <div className="w-full max-w-[1680px] mx-auto relative">
+        {/* 상단 왼쪽 빛나는 곡선 border */}
+        <div className={`absolute top-0 left-0 w-[250px] h-[60px] pointer-events-none ${isTablet || isMobile ? 'hidden' : ''}`}>
+          <svg width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="glow-top">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <path d="M0 60 C0 30, 0 15, 30 15 L250 15" stroke="#21e786" strokeWidth="3" fill="none" filter="url(#glow-top)" strokeLinecap="round"/>
+          </svg>
+        </div>
 
-              <div className={`flex items-center justify-between gap-2 px-4 py-2`}>
+        {/* 하단 오른쪽 빛나는 곡선 border */}
+        <div className={`absolute bottom-0 right-0 w-[250px] h-[60px] pointer-events-none ${isTablet || isMobile ? 'hidden' : ''}`}>
+          <svg width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="glow-bottom">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            <path d="M250 0 C250 30, 250 45, 220 45 L0 45" stroke="#21e786" strokeWidth="3" fill="none" filter="url(#glow-bottom)" strokeLinecap="round"/>
+          </svg>
+        </div>
+
+        <div className="relative z-10">
+        {/* Header */}
+        {isMobile ? (
+          <div className="relative flex flex-col items-center mb-6">
+            {/* 배지 */}
+            <img
+              src={isConfirmed ? "/badge.png" : "/calendar-badge.png"}
+              alt={isConfirmed ? "일정 확인 완료" : "일정 확인 필요"}
+              className="h-auto cursor-pointer"
+            />
+          </div>
+        ) : isTablet ? (
+          <div className="relative flex items-center justify-between mb-8 max-w-[686px] mx-auto">
+            {/* 왼쪽: 날짜 선택기 */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#141b22] rounded-lg border-2 border-[#ffffff4c]">
+              <button className="w-5 h-5">
+                <img
+                  alt="Previous month"
+                  src="https://c.animaapp.com/O1XpzcZm/img/frame-3.svg"
+                />
+              </button>
+
+              <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
+                2025. 10
+              </span>
+
+              <button className="w-5 h-5">
+                <img
+                  alt="Next month"
+                  src="https://c.animaapp.com/O1XpzcZm/img/frame-4.svg"
+                />
+              </button>
+            </div>
+
+            {/* 오른쪽: 배지 */}
+            <img
+              src={isConfirmed ? "/badge.png" : "/calendar-badge.png"}
+              alt={isConfirmed ? "일정 확인 완료" : "일정 확인 필요"}
+              className="h-auto cursor-pointer"
+            />
+          </div>
+        ) : (
+          <div className="relative flex items-center justify-between mb-8 pt-[37px] px-[48px]">
+            <h2 className="font-bold text-white text-[32px] tracking-[0] leading-[normal] font-ria-sans">
+              캘린더
+            </h2>
+
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-[#141b22] rounded-lg border-2 border-[#ffffff4c]">
+              <button className="w-5 h-5">
+                <img
+                  alt="Previous month"
+                  src="https://c.animaapp.com/O1XpzcZm/img/frame-3.svg"
+                />
+              </button>
+
+              <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
+                2025. 10
+              </span>
+
+              <button className="w-5 h-5">
+                <img
+                  alt="Next month"
+                  src="https://c.animaapp.com/O1XpzcZm/img/frame-4.svg"
+                />
+              </button>
+            </div>
+
+            <img
+              src={isConfirmed ? "/badge.png" : "/calendar-badge.png"}
+              alt={isConfirmed ? "일정 확인 완료" : "일정 확인 필요"}
+              className="h-auto cursor-pointer"
+            />
+          </div>
+        )}
+
+        {/* Calendar Grid */}
+        <div className={`bg-[#1a1f26] rounded-lg overflow-hidden ${isTablet ? 'max-w-[686px] mx-auto' : ''}`}>
+          {isMobile ? (
+            <>
+              {/* 날짜 선택기 */}
+              <div className="flex items-center justify-center gap-4 px-6 py-3 bg-[#141b22]">
                 <button className="w-5 h-5">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M15 18L9 12L15 6" stroke="#21e786" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
 
-                <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
+                <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base">
                   2025. 10
                 </span>
 
@@ -156,163 +229,507 @@ export const CalendarSection = (): JSX.Element => {
                   </svg>
                 </button>
               </div>
-            </div>
-          ) : (
-            <div className="relative flex items-center justify-between mb-8">
-              <h2 className="font-bold text-white text-[32px] tracking-[0] leading-[normal] font-ria-sans">
-                캘린더
-              </h2>
 
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-[#141b22] rounded-lg border-2 border-[#ffffff4c]">
-                <button className="w-5 h-5">
-                  <img
-                    alt="Previous month"
-                    src="https://c.animaapp.com/O1XpzcZm/img/frame-3.svg"
-                  />
-                </button>
-
-                <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
-                  2025. 10
-                </span>
-
-                <button className="w-5 h-5">
-                  <img
-                    alt="Next month"
-                    src="https://c.animaapp.com/O1XpzcZm/img/frame-4.svg"
-                  />
-                </button>
-              </div>
-
-              <Button className="inline-flex items-center justify-center gap-2 px-6 py-2 h-auto rounded-full shadow-[0px_0px_15px_#33ff0080] bg-[linear-gradient(90deg,rgba(135,230,135,1)_0%,rgba(165,234,53,1)_100%)] hover:bg-[linear-gradient(90deg,rgba(135,230,135,1)_0%,rgba(165,234,53,1)_100%)]">
-                <span className="text-base">✅</span>
-                <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-[#2e7351] text-base">
-                  일정 확인 완료
-                </span>
-              </Button>
-            </div>
-          )}
-
-          {/* Calendar Grid */}
-          <div className="bg-[#1a1f26] rounded-lg overflow-hidden">
-            {isMobile ? (
-              <div className="grid grid-cols-7 border-b border-[#2a2f36] last:border-b-0">
-                {calendarData.flat().map((day, dayIndex) => (
-                  <div
-                    key={dayIndex}
-                    className={`min-h-[80px] p-3 border-r border-[#2a2f36] last:border-r-0 ${
-                      day.isToday
-                        ? "bg-[#1e2a1e] border-2 border-[#21e786] relative"
-                        : "bg-[#222222]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1 mb-2">
-                      <span
-                        className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-sm ${
-                          day.isToday
-                            ? "text-[#21e786]"
-                            : day.isCurrentMonth
-                              ? "text-white"
-                              : "text-[#767676]"
-                        }`}
-                      >
-                        {day.date}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      {day.events.slice(0, 2).map((event, eventIndex) => (
-                        <div
-                          key={eventIndex}
-                          className={`${event.color} h-2 rounded-sm`}
-                        />
-                      ))}
-                      {day.events.length > 2 && (
-                        <div className="w-full h-2 bg-[#555555] rounded-sm flex items-center justify-center">
-                          <span className="text-white text-[8px]">+</span>
-                        </div>
-                      )}
-                    </div>
+              {/* 요일 헤더 */}
+              <div className="grid grid-cols-7 bg-[#141b22]">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                  <div key={idx} className="text-center py-2 text-[#aaaaaa] text-xs font-semibold border-r border-[#2a2f36] last:border-r-0">
+                    {day}
                   </div>
                 ))}
               </div>
-            ) : (
-              calendarData.map((week, weekIndex) => (
+              {/* 캘린더 그리드 */}
+              {calendarData.map((week, weekIndex) => (
                 <div key={weekIndex} className="grid grid-cols-7 border-b border-[#2a2f36] last:border-b-0">
-                  {week.map((day, dayIndex) => (
-                    <div
-                      key={dayIndex}
-                      className={`min-h-[180px] p-3 border-r border-[#2a2f36] last:border-r-0 ${
-                        day.isToday
-                          ? "bg-[#1e2a1e] border-2 border-[#21e786] relative"
-                          : "bg-[#222222]"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-3">
-                        <span
-                          className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-lg ${
-                            day.isCurrentMonth
-                              ? "text-white"
-                              : "text-[#767676]"
+                  {week.map((day, dayIndex) => {
+                    // 이 날짜에 해당하는 이벤트들 필터링
+                    const dayEvents = events?.filter(event =>
+                      event?.startDate <= day.date && event?.endDate >= day.date
+                    ) || [];
+
+                    return (
+                      <div
+                        key={dayIndex}
+                        className={`min-h-[60px] p-1.5 border-r border-[#2a2f36] last:border-r-0 ${
+                          day.isToday
+                            ? "bg-[#1e2a1e] border-2 border-[#21e786]"
+                            : "bg-[#222222]"
+                        }`}
+                      >
+                        <div className="flex items-center justify-center mb-1">
+                          <span
+                            className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-xs ${
+                              day.isToday
+                                ? "text-[#21e786]"
+                                : day.isCurrentMonth
+                                  ? "text-white"
+                                  : "text-[#767676]"
+                            }`}
+                          >
+                            {Math.abs(day.date)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          {dayEvents.slice(0, 3).map((event, eventIndex) => (
+                            <div
+                              key={eventIndex}
+                              className={`${event.color} h-1 rounded-sm`}
+                            />
+                          ))}
+                          {dayEvents.length > 3 && (
+                            <div className="w-full h-1 bg-[#555555] rounded-sm" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </>
+          ) : isTablet ? (
+            <>
+              {/* 태블릿 캘린더 그리드 */}
+              {calendarData.map((week, weekIndex) => {
+                const weekStartDate = Math.min(...(week?.map(d => d.date) || [0]));
+                const weekEndDate = Math.max(...(week?.map(d => d.date) || [0]));
+
+                // 이 주에 해당하는 이벤트 필터링하고 길이 순으로 정렬 (긴 것부터)
+                const weekEvents = events
+                  .filter(event =>
+                    (event.startDate >= weekStartDate && event.startDate <= weekEndDate) ||
+                    (event.endDate >= weekStartDate && event.endDate <= weekEndDate) ||
+                    (event.startDate < weekStartDate && event.endDate > weekEndDate)
+                  )
+                  .map(event => ({
+                    ...event,
+                    length: event.endDate - event.startDate + 1
+                  }))
+                  .sort((a, b) => b.length - a.length);
+
+                // 각 이벤트의 행(row) 계산 - 겹치지 않도록
+                const eventRows = new Map();
+                const rowOccupancy: Array<Array<{start: number, end: number}>> = [];
+
+                weekEvents.forEach(event => {
+                  const eventStart = Math.max(event.startDate, weekStartDate);
+                  const eventEnd = Math.min(event.endDate, weekEndDate);
+
+                  let row = 0;
+                  // 사용 가능한 행 찾기
+                  while (true) {
+                    // 이 행이 존재하지 않으면 초기화
+                    if (!rowOccupancy[row]) {
+                      rowOccupancy[row] = [];
+                    }
+
+                    // 이 행에서 현재 이벤트와 겹치는 다른 이벤트가 있는지 확인
+                    const hasConflict = rowOccupancy[row].some(occupied => {
+                      // 날짜 범위가 겹치는지 확인
+                      return !(eventEnd < occupied.start || eventStart > occupied.end);
+                    });
+
+                    if (!hasConflict) {
+                      // 겹치지 않으면 이 행에 배치
+                      rowOccupancy[row].push({ start: eventStart, end: eventEnd });
+                      eventRows.set(event, row);
+                      break;
+                    }
+
+                    // 겹치면 다음 행으로
+                    row++;
+                  }
+                });
+
+                return (
+                  <div key={weekIndex} className="relative border-b border-[#2a2f36] last:border-b-0">
+                    {/* 날짜 셀 그리드 */}
+                    <div className="grid grid-cols-7">
+                      {week.map((day, dayIndex) => (
+                        <div
+                          key={dayIndex}
+                          className={`w-[98px] min-h-[152px] p-2 border-r border-[#2a2f36] last:border-r-0 ${
+                            day.isToday
+                              ? "bg-[#1e2a1e] border-2 border-[#21e786] relative"
+                              : "bg-[#222222]"
                           }`}
                         >
-                          {day.date}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        {day.events.map((event, eventIndex) => (
-                          <div
-                            key={eventIndex}
-                            className={`${event.color} px-3 py-1.5 rounded-md cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5`}
-                          >
+                          <div className="flex items-center gap-2 mb-2">
                             <span
-                              className={`[font-family:'Pretendard-Medium',Helvetica] font-medium ${event.textColor} text-sm leading-tight`}
+                              className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-sm ${
+                                day.isToday
+                                  ? "text-[#21e786]"
+                                  : day.isCurrentMonth
+                                    ? "text-white"
+                                    : "text-[#767676]"
+                              }`}
                             >
-                              {event.text}
+                              {Math.abs(day.date)}
                             </span>
+                            {day.isToday && (
+                              <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#21e786] text-xs">
+                                오늘
+                              </span>
+                            )}
+                          </div>
+                          {(() => {
+                            const dayEvents = weekEvents.filter(event =>
+                              (event.startDate <= day.date && event.endDate >= day.date) ||
+                              event.startDate === day.date
+                            );
+                            const maxVisibleEvents = 3;
+                            const hasMoreEvents = dayEvents.length > maxVisibleEvents;
+
+                            return hasMoreEvents && (
+                              <div className="absolute bottom-2 left-0 right-0 flex justify-center">
+                                <button className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-[#AAAAAA] text-[10px] hover:text-white transition-colors">
+                                  + 더보기
+                                </button>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 이벤트 레이어 (절대 위치) */}
+                    <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
+                      <div className="grid grid-cols-7 h-full">
+                        {week.map((day, dayIndex) => (
+                          <div key={dayIndex} className="relative pt-[38px] px-2">
+                            {weekEvents
+                              .filter(event => event.startDate === day.date)
+                              .map((event) => {
+                                const startIndex = week.findIndex(d => d.date === event.startDate);
+                                const endIndex = week.findIndex(d => d.date === event.endDate);
+                                const spanDays = endIndex >= startIndex ? endIndex - startIndex + 1 : 1;
+
+                                const row = eventRows.get(event);
+                                const eventHeight = 24;
+                                const gap = 6;
+
+                                // 태블릿 일정 너비: 1일=86px, 2일=184px, 3일=282px, 4일=380px
+                                const eventWidth = 98 * spanDays - 12;
+
+                                const bgColorMatch = event.color.match(/bg-\[([^\]]+)\]/);
+                                const textColorMatch = event.textColor.match(/text-\[([^\]]+)\]/);
+                                const bgColor = bgColorMatch ? bgColorMatch[1] : '#555555';
+                                const textColor = textColorMatch ? textColorMatch[1] : '#aaaaaa';
+
+                                const isSelected = selectedEvents.has(event.id);
+
+                                return (
+                                  <div
+                                    key={event.id}
+                                    className="px-2 py-1 rounded cursor-pointer transition-all duration-200 pointer-events-auto absolute flex items-center justify-between hover:opacity-80"
+                                    style={{
+                                      width: `${eventWidth}px`,
+                                      height: `${eventHeight}px`,
+                                      top: `${row * (eventHeight + gap)}px`,
+                                      zIndex: event.length,
+                                      backgroundColor: bgColor,
+                                      color: textColor
+                                    }}
+                                    onClick={() => handleEventClick(event.id)}
+                                  >
+                                    <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-[10px] leading-tight truncate">
+                                      {event.text}
+                                    </span>
+                                    {isSelected && (
+                                      <img
+                                        src="/icons/iconFireCalendar.png"
+                                        alt="Selected"
+                                        className="w-3 h-3 ml-1 flex-shrink-0"
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
                           </div>
                         ))}
-                        {day.events.length > 3 && (
-                          <button className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-xs text-left hover:underline">
-                            + 더보기
-                          </button>
-                        )}
                       </div>
                     </div>
-                  ))}
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            calendarData.map((week, weekIndex) => {
+              const weekStartDate = Math.min(...(week?.map(d => d.date) || [0]));
+              const weekEndDate = Math.max(...(week?.map(d => d.date) || [0]));
+
+              // 이 주에 해당하는 이벤트 필터링하고 길이 순으로 정렬 (긴 것부터)
+              const weekEvents = events
+                .filter(event =>
+                  (event.startDate >= weekStartDate && event.startDate <= weekEndDate) ||
+                  (event.endDate >= weekStartDate && event.endDate <= weekEndDate) ||
+                  (event.startDate < weekStartDate && event.endDate > weekEndDate)
+                )
+                .map(event => ({
+                  ...event,
+                  length: event.endDate - event.startDate + 1
+                }))
+                .sort((a, b) => b.length - a.length); // 긴 일정부터 배치
+
+              // 각 이벤트의 행(row) 계산
+              const eventRows = new Map();
+              weekEvents.forEach(event => {
+                let row = 0;
+                const eventStart = Math.max(event.startDate, weekStartDate);
+                const eventEnd = Math.min(event.endDate, weekEndDate);
+
+                // 이미 배치된 이벤트들과 겹치는지 확인
+                while (true) {
+                  let hasConflict = false;
+                  for (const [otherEvent, otherRow] of eventRows) {
+                    if (otherRow === row) {
+                      const otherStart = Math.max(otherEvent.startDate, weekStartDate);
+                      const otherEnd = Math.min(otherEvent.endDate, weekEndDate);
+                      // 날짜 범위가 겹치는지 확인
+                      if (!(eventEnd < otherStart || eventStart > otherEnd)) {
+                        hasConflict = true;
+                        break;
+                      }
+                    }
+                  }
+                  if (!hasConflict) break;
+                  row++;
+                }
+                eventRows.set(event, row);
+              });
+
+              return (
+                <div key={weekIndex} className="relative border-b border-[#2a2f36] last:border-b-0">
+                  {/* 날짜 셀 그리드 */}
+                  <div className="grid grid-cols-7">
+                    {week.map((day, dayIndex) => (
+                      <div
+                        key={dayIndex}
+                        className={`${isTablet ? 'w-[150px] h-[165px]' : 'w-[240px] h-[249px]'} p-3 border-r border-[#2a2f36] last:border-r-0 ${
+                          day.isToday
+                            ? "bg-[#1e2a1e] border-2 border-[#21e786] relative"
+                            : "bg-[#222222]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <span
+                            className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-lg ${
+                              day.isToday
+                                ? "text-[#21e786]"
+                                : day.isCurrentMonth
+                                  ? "text-white"
+                                  : "text-[#767676]"
+                            }`}
+                          >
+                            {Math.abs(day.date)}
+                          </span>
+                          {day.isToday && (
+                            <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#21e786] text-sm">
+                              오늘
+                            </span>
+                          )}
+                        </div>
+                        {(() => {
+                          const dayEvents = weekEvents.filter(event =>
+                            (event.startDate <= day.date && event.endDate >= day.date) ||
+                            event.startDate === day.date
+                          );
+                          const maxVisibleEvents = 3;
+                          const hasMoreEvents = dayEvents.length > maxVisibleEvents;
+
+                          return hasMoreEvents && (
+                            <div className="absolute bottom-3 left-0 right-0 flex justify-center">
+                              <button className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-[#AAAAAA] text-xs hover:text-white transition-colors">
+                                + 더보기
+                              </button>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 이벤트 레이어 (절대 위치) */}
+                  <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
+                    <div className="grid grid-cols-7 h-full">
+                      {week.map((day, dayIndex) => (
+                        <div key={dayIndex} className="relative pt-[54px] px-3">
+                          {weekEvents
+                            .filter(event => event.startDate === day.date)
+                            .map((event) => {
+                              // 이 주의 셀들 중에서 이벤트가 포함되는 셀 개수 계산
+                              const startIndex = week.findIndex(d => d.date === event.startDate);
+                              const endIndex = week.findIndex(d => d.date === event.endDate);
+                              const spanDays = endIndex >= startIndex ? endIndex - startIndex + 1 : 1;
+
+                              const row = eventRows.get(event);
+                              const eventHeight = 39; // 이벤트 높이
+                              const gap = 12; // 이벤트 간격
+
+                              const cellWidth = isTablet ? 150 : 240;
+                              const eventWidth = spanDays * cellWidth - 24;
+
+                              // z-index용 실제 이벤트 길이 계산
+                              const eventDates = [];
+                              for (let d = event.startDate; eventDates.length < 100; d++) {
+                                if (d === 0) continue; // 0일은 없음
+                                eventDates.push(d);
+                                if (d === event.endDate) break;
+                                if (d === -1) d = 0; // -1 다음은 1
+                              }
+                              const eventLength = eventDates.length;
+
+                              // 배경색과 텍스트 색상 추출
+                              const bgColorMatch = event.color.match(/bg-\[([^\]]+)\]/);
+                              const textColorMatch = event.textColor.match(/text-\[([^\]]+)\]/);
+                              const bgColor = bgColorMatch ? bgColorMatch[1] : '#555555';
+                              const textColor = textColorMatch ? textColorMatch[1] : '#aaaaaa';
+
+                              const isSelected = selectedEvents.has(event.id);
+
+                              return (
+                                <div
+                                  key={event.id}
+                                  className="group px-3 py-2 rounded cursor-pointer transition-all duration-200 pointer-events-auto absolute flex items-center justify-between"
+                                  style={{
+                                    width: `${eventWidth}px`,
+                                    height: '39px',
+                                    top: `${row * (eventHeight + gap)}px`,
+                                    zIndex: eventLength,
+                                    backgroundColor: bgColor,
+                                    color: textColor
+                                  }}
+                                  onClick={() => handleEventClick(event.id)}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = textColor;
+                                    e.currentTarget.style.color = bgColor;
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = bgColor;
+                                    e.currentTarget.style.color = textColor;
+                                  }}
+                                >
+                                  <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-base leading-tight">
+                                    {event.icon} {event.text}
+                                  </span>
+                                  {isSelected && (
+                                    <img
+                                      src="/icons/iconFireCalendar.png"
+                                      alt="Selected"
+                                      className="w-5 h-5 mr-3"
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              ))
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className={`mt-0 flex flex-col items-center gap-6 bg-[#141b22] rounded-b-lg ${isMobile ? 'py-6 px-4' : 'py-10 px-8'} ${isTablet ? 'max-w-[686px] mx-auto' : ''} relative overflow-hidden`}>
+          {/* Footer 오른쪽 하단 빛나는 곡선 border */}
+          <div className="absolute -bottom-[10px] -right-[1px] w-[250px] h-[60px] pointer-events-none">
+            <svg width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <filter id="glow-footer">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              <path d="M250 0 C250 30, 250 45, 220 45 L0 45" stroke="#21e786" strokeWidth="3" fill="none" filter="url(#glow-footer)" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="flex flex-col items-center gap-3">
+            {isMobile ? (
+              <>
+                <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-lg">
+                  <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">클럽 일정</span>
+                </h3>
+                <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
+                  클럽 일정 일정을 캘린더를 통해 확인해주세요
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-2xl">
+                  <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-[32px]">클럽 일정</span>을 확인하고 3개의 기대 표현을 보내주세요!
+                </h3>
+                <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-sm">
+                  활동 일정 클릭 시 자동 선택됩니다.
+                </p>
+                <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
+                  '기대'는 앞으로 2주 내의 클럽 활동 중 두근두근 기대가 되는 활동을 표시하는 나의 '찜콩'입니다.
+                  <br />
+                  클럽의 중요한 활동을 놓치는 일 없이 다 후루룹짭짭..해서, 성장의 근수저가 되보자구요!
+                </p>
+              </>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="mt-0 flex flex-col items-center gap-6 bg-[#141b22] rounded-b-lg py-10 px-8">
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-2">
-                <span className="bg-[linear-gradient(94deg,rgba(33,231,134,1)_0%,rgba(255,255,255,1)_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] font-ria-sans font-bold text-2xl">
-                  클럽 일정
-                </span>
-                <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-2xl">
-                  을 확인하고 3개의 기대 표현을 보내주세요!
-                </span>
-              </div>
-              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
-                활동 일정 클릭 시 자동 선택됩니다.
-              </p>
-              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
-                '기대'는 앞으로 2주 내의 클럽 활동 중 5~6가지로, 기대 카드는 활동 일정의 '정원'입니다.
-              </p>
-              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
-                클럽의 중앙만 활동을 높이는 일 외에 더 꾸준한걸까, 해석, 상상의 근육까지 키워가자구요!
-              </p>
-            </div>
+          <Button
+            className={`inline-flex items-center justify-center gap-2 h-auto bg-[#21e786] hover:bg-[#1bc970] ${isMobile ? 'px-4 py-2 w-[204px]' : 'px-8 py-3'}`}
+            onClick={() => setIsModalOpen(true)}
+          >
+            <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#040b11] ${isMobile ? 'text-sm' : 'text-base'}`}>
+              일정 확인하고 기대 표현 보내기
+            </span>
+          </Button>
+        </div>
+        </div>
+      </div>
 
-            <Button className="inline-flex items-center justify-center gap-2 px-8 py-3 h-auto bg-app-primary hover:bg-app-primary/90 rounded-lg">
-              <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#141b11] text-base">
-                일정 확인하고 기대 표현 보내기
-              </span>
-            </Button>
+      {/* Modal */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            className="relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src="/modal-notice.png"
+              alt="Notice Modal"
+              className="max-w-[90vw] max-h-[90vh] object-contain"
+            />
+
+            {/* 버튼 영역 - 이미지 하단 버튼 위에 투명 오버레이 */}
+            <div className="absolute inset-0 pointer-events-none">
+              {/* 다시 확인할게요 버튼 */}
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute left-[22%] w-[28%] h-[13%] bg-transparent hover:bg-white hover:bg-opacity-10 transition-all rounded-lg pointer-events-auto"
+                style={{ bottom: 'calc(12% + 40px)' }}
+              />
+              {/* 네! 확인했어요 버튼 */}
+              <button
+                onClick={handleConfirm}
+                className="absolute right-[22%] w-[28%] h-[13%] bg-transparent hover:bg-white hover:bg-opacity-10 transition-all rounded-lg pointer-events-auto"
+                style={{ bottom: 'calc(12% + 40px)' }}
+              />
+            </div>
           </div>
         </div>
-      </section>
+      )}
+
+      {/* Toast 알림 */}
+      {showToast && (
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-[#21e786] text-[#040b11] px-8 py-4 rounded-full shadow-lg">
+          <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-lg">
+            ✓ 일정이 저장되었습니다
+          </span>
+        </div>
+      )}
+    </section>
   );
 };

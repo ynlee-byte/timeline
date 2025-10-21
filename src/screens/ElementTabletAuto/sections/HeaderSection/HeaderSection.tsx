@@ -8,7 +8,7 @@ export const HeaderSection = (): JSX.Element => {
   const isTablet = screenWidth >= 768 && screenWidth < 1280;
 
   return (
-    <section className="relative w-full h-[798px] overflow-hidden">
+    <section className="relative w-full h-[798px]">
       <header className="absolute top-0 left-0 w-full h-[108px] flex bg-bg overflow-hidden z-10">
         <div className={`flex mt-[29px] w-full h-[50px] ${isMobile ? 'px-5' : isTablet ? 'px-10' : 'px-[120px]'} items-center justify-between max-w-[1920px] mx-auto`}>
           <div className="inline-flex items-center gap-4">
@@ -18,7 +18,7 @@ export const HeaderSection = (): JSX.Element => {
               src="https://c.animaapp.com/O1XpzcZm/img/logo.svg"
             />
             {!isMobile && (
-              <h1 className="[font-family:'Bakbak One',Helvetica] font-normal text-white text-[32px] tracking-[0] leading-[42px] whitespace-nowrap">
+              <h1 className="font-ria-sans font-normal text-white text-[28px] tracking-[0] leading-[42px] whitespace-nowrap">
                 Binabox
               </h1>
             )}
@@ -31,12 +31,12 @@ export const HeaderSection = (): JSX.Element => {
           ) : (
             <>
               <nav className="flex items-center gap-10">
-                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">타임</a>
-                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">크루</a>
-                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">커뮤니티</a>
-                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">클럽 & 커리어</a>
-                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">LIVE</a>
-                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">APPLY</a>
+                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">HOME</a>
+                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">ABOUT</a>
+                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">ROADMAP</a>
+                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">COLLECTION</a>
+                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">FAQS</a>
+                <a href="#" className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base hover:text-app-primary transition-colors">PAGES</a>
               </nav>
 
               <div className="flex items-center gap-4">
@@ -56,7 +56,7 @@ export const HeaderSection = (): JSX.Element => {
 
       <div className="absolute top-[108px] left-0 w-full h-[690px] flex items-center justify-center">
         <img
-          className="absolute top-[264px] left-0 w-full h-[313px]"
+          className="absolute top-[250px] left-1/2 -translate-x-1/2 w-[1270px] h-[350px] object-contain"
           alt="Background"
           src="https://c.animaapp.com/O1XpzcZm/img/bg.png"
         />
