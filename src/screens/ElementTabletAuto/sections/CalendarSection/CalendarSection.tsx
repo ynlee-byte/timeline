@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "../../../../components/ui/button";
 import { useWindowWidth } from "../../../../breakpoints";
 
@@ -62,6 +63,7 @@ const calendarData = [
 ];
 
 export const CalendarSection = (): JSX.Element => {
+  const router = useRouter();
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
@@ -69,6 +71,14 @@ export const CalendarSection = (): JSX.Element => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+
+  // localStorage에서 일정 확인 상태 불러오기
+  useEffect(() => {
+    const confirmed = localStorage.getItem('calendarConfirmed');
+    if (confirmed === 'true') {
+      setIsConfirmed(true);
+    }
+  }, []);
 
   const handleEventClick = (eventId: number) => {
     setSelectedEvents(prev => {
@@ -91,6 +101,7 @@ export const CalendarSection = (): JSX.Element => {
   const handleConfirm = () => {
     setIsModalOpen(false);
     setIsConfirmed(true);
+    localStorage.setItem('calendarConfirmed', 'true');
     setShowToast(true);
     setTimeout(() => {
       setShowToast(false);
@@ -98,7 +109,7 @@ export const CalendarSection = (): JSX.Element => {
   };
 
   return (
-    <section className={`flex flex-col items-center ${isMobile ? 'px-5' : isTablet ? 'px-10' : 'px-[120px]'} py-20 w-full bg-[#040b11] relative`}>
+    <section className={`flex flex-col items-center ${isMobile ? 'px-3 py-5' : isTablet ? 'px-10 py-20' : 'px-[120px] py-20'} w-full bg-[#040b11] relative`}>
       <div className="w-full max-w-[1680px] mx-auto relative">
         {/* 상단 왼쪽 빛나는 곡선 border */}
         <div className={`absolute top-0 left-0 w-[250px] h-[60px] pointer-events-none ${isTablet || isMobile ? 'hidden' : ''}`}>
@@ -116,22 +127,6 @@ export const CalendarSection = (): JSX.Element => {
           </svg>
         </div>
 
-        {/* 하단 오른쪽 빛나는 곡선 border */}
-        <div className={`absolute bottom-0 right-0 w-[250px] h-[60px] pointer-events-none ${isTablet || isMobile ? 'hidden' : ''}`}>
-          <svg width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <filter id="glow-bottom">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-            <path d="M250 0 C250 30, 250 45, 220 45 L0 45" stroke="#21e786" strokeWidth="3" fill="none" filter="url(#glow-bottom)" strokeLinecap="round"/>
-          </svg>
-        </div>
-
         <div className="relative z-10">
         {/* Header */}
         {isMobile ? (
@@ -141,6 +136,7 @@ export const CalendarSection = (): JSX.Element => {
               src={isConfirmed ? "/badge.png" : "/calendar-badge.png"}
               alt={isConfirmed ? "일정 확인 완료" : "일정 확인 필요"}
               className="h-auto cursor-pointer"
+              style={{ width: '140px' }}
             />
           </div>
         ) : isTablet ? (
@@ -242,15 +238,15 @@ export const CalendarSection = (): JSX.Element => {
               {calendarData.map((week, weekIndex) => (
                 <div key={weekIndex} className="grid grid-cols-7 border-b border-[#2a2f36] last:border-b-0">
                   {week.map((day, dayIndex) => {
-                    // 이 날짜에 해당하는 이벤트들 필터링
-                    const dayEvents = events?.filter(event =>
-                      event?.startDate <= day.date && event?.endDate >= day.date
+                    // 이 날짜에 시작하는 이벤트들만 필터링
+                    const startingEvents = events?.filter(event =>
+                      event?.startDate === day.date
                     ) || [];
 
                     return (
                       <div
                         key={dayIndex}
-                        className={`min-h-[60px] p-1.5 border-r border-[#2a2f36] last:border-r-0 ${
+                        className={`min-h-[60px] p-1.5 border-r border-[#2a2f36] last:border-r-0 relative ${
                           day.isToday
                             ? "bg-[#1e2a1e] border-2 border-[#21e786]"
                             : "bg-[#222222]"
@@ -269,16 +265,39 @@ export const CalendarSection = (): JSX.Element => {
                             {Math.abs(day.date)}
                           </span>
                         </div>
-                        <div className="flex flex-col gap-0.5">
-                          {dayEvents.slice(0, 3).map((event, eventIndex) => (
-                            <div
-                              key={eventIndex}
-                              className={`${event.color} h-1 rounded-sm`}
-                            />
-                          ))}
-                          {dayEvents.length > 3 && (
-                            <div className="w-full h-1 bg-[#555555] rounded-sm" />
-                          )}
+                        <div className="flex flex-col gap-0.5 relative">
+                          {startingEvents.map((event, eventIndex) => {
+                            // 이벤트 기간 계산 (일수)
+                            const eventSpan = event.endDate - event.startDate + 1;
+
+                            // 일수에 따른 너비 설정
+                            let eventWidth;
+                            if (eventSpan === 1) {
+                              eventWidth = 34;
+                            } else if (eventSpan === 2) {
+                              eventWidth = 74;
+                            } else {
+                              eventWidth = 114;
+                            }
+
+                            // 배경색 추출
+                            const bgColorMatch = event.color.match(/bg-\[([^\]]+)\]/);
+                            const bgColor = bgColorMatch ? bgColorMatch[1] : '#555555';
+
+                            return (
+                              <div
+                                key={eventIndex}
+                                className="rounded-sm absolute"
+                                style={{
+                                  width: `${eventWidth}px`,
+                                  height: '3px',
+                                  backgroundColor: bgColor,
+                                  top: `${eventIndex * 4}px`,
+                                  left: '0'
+                                }}
+                              />
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -392,10 +411,10 @@ export const CalendarSection = (): JSX.Element => {
                     </div>
 
                     {/* 이벤트 레이어 (절대 위치) */}
-                    <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
+                    <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none overflow-hidden">
                       <div className="grid grid-cols-7 h-full">
                         {week.map((day, dayIndex) => (
-                          <div key={dayIndex} className="relative pt-[38px] px-2">
+                          <div key={dayIndex} className="relative pt-[38px] px-2 overflow-visible">
                             {weekEvents
                               .filter(event => event.startDate === day.date)
                               .map((event) => {
@@ -420,19 +439,33 @@ export const CalendarSection = (): JSX.Element => {
                                 return (
                                   <div
                                     key={event.id}
-                                    className="px-2 py-1 rounded cursor-pointer transition-all duration-200 pointer-events-auto absolute flex items-center justify-between hover:opacity-80"
+                                    className={`px-2 py-1 rounded cursor-pointer transition-all duration-300 pointer-events-auto absolute flex items-center justify-between ${isSelected ? 'ring-1 ring-[#21e786] ring-opacity-60' : ''}`}
                                     style={{
                                       width: `${eventWidth}px`,
                                       height: `${eventHeight}px`,
                                       top: `${row * (eventHeight + gap)}px`,
-                                      zIndex: event.length,
+                                      zIndex: event.length + (isSelected ? 100 : 0),
                                       backgroundColor: bgColor,
-                                      color: textColor
+                                      color: textColor,
+                                      transform: isSelected ? 'scale(1.01)' : 'scale(1)',
+                                      boxShadow: isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none'
                                     }}
                                     onClick={() => handleEventClick(event.id)}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = textColor;
+                                      e.currentTarget.style.color = bgColor;
+                                      e.currentTarget.style.transform = 'scale(1.02)';
+                                      e.currentTarget.style.boxShadow = '0 3px 8px rgba(33, 231, 134, 0.3)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = bgColor;
+                                      e.currentTarget.style.color = textColor;
+                                      e.currentTarget.style.transform = isSelected ? 'scale(1.01)' : 'scale(1)';
+                                      e.currentTarget.style.boxShadow = isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none';
+                                    }}
                                   >
                                     <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-[10px] leading-tight truncate">
-                                      {event.text}
+                                      {event.icon} {event.text}
                                     </span>
                                     {isSelected && (
                                       <img
@@ -456,6 +489,20 @@ export const CalendarSection = (): JSX.Element => {
             calendarData.map((week, weekIndex) => {
               const weekStartDate = Math.min(...(week?.map(d => d.date) || [0]));
               const weekEndDate = Math.max(...(week?.map(d => d.date) || [0]));
+
+              // 화면 크기에 따른 셀 너비 계산
+              let desktopCellWidth, desktopCellHeight;
+              if (isTablet) {
+                desktopCellWidth = 150;
+                desktopCellHeight = 165;
+              } else if (screenWidth < 1680) {
+                const availableWidth = screenWidth - 240;
+                desktopCellWidth = Math.floor(availableWidth / 7);
+                desktopCellHeight = 249;
+              } else {
+                desktopCellWidth = 240;
+                desktopCellHeight = 249;
+              }
 
               // 이 주에 해당하는 이벤트 필터링하고 길이 순으로 정렬 (긴 것부터)
               const weekEvents = events
@@ -504,11 +551,15 @@ export const CalendarSection = (): JSX.Element => {
                     {week.map((day, dayIndex) => (
                       <div
                         key={dayIndex}
-                        className={`${isTablet ? 'w-[150px] h-[165px]' : 'w-[240px] h-[249px]'} p-3 border-r border-[#2a2f36] last:border-r-0 ${
+                        className={`p-3 border-r border-[#2a2f36] last:border-r-0 ${
                           day.isToday
                             ? "bg-[#1e2a1e] border-2 border-[#21e786] relative"
                             : "bg-[#222222]"
                         }`}
+                        style={{
+                          width: `${desktopCellWidth}px`,
+                          minHeight: `${desktopCellHeight}px`
+                        }}
                       >
                         <div className="flex items-center gap-2 mb-3">
                           <span
@@ -549,10 +600,10 @@ export const CalendarSection = (): JSX.Element => {
                   </div>
 
                   {/* 이벤트 레이어 (절대 위치) */}
-                  <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
+                  <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none overflow-hidden">
                     <div className="grid grid-cols-7 h-full">
                       {week.map((day, dayIndex) => (
-                        <div key={dayIndex} className="relative pt-[54px] px-3">
+                        <div key={dayIndex} className="relative pt-[54px] px-3 overflow-visible">
                           {weekEvents
                             .filter(event => event.startDate === day.date)
                             .map((event) => {
@@ -565,7 +616,17 @@ export const CalendarSection = (): JSX.Element => {
                               const eventHeight = 39; // 이벤트 높이
                               const gap = 12; // 이벤트 간격
 
-                              const cellWidth = isTablet ? 150 : 240;
+                              // 화면 크기에 따른 실제 셀 너비 계산
+                              let cellWidth;
+                              if (isTablet) {
+                                cellWidth = 150;
+                              } else if (screenWidth < 1680) {
+                                // 1280px ~ 1679px: 패딩을 고려한 실제 너비 계산
+                                const availableWidth = screenWidth - 240; // 좌우 패딩 120px씩
+                                cellWidth = Math.floor(availableWidth / 7);
+                              } else {
+                                cellWidth = 240;
+                              }
                               const eventWidth = spanDays * cellWidth - 24;
 
                               // z-index용 실제 이벤트 길이 계산
@@ -589,23 +650,29 @@ export const CalendarSection = (): JSX.Element => {
                               return (
                                 <div
                                   key={event.id}
-                                  className="group px-3 py-2 rounded cursor-pointer transition-all duration-200 pointer-events-auto absolute flex items-center justify-between"
+                                  className={`group px-3 py-2 rounded cursor-pointer transition-all duration-300 pointer-events-auto absolute flex items-center justify-between ${isSelected ? 'ring-1 ring-[#21e786] ring-opacity-60' : ''}`}
                                   style={{
                                     width: `${eventWidth}px`,
                                     height: '39px',
                                     top: `${row * (eventHeight + gap)}px`,
-                                    zIndex: eventLength,
+                                    zIndex: eventLength + (isSelected ? 100 : 0),
                                     backgroundColor: bgColor,
-                                    color: textColor
+                                    color: textColor,
+                                    transform: isSelected ? 'scale(1.01)' : 'scale(1)',
+                                    boxShadow: isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none'
                                   }}
                                   onClick={() => handleEventClick(event.id)}
                                   onMouseEnter={(e) => {
                                     e.currentTarget.style.backgroundColor = textColor;
                                     e.currentTarget.style.color = bgColor;
+                                    e.currentTarget.style.transform = 'scale(1.02)';
+                                    e.currentTarget.style.boxShadow = '0 3px 8px rgba(33, 231, 134, 0.3)';
                                   }}
                                   onMouseLeave={(e) => {
                                     e.currentTarget.style.backgroundColor = bgColor;
                                     e.currentTarget.style.color = textColor;
+                                    e.currentTarget.style.transform = isSelected ? 'scale(1.01)' : 'scale(1)';
+                                    e.currentTarget.style.boxShadow = isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none';
                                   }}
                                 >
                                   <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-base leading-tight">
@@ -634,29 +701,34 @@ export const CalendarSection = (): JSX.Element => {
         {/* Footer */}
         <div className={`mt-0 flex flex-col items-center gap-6 bg-[#141b22] rounded-b-lg ${isMobile ? 'py-6 px-4' : 'py-10 px-8'} ${isTablet ? 'max-w-[686px] mx-auto' : ''} relative overflow-hidden`}>
           {/* Footer 오른쪽 하단 빛나는 곡선 border */}
-          <div className="absolute -bottom-[10px] -right-[1px] w-[250px] h-[60px] pointer-events-none">
-            <svg width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <filter id="glow-footer">
-                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                  <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
-              <path d="M250 0 C250 30, 250 45, 220 45 L0 45" stroke="#21e786" strokeWidth="3" fill="none" filter="url(#glow-footer)" strokeLinecap="round"/>
-            </svg>
-          </div>
+          {!isMobile && (
+            <div className="absolute -bottom-[10px] -right-[1px] w-[250px] h-[60px] pointer-events-none">
+              <svg width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <filter id="glow-footer">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <path d="M250 0 C250 30, 250 45, 220 45 L0 45" stroke="#21e786" strokeWidth="3" fill="none" filter="url(#glow-footer)" strokeLinecap="round"/>
+              </svg>
+            </div>
+          )}
           <div className="flex flex-col items-center gap-3">
             {isMobile ? (
               <>
-                <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-lg">
-                  <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">클럽 일정</span>
-                </h3>
-                <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
-                  클럽 일정 일정을 캘린더를 통해 확인해주세요
-                </p>
+                <div className="text-center">
+                  <div className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">클럽 일정</div>
+                  <p className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-xs mt-1 mb-1">
+                    을 확인하고 3개의 기대 표현을 보내주세요!
+                  </p>
+                  <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
+                    클럽 전체 일정은 캘린더를 통해 확인해주세요
+                  </p>
+                </div>
               </>
             ) : (
               <>
@@ -677,7 +749,13 @@ export const CalendarSection = (): JSX.Element => {
 
           <Button
             className={`inline-flex items-center justify-center gap-2 h-auto bg-[#21e786] hover:bg-[#1bc970] ${isMobile ? 'px-4 py-2 w-[204px]' : 'px-8 py-3'}`}
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              if (isMobile) {
+                router.push('/calendar-events');
+              } else {
+                setIsModalOpen(true);
+              }
+            }}
           >
             <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#040b11] ${isMobile ? 'text-sm' : 'text-base'}`}>
               일정 확인하고 기대 표현 보내기

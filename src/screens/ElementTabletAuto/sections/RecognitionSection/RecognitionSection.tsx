@@ -216,23 +216,17 @@ export const RecognitionSection = (): JSX.Element => {
     });
   }, [isMobile, isTablet]);
 
+  // Mobile: card width = 170px, gap = 24px
+  // Total movement per card = 170px + 24px = 194px
   const translateXValue = isMobile
-    ? `translateX(-${currentCardIndex * 100}%)`
+    ? `translateX(-${currentCardIndex * 194}px)`
     : `translateX(-${currentCardIndex * cardWidthWithGap}px)`;
 
   return (
-    <section className={`flex flex-col items-center w-full bg-[#040b11] relative overflow-visible ${isMobile ? 'py-10' : 'py-20'}`}>
-      {/* Background image */}
-      {!isMobile && (
-        <div
-          className="absolute inset-0 w-full h-full bg-cover bg-center -z-10"
-          style={{ backgroundImage: `url(https://c.animaapp.com/O1XpzcZm/img/06-slider.png)` }}
-        />
-      )}
-
+    <section className={`flex flex-col items-center w-full bg-[#040b11] relative overflow-visible ${isMobile ? 'py-10' : 'pt-[88px] pb-20'}`}>
       {/* Timeline line image - full width */}
       {!isMobile && (
-        <div className="absolute left-0 right-0 top-[calc(50%)] w-full h-[5px] z-0" style={{ marginTop: '-140px' }}>
+        <div className={`absolute left-0 right-0 w-full h-[5px] z-10 ${isTablet ? 'top-[320px]' : 'top-[333px]'}`}>
           <img
             className="w-full h-full object-cover"
             alt="Timeline"
@@ -242,7 +236,7 @@ export const RecognitionSection = (): JSX.Element => {
       )}
 
       {/* Header section with max-width */}
-      <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} w-full max-w-[1680px] mx-auto relative z-10 ${isMobile ? 'gap-6 px-5 mb-6' : isTablet ? 'gap-[40px] px-10 mb-[40px]' : 'gap-[50px] px-[120px] mb-[50px]'}`}>
+      <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} w-full max-w-[1680px] mx-auto relative z-0 ${isMobile ? 'gap-6 px-5 mb-6' : isTablet ? 'gap-[40px] px-10 mb-[50px]' : 'gap-[50px] px-[120px] mb-[50px]'}`}>
         <header className={`flex flex-col ${isMobile ? 'items-start w-full' : 'items-center'} ${isMobile ? 'gap-3' : 'gap-[15px]'}`}>
           {isMobile ? (
             <h2 className="font-bold text-white text-[20px] text-left font-ria-sans">
@@ -280,35 +274,49 @@ export const RecognitionSection = (): JSX.Element => {
       </div>
 
       {/* Timeline with cards - full width without padding */}
-      <div className="relative w-full z-10">
+      <div className="relative w-full">
+          {/* Timeline line - horizontal line for mobile */}
+          {isMobile && (
+            <div className="absolute left-0 right-0 w-full h-[2px] z-0" style={{ top: '40px' }}>
+              <img
+                className="w-full h-full object-cover"
+                alt="Timeline"
+                src={lineImage.src}
+              />
+            </div>
+          )}
+
           {/* Cards container with horizontal scroll */}
           <div
             ref={sliderRef}
-            className={`relative w-full ${isMobile ? 'overflow-hidden px-5' : 'overflow-visible'}`}
+            className={`relative ${isMobile ? 'w-full overflow-x-hidden overflow-y-visible px-5' : isTablet ? 'w-[1010px] overflow-hidden mx-auto' : 'w-[1720px] overflow-hidden mx-auto'}`}
+            style={isMobile ? { paddingTop: '20px' } : undefined}
           >
             <div
               className={`inline-flex flex-row transition-transform duration-500 ease-in-out ${isMobile ? 'gap-6' : 'gap-[55px]'}`}
               style={{ transform: translateXValue }}
             >
               {recognitionCards.map((card, index) => (
-                <div key={card.id} className={`relative flex flex-col items-center flex-shrink-0 ${isMobile ? 'w-full' : 'w-[300px] -mt-[15px]'}`}>
+                <div key={card.id} className={`relative flex flex-col items-center flex-shrink-0 ${isMobile ? '-mt-[15px]' : 'w-[300px]'}`} style={isMobile ? { width: '170px' } : undefined}>
                   {/* Timeline dot and dashed line */}
-                  <div className={`relative w-full flex flex-col items-center ${isMobile ? 'h-[80px]' : 'h-[201px]'}`}>
+                  <div className={`relative w-full flex flex-col items-center ${isMobile ? 'h-[70px]' : 'h-[201px]'}`}>
                     {/* Timeline dot with outer and inner circles */}
-                    <div className={`absolute rounded-full bg-[#21e786] opacity-20 z-10 flex items-center justify-center ${isMobile ? 'top-[10px] w-[40px] h-[40px]' : 'top-[30px] w-[60px] h-[60px]'}`} />
-                    <div className={`absolute rounded-full bg-[#21e786] z-20 ${isMobile ? 'top-[20px] w-[20px] h-[20px]' : 'top-[45px] w-[30px] h-[30px]'}`} />
+                    <div className={`absolute left-1/2 -translate-x-1/2 rounded-full bg-[#21e786] opacity-20 z-30 flex items-center justify-center ${isMobile ? 'top-[15px] w-[40px] h-[40px]' : 'top-[45px] w-[60px] h-[60px]'}`} />
+                    <div className={`absolute left-1/2 -translate-x-1/2 rounded-full bg-[#21e786] z-40 ${isMobile ? 'top-[27px] w-[16px] h-[16px]' : 'top-[60px] w-[30px] h-[30px]'}`} />
                     {/* Dashed vertical line */}
-                    <div className={`absolute w-0.5 border-l-2 border-dashed border-white opacity-70 ${isMobile ? 'top-[30px] h-[50px]' : 'top-[60px] h-[141px]'}`} />
+                    <div className={`absolute left-1/2 -translate-x-1/2 w-0.5 border-l-2 border-dashed border-white opacity-70 ${isMobile ? 'z-[15]' : 'z-[15]'} ${isMobile ? 'top-[43px] h-[42px]' : 'top-[75px] h-[126px]'}`} />
                   </div>
 
                   {/* Bottom Card Section */}
-                  <div className={`bg-white bg-opacity-20 relative rounded-lg ${isMobile ? 'w-full p-4' : 'w-[300px] h-[270px] p-6'}`}>
+                  <div className={`relative rounded-lg bg-[#141B22] border-2 border-transparent transition-all duration-300 ${isMobile ? 'w-full p-4 flex items-center z-[25]' : 'w-[300px] h-[229px] p-6 z-[25] hover:border-[#21e786] hover:shadow-[0_0_20px_rgba(33,231,134,0.3)]'}`} style={isMobile ? { width: '170px', height: '200px' } : undefined}>
 
-                    <div className={`flex flex-col ${isMobile ? 'gap-2' : 'gap-4'}`}>
+                    <div className={`flex flex-col ${isMobile ? 'gap-2 w-full' : 'gap-3'}`}>
                       {/* Period */}
-                      <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#cccccc] text-left tracking-[-0.36px] ${isMobile ? 'text-xs leading-[14px]' : 'text-[16px] leading-[18px]'}`}>
-                        {card.period}
-                      </p>
+                      {!isMobile && (
+                        <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#cccccc] text-left tracking-[-0.36px] ${isMobile ? 'text-xs leading-[14px]' : 'text-[16px] leading-[18px]'}`}>
+                          {card.period}
+                        </p>
+                      )}
 
                       {/* Title with icon */}
                       {isMobile ? (
@@ -329,53 +337,63 @@ export const RecognitionSection = (): JSX.Element => {
                       )}
 
                       {/* Description */}
-                      <div className={`flex items-start justify-start ${isMobile ? 'min-h-[42px]' : 'min-h-[60px]'}`}>
+                      <div className={`flex items-start justify-start ${isMobile ? '' : 'min-h-[60px]'}`}>
                         <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-white tracking-[-0.42px] text-left overflow-hidden text-ellipsis ${isMobile ? 'text-sm leading-[18px] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]' : 'text-[16px] leading-[21px]'}`}>
                           {card.description}
                         </p>
                       </div>
 
-                      {/* Stars */}
-                      <div className="flex items-center justify-start gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <span
-                            key={i}
-                            className={`${isMobile ? 'text-base' : 'text-2xl'} ${i < card.stars ? 'text-white' : 'text-[#666666]'}`}
-                          >
-                            ★
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Crew name and Badge button in row for mobile */}
+                      {/* Stars and Badge button in row */}
                       {isMobile ? (
-                        <div className="flex items-center justify-between mt-2">
-                          <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#cccccc] text-xs">
-                            배낭수 크루
-                          </p>
-                          <button
-                            onClick={() => handleButtonClick(card.id)}
-                            className={`rounded-full flex items-center justify-center font-semibold transition-all duration-300 hover:scale-110 hover:brightness-125 font-ria-sans cursor-pointer w-12 h-12 text-sm ${
-                              clickedButtons[card.id]
-                                ? 'bg-[#FFF802] text-[#040B11]'
-                                : 'bg-[#040B11] text-white border-2 border-white border-opacity-30'
-                            }`}
-                            style={
-                              clickedButtons[card.id]
-                                ? {
-                                    boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)'
-                                  }
-                                : undefined
-                            }
-                          >
-                            {card.badge}
-                          </button>
-                        </div>
+                        <>
+                          <div className="flex items-center justify-start gap-0.5 -mt-1">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-base ${i < card.stars ? 'text-white' : 'text-[#666666]'}`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#cccccc] text-xs">
+                              {card.period.split('·')[1]?.trim() || ''}
+                            </p>
+                            <button
+                              onClick={() => handleButtonClick(card.id)}
+                              className={`rounded-full flex items-center justify-center font-normal transition-all duration-300 hover:scale-110 hover:brightness-125 font-ria-sans cursor-pointer w-11 h-11 text-sm ${
+                                clickedButtons[card.id]
+                                  ? 'bg-[#FFF802] text-[#040B11]'
+                                  : 'bg-[#040B11] text-white border-2 border-white border-opacity-30'
+                              }`}
+                              style={
+                                clickedButtons[card.id]
+                                  ? {
+                                      boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)'
+                                    }
+                                  : undefined
+                              }
+                            >
+                              {card.badge}
+                            </button>
+                          </div>
+                        </>
                       ) : (
-                        <div className="flex items-center justify-end mt-2">
+                        <div className="flex items-center justify-between -mt-2">
+                          <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-2xl ${i < card.stars ? 'text-white' : 'text-[#666666]'}`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
                           <button
                             onClick={() => handleButtonClick(card.id)}
-                            className={`rounded-full flex items-center justify-center font-semibold transition-all duration-300 hover:scale-110 hover:brightness-125 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
+                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-300 hover:scale-110 hover:brightness-125 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
                               clickedButtons[card.id]
                                 ? 'bg-[#FFF802] text-[#040B11]'
                                 : 'bg-[#040B11] text-white border-2 border-white border-opacity-30'
