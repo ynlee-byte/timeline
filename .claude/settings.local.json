@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(npm run build)",
+      "Bash(git add public tsconfig.app.json tsconfig.node.json vite.config.ts next-env.d.ts)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
