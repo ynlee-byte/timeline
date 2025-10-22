@@ -8,9 +8,9 @@ export const HeaderSection = (): JSX.Element => {
   const isTablet = screenWidth >= 768 && screenWidth < 1280;
 
   return (
-    <section className="relative w-full h-[798px]">
+    <section className={`relative w-full ${isMobile ? 'h-[680px]' : 'h-[798px]'}`}>
       <header className="absolute top-0 left-0 w-full h-[108px] flex bg-bg overflow-hidden z-10">
-        <div className={`flex mt-[29px] w-full h-[50px] ${isMobile ? 'px-5' : isTablet ? 'px-10' : 'px-[120px]'} items-center justify-between max-w-[1920px] mx-auto`}>
+        <div className={`flex mt-[29px] w-full h-[50px] ${isMobile ? 'px-3' : isTablet ? 'px-10' : 'px-[120px]'} items-center justify-between max-w-[1920px] mx-auto`}>
           <div className="inline-flex items-center gap-4">
             <img
               className="w-9 h-10"
@@ -23,7 +23,7 @@ export const HeaderSection = (): JSX.Element => {
               </h1>
             )}
           </div>
-          
+
           {isMobile || isTablet ? (
             <Button variant="ghost" size="icon" className="w-[50px] h-[50px] p-0 hover:bg-transparent">
               <img className="w-[50px] h-[50px]" alt="Icon menu" src="https://c.animaapp.com/O1XpzcZm/img/iconmenu.svg" />

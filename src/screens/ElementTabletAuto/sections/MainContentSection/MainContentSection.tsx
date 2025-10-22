@@ -5,6 +5,7 @@ import { Card, CardContent } from "../../../../components/ui/card";
 import { useWindowWidth } from "../../../../breakpoints";
 import { ReviewCardModal, GoalCardModal } from "./components";
 import { useState } from "react";
+import cardMy02 from "../../../../assets/cardMy02.png";
 
 const cardData = [
   {
@@ -47,7 +48,7 @@ export const MainContentSection = (): JSX.Element => {
     <section className={`flex flex-col items-center justify-center ${isMobile ? 'gap-6 px-5 py-10' : isTablet ? 'gap-[40px] px-10 py-16' : 'gap-[50px] px-[120px] py-20'} relative w-full bg-[#040b11] overflow-hidden`}>
       {isMobile ? (
         <header className="w-full">
-          <h1 className="font-bold text-white text-base text-left font-ria-sans">
+          <h1 className="font-bold text-white text-left font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
             나의 카드
           </h1>
         </header>
@@ -75,17 +76,18 @@ export const MainContentSection = (): JSX.Element => {
         {cardData.map((card, index) => (
           <Card
             key={index}
-            className={`relative ${isMobile ? 'w-full' : 'w-[330px]'} ${isMobile ? 'h-[80px]' : 'h-[341px]'} bg-[#1a1f26] border-0 rounded-lg overflow-hidden`}
+            className={`relative bg-[#1a1f26] border-0 rounded-none overflow-hidden ${isMobile ? '' : 'w-[330px] h-[341px]'}`}
+            style={isMobile ? { width: 'clamp(280px, 75vw, 380px)', height: 'clamp(61px, 16vw, 80px)' } : {}}
           >
             <CardContent className="p-0 relative w-full h-full">
-              {/* Green corner glow accents */}
-              {!isMobile && (
+              {/* Green corner glow accents for desktop/tablet */}
+              {!isMobile && (card.type === "review" || card.type === "goal" || card.type === "judgment") && (
                 <>
                   {/* Top-left corner glow */}
                   <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none">
                     <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
                       <defs>
-                        <filter id="glowTopLeft" x="-200%" y="-200%" width="500%" height="500%">
+                        <filter id={`glowTopLeft-${index}`} x="-200%" y="-200%" width="500%" height="500%">
                           <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
                           <feComposite in="SourceGraphic" in2="blur" operator="over" />
                         </filter>
@@ -96,7 +98,7 @@ export const MainContentSection = (): JSX.Element => {
                         strokeWidth="3"
                         strokeLinecap="round"
                         fill="none"
-                        filter="url(#glowTopLeft)"
+                        filter={`url(#glowTopLeft-${index})`}
                       />
                     </svg>
                   </div>
@@ -105,7 +107,7 @@ export const MainContentSection = (): JSX.Element => {
                   <div className="absolute bottom-0 right-0 w-20 h-20 pointer-events-none">
                     <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
                       <defs>
-                        <filter id="glowBottomRight" x="-200%" y="-200%" width="500%" height="500%">
+                        <filter id={`glowBottomRight-${index}`} x="-200%" y="-200%" width="500%" height="500%">
                           <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
                           <feComposite in="SourceGraphic" in2="blur" operator="over" />
                         </filter>
@@ -116,78 +118,137 @@ export const MainContentSection = (): JSX.Element => {
                         strokeWidth="3"
                         strokeLinecap="round"
                         fill="none"
-                        filter="url(#glowBottomRight)"
+                        filter={`url(#glowBottomRight-${index})`}
                       />
                     </svg>
                   </div>
                 </>
               )}
 
+              {/* Green corner glow accents for mobile */}
+              {isMobile && (card.type === "review" || card.type === "goal" || card.type === "judgment") && (
+                <>
+                  {/* Top-left corner glow - smaller version for mobile */}
+                  <div className="absolute top-0 left-0 w-10 h-10 pointer-events-none">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
+                      <defs>
+                        <filter id={`glowTopLeftMobile-${index}`} x="-200%" y="-200%" width="500%" height="500%">
+                          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      <path
+                        d="M 0 30 L 0 10 Q 0 0 10 0 L 30 0"
+                        stroke="#21e786"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        fill="none"
+                        filter={`url(#glowTopLeftMobile-${index})`}
+                      />
+                    </svg>
+                  </div>
+
+                  {/* Bottom-right corner glow - smaller version for mobile */}
+                  <div className="absolute bottom-0 right-0 w-10 h-10 pointer-events-none">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
+                      <defs>
+                        <filter id={`glowBottomRightMobile-${index}`} x="-200%" y="-200%" width="500%" height="500%">
+                          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      <path
+                        d="M 40 10 L 40 30 Q 40 40 30 40 L 10 40"
+                        stroke="#21e786"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        fill="none"
+                        filter={`url(#glowBottomRightMobile-${index})`}
+                      />
+                    </svg>
+                  </div>
+                </>
+              )}
+
+
               {isMobile ? (
                 <>
-                  {/* Left green border glow effect */}
-                  {(card.type === "review" || card.type === "goal") && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#21e786] to-[#21e786] shadow-[0_0_10px_#21e786]" />
-                  )}
 
-                  {/* Bottom green glow effect for judgment card */}
-                  {card.type === "judgment" && (
-                    <div className="absolute left-0 right-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-[#21e786] to-transparent shadow-[0_0_10px_#21e786]" />
-                  )}
-
-                  <div className="flex items-center justify-between p-4 h-full">
+                  <div className="flex items-center justify-between px-4 py-3 h-full">
                     <div className="flex items-center gap-3">
                     {card.type === "review" && (
                       <img
-                        className="w-8 h-8 flex-shrink-0"
+                        className="flex-shrink-0"
+                        style={{ width: 'clamp(30px, 7vw, 40px)', height: 'clamp(28px, 6.5vw, 37px)' }}
                         alt="Chat bubble icon"
                         src={card.icon.vector}
                       />
                     )}
+                    {card.type === "judgment" && (
+                      <img
+                        className="flex-shrink-0"
+                        style={{ width: 'clamp(30px, 7vw, 40px)', height: 'clamp(28px, 6.5vw, 37px)' }}
+                        alt="Icon Scoop"
+                        src="/iconScoop-mobile.png"
+                      />
+                    )}
                     {card.type === "goal" && (
                       <img
-                        className="w-10 h-10 flex-shrink-0"
+                        className="flex-shrink-0"
+                        style={{ width: 'clamp(30px, 7vw, 40px)', height: 'clamp(28px, 6.5vw, 37px)' }}
                         alt="Heart icon"
                         src="/iconHeart.png"
                       />
                     )}
-                    <div className="flex flex-col items-start">
+                    <div className="flex flex-col items-start gap-0.5">
                       {card.badge && (
-                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-xs">
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] leading-tight" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>
                           {card.badge}
                         </p>
                       )}
-                      <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-base">
+                      <h3 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white leading-tight" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
                         {card.title}
                       </h3>
                     </div>
                   </div>
                   {card.type === "judgment" ? (
-                    <div className="flex items-center gap-2">
-                      <Badge className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 bg-[#21e786] rounded-[50px] hover:bg-[#21e786]">
-                        <div className="inline-flex items-center gap-[4px]">
-                          <img
-                            className="w-[16px] h-[16px]"
-                            alt="Icon medal"
-                            src="https://c.animaapp.com/O1XpzcZm/img/iconmedal-4@2x.png"
-                          />
-                          <span className="[font-family:'Ria_Sans-Bold',Helvetica] font-bold text-[#040b11] text-[10px] tracking-[-0.3px] leading-[12px] whitespace-nowrap">
-                            목표달성!
-                          </span>
-                        </div>
-                      </Badge>
+                    <div className="flex items-center gap-3">
                       <img
-                        className="w-5 h-5 flex-shrink-0"
-                        alt="Dropdown arrow"
-                        src="https://c.animaapp.com/O1XpzcZm/img/vector-2188.svg"
+                        src="/badge02.png"
+                        alt="목표 달성!"
+                        className="h-auto flex-shrink-0"
+                        style={{ width: 'clamp(120px, 18vw, 180px)' }}
                       />
+                      <svg
+                        className="w-5 h-5 flex-shrink-0"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M5 7.5L10 12.5L15 7.5"
+                          stroke="white"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
                     </div>
                   ) : (
-                    <img
+                    <svg
                       className="w-5 h-5 flex-shrink-0"
-                      alt="Dropdown arrow"
-                      src="https://c.animaapp.com/O1XpzcZm/img/vector-2188.svg"
-                    />
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M5 7.5L10 12.5L15 7.5"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   )}
                   </div>
                 </>
@@ -241,37 +302,43 @@ export const MainContentSection = (): JSX.Element => {
                   )}
                   {card.type === "judgment" && (
                     <>
-                      <div className="flex flex-col w-full h-full p-6 relative z-10">
+                      <div className="flex flex-col w-full h-full px-6 pt-[5px] pb-6 relative z-10">
                         {/* Header with icon, title and badge */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-[10px]">
-                            {/* Icon Scoop */}
+                        <div className="flex items-center mb-4 -mx-6 pl-[15px] pr-6">
+                          {/* Icon Scoop */}
+                          <div className="w-[60px] h-[60px] flex items-center justify-center flex-shrink-0 self-center overflow-visible">
                             <img
-                              className="w-[30px] h-[28px] object-contain scale-[4] translate-y-[3px]"
+                              className="w-full h-full object-contain scale-[2]"
                               alt="Icon Scoop"
                               src="/iconScoop-mobile.png"
                             />
-
-                            {/* Title */}
-                            <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[24px] tracking-[0] leading-[normal]">
-                              지난주 판정
-                            </h2>
                           </div>
 
+                          {/* Title */}
+                          <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[28px] tracking-[0] leading-[normal] whitespace-nowrap self-center -ml-2">
+                            지난주 판정
+                          </h2>
+
                           {/* Badge */}
-                          <Badge className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-[#0a1f1f] rounded-full border border-[#21e786] shadow-[0px_0px_20px_rgba(33,231,134,0.4)] hover:bg-[#0a1f1f]">
-                            <span className="text-base">🟡</span>
-                            <span className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-[#21e786] text-[12px] tracking-[0] leading-[normal] whitespace-nowrap">
-                              목표 달성!
-                            </span>
-                          </Badge>
+                          <img
+                            src="/badge02.png"
+                            alt="목표 달성!"
+                            className="h-auto flex-shrink-0 ml-1"
+                            style={{ width: '150px' }}
+                          />
                         </div>
 
                         {/* Divider */}
-                        <div className="w-full h-px bg-[#2a2f36] mb-4" />
+                        <div
+                          className="h-[1px] mb-[30px] -mt-[20px] -mx-6"
+                          style={{
+                            width: '330px',
+                            background: 'linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0) 100%)'
+                          }}
+                        />
 
                         {/* Activity section */}
-                        <div className="flex flex-col gap-1.5 mb-5">
+                        <div className="flex flex-col gap-1 mb-[20px]">
                           <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                             활동
                           </p>
@@ -281,22 +348,22 @@ export const MainContentSection = (): JSX.Element => {
                         </div>
 
                         {/* Confidence message section */}
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-1">
                           <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                             자신감 멘트
                           </p>
-                          <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-[16px] tracking-[0] leading-[24px]">
+                          <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-[16px] tracking-[0] leading-[21px]">
                             난 멋져 난 해냈어 피드백을 5개 이상인 총 7개를 크루들에게 제공했어! 난 짱이야 ~ 난 짱이야 ~
                           </p>
 
                           {/* Reaction count */}
-                          <div className="inline-flex items-center gap-1.5 mt-5">
+                          <div className="inline-flex items-center gap-1.5 mt-4">
                             <img
                               className="w-5 h-5"
                               alt="Bread icon"
                               src="/icon.png"
                             />
-                            <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-[12px] tracking-[0] leading-[normal]">
+                            <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-[14px] tracking-[0] leading-[normal]">
                               22
                             </span>
                           </div>

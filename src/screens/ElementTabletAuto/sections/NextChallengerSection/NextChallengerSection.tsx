@@ -232,9 +232,9 @@ export const NextChallengerSection = (): JSX.Element => {
   };
 
   return (
-    <section className={`flex flex-col items-start ${isMobile ? 'px-5 py-10' : isTablet ? 'px-10 py-16' : 'px-[120px] py-[150px]'} w-full bg-[#040b11]`}>
-      <div className={`flex flex-col items-center py-0 w-full bg-[#040b11] max-w-[1680px] mx-auto ${isMobile ? 'mb-6' : 'mb-[50px]'}`}>
-        <header className="flex flex-col items-center gap-2.5 w-full relative">
+    <section className={`flex flex-col items-start ${isMobile ? 'py-10' : isTablet ? 'px-10 py-16' : 'px-[120px] py-[150px]'} w-full bg-[#040b11]`}>
+      <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} py-0 w-full bg-[#040b11] max-w-[1680px] mx-auto ${isMobile ? 'mb-6' : 'mb-[50px]'}`}>
+        <header className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} gap-2.5 w-full relative`}>
           {/* 좌측 장식 이미지 */}
           {!isMobile && (
             <div className="absolute left-0 top-1/2 -translate-y-[calc(50%+50px)] opacity-60">
@@ -257,33 +257,48 @@ export const NextChallengerSection = (): JSX.Element => {
             </div>
           )}
 
-          <div className={`relative z-10 flex flex-col items-center py-4 ${isMobile ? 'gap-3' : 'gap-4'}`}>
-            <div className="flex items-center gap-5">
-              <img
-                className={`flex-shrink-0 ${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`}
-                alt="Logo"
-                src="https://c.animaapp.com/O1XpzcZm/img/logo-3.svg"
-              />
-              <h2 className={`font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans whitespace-nowrap ${isMobile ? 'text-2xl leading-[32px]' : 'text-[32px] leading-[40px]'}`}>
+          {isMobile ? (
+            <div className="relative z-10 flex flex-col items-start py-4 gap-3" style={{ paddingLeft: '20px' }}>
+              <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans" style={{ fontSize: '16px' }}>
                 Next Challenger
               </h2>
-              <img
-                className={`flex-shrink-0 ${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`}
-                alt="Logo"
-                src="https://c.animaapp.com/O1XpzcZm/img/logo-4.svg"
-              />
-            </div>
-
-            <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-center tracking-[-0.60px] max-w-3xl px-4 ${isMobile ? 'text-sm leading-[21px]' : 'text-[20px] leading-[32px]'}`}>
+              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left tracking-[-0.60px]" style={{ fontSize: '12px', lineHeight: '18px' }}>
                 아쉽지만 이번주에는 목표 달성에 실패한 크루들이에요.
-                {!isMobile && <br />}
-                {!isMobile && <>실패는 성공의 어머니! 다음번엔 더 잘할 수 있도록 5명에게 박수를 보내주세요!</>}
-            </p>
-          </div>
+                <br />
+                실패는 성공의 어머니!
+                <br />
+                다음번엔 더 잘할 수 있도록 5명에게 박수를 보내주세요!
+              </p>
+            </div>
+          ) : (
+            <div className="relative z-10 flex flex-col items-center py-4 gap-4">
+              <div className="flex items-center gap-5">
+                <img
+                  className="flex-shrink-0 w-6 h-6"
+                  alt="Logo"
+                  src="https://c.animaapp.com/O1XpzcZm/img/logo-3.svg"
+                />
+                <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans whitespace-nowrap text-[32px] leading-[40px]">
+                  Next Challenger
+                </h2>
+                <img
+                  className="flex-shrink-0 w-6 h-6"
+                  alt="Logo"
+                  src="https://c.animaapp.com/O1XpzcZm/img/logo-4.svg"
+                />
+              </div>
+
+              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-center tracking-[-0.60px] max-w-3xl px-4 text-[20px] leading-[32px]">
+                  아쉽지만 이번주에는 목표 달성에 실패한 크루들이에요.
+                  <br />
+                  실패는 성공의 어머니! 다음번엔 더 잘할 수 있도록 5명에게 박수를 보내주세요!
+              </p>
+            </div>
+          )}
         </header>
       </div>
 
-      <div className={`py-0 flex flex-col items-start w-full relative ${isMobile ? 'gap-6' : 'gap-[50px]'}`}>
+      <div className={`py-0 flex flex-col items-start w-full relative ${isMobile ? 'gap-6 px-5' : 'gap-[50px]'}`}>
         {/* Main content wrapper with max-width for centering */}
         <div className={`${!isMobile && !isTablet ? 'max-w-[1680px] mx-auto w-full relative' : 'w-full'}`}>
           {!isMobile && !isTablet && (
@@ -296,7 +311,7 @@ export const NextChallengerSection = (): JSX.Element => {
             </div>
           )}
 
-          <div className={`grid ${isMobile || isTablet ? 'grid-cols-1' : 'grid-cols-2'} gap-[30px] ${isMobile ? 'w-full' : isTablet ? 'w-[480px] mx-auto' : 'w-[1000px]'} relative z-10 transition-all duration-500 ease-out ${
+          <div className={`grid ${isMobile || isTablet ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'w-full items-center justify-items-center' : 'gap-[30px]'} ${isTablet ? 'w-[480px] mx-auto' : !isMobile ? 'w-[1000px]' : ''} relative z-10 transition-all duration-500 ease-out ${
             isTransitioning
               ? slideDirection === 'left'
                 ? 'opacity-0 -translate-x-20'
@@ -304,41 +319,63 @@ export const NextChallengerSection = (): JSX.Element => {
               : 'opacity-100 translate-x-0'
           }`}>
           {currentCards.map((card) => (
-            <Card
-              key={card.id}
-              className={`relative w-full ${isMobile ? 'h-[220px]' : 'h-[235px]'} bg-transparent border-0`}
-            >
+            <article key={card.id} className={`relative w-full ${isMobile ? 'mb-[30px] flex justify-center' : ''}`}>
               {isMobile ? (
-                <CardContent className="p-0 relative w-full bg-gradient-to-r from-[#3d1a1a] via-[#2f1a1a] to-[#1f1a1a] border-0 rounded-lg overflow-hidden">
-                  <div className="flex flex-col items-start p-4 pt-8 relative">
-                    <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-xs mb-1">
-                      {card.crewName}
-                    </p>
-                    <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-base mb-2">
-                      {card.title}
-                    </h3>
-                    <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-sm leading-[21px] overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] mb-2 pr-16">
-                      {card.description}
-                    </p>
+                <div className="relative p-[1px] rounded-md bg-gradient-to-r from-[#6D24C8] to-[#E52B50]" style={{ width: 'calc(100vw - 40px)', maxWidth: '380px', height: 'clamp(87px, 23vw, 120px)' }}>
+                  <Card className="relative w-full h-full bg-gradient-to-r from-[#3d1a2d] to-[#2d1a1f] border-0 rounded-md overflow-hidden">
+                    <CardContent className="p-0 relative w-full h-full">
+                    <div className="flex items-center justify-between relative h-full" style={{ padding: 'clamp(12px, 3vw, 20px)', paddingTop: 'clamp(18px, 4.5vw, 26px)', paddingBottom: 'clamp(12px, 3vw, 16px)', paddingRight: 'clamp(54px, 14vw, 70px)' }}>
+                      {/* Left content */}
+                      <div className="flex flex-col items-start justify-center flex-1 max-w-full">
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] mb-1 overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>
+                          {card.crewName}
+                        </p>
+                        <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white mb-1 overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
+                          {card.title}
+                        </h3>
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(12px, 3vw, 14px)', lineHeight: 'clamp(18px, 4.5vw, 21px)' }}>
+                          {card.description}
+                        </p>
+                      </div>
 
-                    {/* Profile image bottom-right */}
-                    <img
-                      className="absolute bottom-4 right-4 w-12 h-12 rounded-full object-cover"
-                      alt="Profile"
-                      src={card.profileImage}
-                    />
-                  </div>
+                      {/* Badge icon on right - positioned at bottom-right with click effect */}
+                      <img
+                        className="absolute object-contain cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
+                        style={{
+                          width: 'clamp(126px, 31.5vw, 168px)',
+                          height: 'clamp(126px, 31.5vw, 168px)',
+                          bottom: '-30px',
+                          right: '-35px'
+                        }}
+                        alt="Badge"
+                        src={(applauseClicks[card.id] || 0) > 0 ? buttonApplauseChecked.src : "/buttonApplause.png"}
+                        onClick={() => handleApplauseClick(card.id)}
+                      />
+                    </div>
 
-                  {/* Badge */}
-                  <div className="absolute top-[-16px] left-[20px]">
-                    <div className="bg-[#e52b50] rounded-md px-3 py-1">
-                      <span className="font-bold text-white text-xs font-ria-sans">
+                  </CardContent>
+                  </Card>
+
+                  {/* 다음 기회에... badge at top center - skewed rectangle */}
+                  <div className="absolute left-1/2 -translate-x-1/2 z-50" style={{ top: 'clamp(-14px, -3.6vw, -11px)' }}>
+                    <div className="inline-flex items-center justify-center bg-[#2d1a1f] border-2 border-[#E52B50] shadow-[0px_0px_20px_#E52B5066] rounded-md" style={{
+                      padding: 'clamp(5px, 1.35vw, 7px) clamp(11px, 2.7vw, 14px)',
+                      transform: 'skewX(-10deg)'
+                    }}>
+                      <span className="font-bold text-[#E52B50] leading-[normal] whitespace-nowrap font-ria-sans" style={{
+                        fontSize: 'clamp(11px, 2.7vw, 13px)',
+                        transform: 'skewX(10deg)',
+                        display: 'inline-block'
+                      }}>
                         다음 기회에...
                       </span>
                     </div>
                   </div>
-                </CardContent>
+                </div>
               ) : (
+                <Card
+                  className={`relative w-full h-[235px] bg-transparent border-0`}
+                >
                 <CardContent className="p-0 h-[235px]">
                   <div className="flex flex-col w-full h-[215px] items-start gap-2.5 pt-[37px] pb-[30px] px-[30px] absolute top-5 left-0">
                     <img
@@ -395,15 +432,16 @@ export const NextChallengerSection = (): JSX.Element => {
                     />
                   </div>
                 </CardContent>
+                </Card>
               )}
-            </Card>
+            </article>
           ))}
           </div>
         </div>
 
         {/* Pagination buttons */}
         <div className={`${!isMobile && !isTablet ? 'max-w-[1680px] mx-auto w-full relative' : 'w-full'}`}>
-          <div className={`flex justify-center ${!isMobile && !isTablet ? 'w-[1000px] mt-[64px]' : 'mt-8 w-full'}`}>
+          <div className={`flex justify-center ${!isMobile && !isTablet ? 'w-[1000px] mt-[64px]' : 'w-full'} ${isMobile ? 'mt-0' : isTablet ? 'mt-8' : ''}`}>
             <div className="relative cursor-pointer">
               <img
                 className="w-auto h-auto"

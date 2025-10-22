@@ -140,7 +140,7 @@ export const WinnerListSection = (): JSX.Element => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [inspireClicks, setInspireClicks] = useState<Record<number, number>>({});
-  const cardsPerPage = isMobile || isTablet ? 6 : 6;
+  const cardsPerPage = isMobile || isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(winnerData.length / cardsPerPage));
 
   const currentCards = winnerData.slice(
@@ -183,57 +183,86 @@ export const WinnerListSection = (): JSX.Element => {
   };
 
   return (
-    <section className={`flex flex-col items-start ${isMobile ? 'px-5 py-10' : isTablet ? 'px-10 py-16' : 'px-[120px] py-20'} w-full bg-[#040b11]`}>
-      <div className={`flex flex-col items-center w-full max-w-[1680px] mx-auto ${isMobile ? 'gap-6' : 'gap-[50px]'}`}>
-        <header className={`inline-flex flex-col items-center gap-2.5 ${isMobile ? 'mb-6' : 'mb-[50px]'}`}>
-          <div className="relative w-[315px] h-[64.03px]">
-            <div className="inline-flex items-center gap-5 absolute top-[18px] left-0">
-              <img
-                className="w-6 h-6"
-                alt="Logo"
-                src="https://c.animaapp.com/O1XpzcZm/img/logo-3.svg"
-              />
-
-              <h2 className="w-fit mt-[-1.00px] bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent text-[32px] tracking-[0] leading-[normal] font-ria-sans">
+    <section className={`flex flex-col items-start ${isMobile ? 'py-10' : isTablet ? 'px-10 py-16' : 'px-[120px] py-20'} w-full bg-[#040b11]`}>
+      <div className={`flex flex-col ${isMobile ? 'items-start px-5' : 'items-center'} w-full max-w-[1680px] mx-auto ${isMobile ? 'gap-6' : 'gap-[50px]'}`}>
+        <header className={`inline-flex flex-col ${isMobile ? 'items-start mb-6' : 'items-center mb-[50px]'} gap-2.5`}>
+          {isMobile ? (
+            <div className="relative pt-6">
+              <h2 className="w-fit bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent tracking-[0] leading-[normal] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
                 Winner List
               </h2>
-
+              {/* Star decorations for mobile */}
               <img
-                className="w-6 h-6"
-                alt="Logo"
-                src="https://c.animaapp.com/O1XpzcZm/img/logo-4.svg"
-              />
-            </div>
-
-            <div className="absolute top-px left-16 w-[217px] h-9">
-              <img
-                className="absolute top-[-27px] left-[165px] w-[90px] h-[91px]"
-                alt="Star"
-                src="https://c.animaapp.com/O1XpzcZm/img/star-6.svg"
-              />
-
-              <img
-                className="absolute top-[-38px] -left-10 w-[85px] h-[85px]"
-                alt="Star"
-                src="https://c.animaapp.com/O1XpzcZm/img/star-7.svg"
-              />
-
-              <img
-                className="absolute -top-9 left-[-33px] w-[91px] h-[93px]"
+                className="absolute top-[-8px] left-[-15px] w-[35px] h-[35px]"
                 alt="Star"
                 src="https://c.animaapp.com/O1XpzcZm/img/star-9.svg"
               />
-
               <img
-                className="absolute top-[-30px] left-[59px] w-[97px] h-[101px]"
+                className="absolute top-[-6px] left-[25px] w-[32px] h-[32px]"
+                alt="Star"
+                src="https://c.animaapp.com/O1XpzcZm/img/star-7.svg"
+              />
+              <img
+                className="absolute top-[-8px] right-[-20px] w-[36px] h-[36px]"
+                alt="Star"
+                src="https://c.animaapp.com/O1XpzcZm/img/star-6.svg"
+              />
+              <img
+                className="absolute top-[-5px] right-[15px] w-[38px] h-[38px]"
                 alt="Star"
                 src="https://c.animaapp.com/O1XpzcZm/img/star-10.svg"
               />
             </div>
-          </div>
+          ) : (
+            <div className="relative w-[315px] h-[64.03px]">
+              <div className="inline-flex items-center gap-5 absolute top-[18px] left-0">
+                <img
+                  className="w-6 h-6"
+                  alt="Logo"
+                  src="https://c.animaapp.com/O1XpzcZm/img/logo-3.svg"
+                />
 
-          <div className="inline-flex flex-col items-center gap-[15px]">
-            <p className={`w-fit mt-[-1.00px] [font-family:'Pretendard-Regular',Helvetica] font-normal text-on-surface text-center tracking-[-0.60px] ${isMobile ? 'text-sm leading-[21px]' : 'text-xl leading-[30px]'}`}>
+                <h2 className="w-fit mt-[-1.00px] bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent text-[32px] tracking-[0] leading-[normal] font-ria-sans">
+                  Winner List
+                </h2>
+
+                <img
+                  className="w-6 h-6"
+                  alt="Logo"
+                  src="https://c.animaapp.com/O1XpzcZm/img/logo-4.svg"
+                />
+              </div>
+
+              <div className="absolute top-px left-16 w-[217px] h-9">
+                <img
+                  className="absolute top-[-27px] left-[165px] w-[90px] h-[91px]"
+                  alt="Star"
+                  src="https://c.animaapp.com/O1XpzcZm/img/star-6.svg"
+                />
+
+                <img
+                  className="absolute top-[-38px] -left-10 w-[85px] h-[85px]"
+                  alt="Star"
+                  src="https://c.animaapp.com/O1XpzcZm/img/star-7.svg"
+                />
+
+                <img
+                  className="absolute -top-9 left-[-33px] w-[91px] h-[93px]"
+                  alt="Star"
+                  src="https://c.animaapp.com/O1XpzcZm/img/star-9.svg"
+                />
+
+                <img
+                  className="absolute top-[-30px] left-[59px] w-[97px] h-[101px]"
+                  alt="Star"
+                  src="https://c.animaapp.com/O1XpzcZm/img/star-10.svg"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className={`inline-flex flex-col gap-[15px] ${isMobile ? 'items-start' : 'items-center'}`}>
+            <p className={`w-fit mt-[-1.00px] [font-family:'Pretendard-Regular',Helvetica] font-normal text-on-surface tracking-[-0.60px] ${isMobile ? 'text-left' : 'text-xl leading-[30px] text-center'}`} style={isMobile ? { fontSize: 'clamp(12px, 3vw, 16px)', lineHeight: 'clamp(18px, 4.5vw, 24px)' } : {}}>
               이번주 목표를 달성한 크루들을 축하해주세요!
               {!isMobile && <br />}
               {!isMobile && (
@@ -245,7 +274,7 @@ export const WinnerListSection = (): JSX.Element => {
 
       </div>
 
-      <div className={`py-0 flex flex-col items-start w-full relative ${isMobile ? 'gap-6 mt-6' : 'gap-[50px] mt-[50px]'}`}>
+      <div className={`py-0 flex flex-col items-start w-full relative ${isMobile ? 'gap-6 mt-6 px-5' : 'gap-[50px] mt-[50px]'}`}>
         {/* Main content wrapper with max-width for centering */}
         <div className={`${!isMobile && !isTablet ? 'max-w-[1680px] mx-auto w-full relative' : 'w-full'}`}>
           {/* Left side illustration - only on desktop */}
@@ -259,7 +288,7 @@ export const WinnerListSection = (): JSX.Element => {
             </div>
           )}
 
-          <div className={`grid ${isMobile || isTablet ? 'grid-cols-1' : 'grid-cols-2'} gap-[30px] ${isMobile ? 'w-full' : isTablet ? 'w-[480px] mx-auto' : 'w-[980px] ml-auto'} relative z-10 transition-all duration-500 ease-out ${
+          <div className={`grid ${isMobile || isTablet ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'w-full items-center justify-items-center' : 'gap-[30px]'} ${isTablet ? 'w-[480px] mx-auto' : !isMobile ? 'w-[980px] ml-auto' : ''} relative z-10 transition-all duration-500 ease-out ${
             isTransitioning
               ? slideDirection === 'left'
                 ? 'opacity-0 -translate-x-20'
@@ -267,42 +296,53 @@ export const WinnerListSection = (): JSX.Element => {
               : 'opacity-100 translate-x-0'
           }`}>
           {currentCards.map((winner) => (
-            <article key={winner.id} className="relative w-full">
+            <article key={winner.id} className={`relative w-full ${isMobile ? 'mb-[30px] flex justify-center' : ''}`}>
               {isMobile ? (
-                <Card className="relative w-full bg-gradient-to-r from-[#1a3d2e] via-[#1a2f26] to-[#1a1f26] border-0 rounded-lg overflow-hidden">
-                  <CardContent className="p-0 relative w-full">
-                    {/* Yellow diagonal line bottom-left */}
-                    <div className="absolute left-0 bottom-0 w-16 h-16">
-                      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <line x1="0" y1="64" x2="64" y2="0" stroke="#FFD700" strokeWidth="3" />
-                      </svg>
-                    </div>
+                <div className="relative p-[1px] rounded-md bg-gradient-to-r from-[#FFDC4A] to-[#21E786]" style={{ width: 'calc(100vw - 40px)', maxWidth: '380px', height: 'clamp(87px, 23vw, 120px)' }}>
+                  <Card className="relative w-full h-full bg-gradient-to-r from-[#28482A] to-[#0D1C16] border-0 rounded-md overflow-hidden">
+                    <CardContent className="p-0 relative w-full h-full">
+                    <div className="flex items-center justify-between relative h-full" style={{ padding: 'clamp(12px, 3vw, 20px)', paddingTop: 'clamp(18px, 4.5vw, 26px)', paddingBottom: 'clamp(12px, 3vw, 16px)', paddingRight: 'clamp(54px, 14vw, 70px)' }}>
+                      {/* Left content */}
+                      <div className="flex flex-col items-start justify-center flex-1 max-w-full">
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] mb-1 overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>
+                          {winner.name}
+                        </p>
+                        <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white mb-1 overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
+                          {winner.title}
+                        </h3>
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(12px, 3vw, 14px)', lineHeight: 'clamp(18px, 4.5vw, 21px)' }}>
+                          {winner.description}
+                        </p>
+                      </div>
 
-                    <div className="flex flex-col items-start p-4 pt-8 relative">
-                      <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-xs mb-1">
-                        {winner.name}
-                      </p>
-                      <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-base mb-2">
-                        {winner.title}
-                      </h3>
-                      <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-sm leading-[21px] overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] mb-2 pr-16">
-                        {winner.description}
-                      </p>
-
-                      {/* Profile image bottom-right */}
+                      {/* Badge icon on right - positioned at bottom-right with click effect */}
                       <img
-                        className="absolute bottom-4 right-4 w-12 h-12 rounded-full object-cover"
-                        alt="Profile"
-                        src={winner.profileImage}
+                        className="absolute object-contain cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
+                        style={{
+                          width: (inspireClicks[winner.id] || 0) > 0 ? 'clamp(42px, 10.5vw, 56px)' : 'clamp(36px, 9vw, 48px)',
+                          height: (inspireClicks[winner.id] || 0) > 0 ? 'clamp(42px, 10.5vw, 56px)' : 'clamp(36px, 9vw, 48px)',
+                          bottom: (inspireClicks[winner.id] || 0) > 0 ? '7px' : '10px',
+                          right: (inspireClicks[winner.id] || 0) > 0 ? '5px' : '8px'
+                        }}
+                        alt="Badge"
+                        src={(inspireClicks[winner.id] || 0) > 0 ? buttonInspireCheck.src : "/badgeIcon.png"}
+                        onClick={() => handleInspireClick(winner.id)}
                       />
                     </div>
-                    <div className="absolute top-[-16px] left-1/2 -translate-x-1/2 bg-[#21e786] rounded-full px-3 py-1">
-                      <span className="font-bold text-[#040b11] text-xs font-ria-sans">
+
+                  </CardContent>
+                  </Card>
+
+                  {/* 목표 달성 badge at top center - same as desktop but smaller */}
+                  <div className="absolute left-1/2 -translate-x-1/2 z-50" style={{ top: 'clamp(-14px, -3.6vw, -11px)' }}>
+                    <div className="inline-flex items-center justify-center gap-1 rounded-full bg-[#0a1a12] border-2 border-[#21e786] shadow-[0px_0px_20px_#21e78666]" style={{ padding: 'clamp(5px, 1.35vw, 7px) clamp(11px, 2.7vw, 14px)' }}>
+                      <span style={{ fontSize: 'clamp(13px, 3.15vw, 16px)' }}>🏅</span>
+                      <span className="font-bold text-[#21e786] leading-[normal] whitespace-nowrap font-ria-sans" style={{ fontSize: 'clamp(11px, 2.7vw, 13px)' }}>
                         목표 달성!
                       </span>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ) : (
                 <Card
                   className={`relative w-full h-[235px] bg-transparent border-0`}
@@ -380,7 +420,7 @@ export const WinnerListSection = (): JSX.Element => {
         </div>
 
         {/* Pagination */}
-        <div className={`${!isMobile && !isTablet ? 'w-[980px] ml-auto flex justify-center mt-[64px]' : 'flex justify-center mt-8 w-full'}`}>
+        <div className={`${!isMobile && !isTablet ? 'w-[980px] ml-auto flex justify-center mt-[64px]' : 'flex justify-center w-full'} ${isMobile ? 'mt-0' : isTablet ? 'mt-8' : ''}`}>
           <div className="relative cursor-pointer">
             <img
               className="w-auto h-auto"

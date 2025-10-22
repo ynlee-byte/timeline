@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useWindowWidth } from "../../../../breakpoints";
 import lineImage from "../../../../assets/line.png";
 import paginationImage from "../../../../assets/pagenation.png";
+import bgImage from "../../../../assets/인정응원BG.png";
+import cardMobileBg from "../../../../assets/card-mobile bg.png";
+import cardMy02 from "../../../../assets/cardMy02.png";
 
 const recognitionCards = [
   {
@@ -224,9 +227,31 @@ export const RecognitionSection = (): JSX.Element => {
 
   return (
     <section className={`flex flex-col items-center w-full bg-[#040b11] relative overflow-visible ${isMobile ? 'py-10' : 'pt-[88px] pb-20'}`}>
+      {/* Background image - Desktop only */}
+      {!isMobile && !isTablet && (
+        <div className="absolute inset-0 w-full h-full z-0" style={{ top: '-30px' }}>
+          <img
+            className="w-full h-full object-cover"
+            alt="Background"
+            src={bgImage.src}
+          />
+        </div>
+      )}
+
+      {/* Background image - Mobile only */}
+      {isMobile && (
+        <div className="absolute left-1/2 -translate-x-1/2 z-0" style={{ top: '80px', width: '196px', height: '252px' }}>
+          <img
+            className="w-full h-full object-contain"
+            alt="Background"
+            src={bgImage.src}
+          />
+        </div>
+      )}
+
       {/* Timeline line image - full width */}
       {!isMobile && (
-        <div className={`absolute left-0 right-0 w-full h-[5px] z-10 ${isTablet ? 'top-[320px]' : 'top-[333px]'}`}>
+        <div className={`absolute left-0 right-0 w-full h-[5px] z-10 ${isTablet ? 'top-[300px]' : 'top-[333px]'}`}>
           <img
             className="w-full h-full object-cover"
             alt="Timeline"
@@ -236,7 +261,7 @@ export const RecognitionSection = (): JSX.Element => {
       )}
 
       {/* Header section with max-width */}
-      <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} w-full max-w-[1680px] mx-auto relative z-0 ${isMobile ? 'gap-6 px-5 mb-6' : isTablet ? 'gap-[40px] px-10 mb-[50px]' : 'gap-[50px] px-[120px] mb-[50px]'}`}>
+      <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} w-full max-w-[1680px] mx-auto relative z-10 ${isMobile ? 'gap-6 px-5 mb-6' : isTablet ? 'gap-[40px] px-10 mb-[13px]' : 'gap-[50px] px-[120px] mb-[48px]'}`}>
         <header className={`flex flex-col ${isMobile ? 'items-start w-full' : 'items-center'} ${isMobile ? 'gap-3' : 'gap-[15px]'}`}>
           {isMobile ? (
             <h2 className="font-bold text-white text-[20px] text-left font-ria-sans">
@@ -274,7 +299,7 @@ export const RecognitionSection = (): JSX.Element => {
       </div>
 
       {/* Timeline with cards - full width without padding */}
-      <div className="relative w-full">
+      <div className="relative w-full z-10">
           {/* Timeline line - horizontal line for mobile */}
           {isMobile && (
             <div className="absolute left-0 right-0 w-full h-[2px] z-0" style={{ top: '40px' }}>
@@ -289,7 +314,7 @@ export const RecognitionSection = (): JSX.Element => {
           {/* Cards container with horizontal scroll */}
           <div
             ref={sliderRef}
-            className={`relative ${isMobile ? 'w-full overflow-x-hidden overflow-y-visible px-5' : isTablet ? 'w-[1010px] overflow-hidden mx-auto' : 'w-[1720px] overflow-hidden mx-auto'}`}
+            className={`relative ${isMobile ? 'w-full overflow-x-hidden overflow-y-visible px-0' : isTablet ? 'w-[1010px] overflow-hidden mx-auto' : 'w-[1720px] overflow-hidden mx-auto'}`}
             style={isMobile ? { paddingTop: '20px' } : undefined}
           >
             <div
@@ -308,9 +333,20 @@ export const RecognitionSection = (): JSX.Element => {
                   </div>
 
                   {/* Bottom Card Section */}
-                  <div className={`relative rounded-lg bg-[#141B22] border-2 border-transparent transition-all duration-300 ${isMobile ? 'w-full p-4 flex items-center z-[25]' : 'w-[300px] h-[229px] p-6 z-[25] hover:border-[#21e786] hover:shadow-[0_0_20px_rgba(33,231,134,0.3)]'}`} style={isMobile ? { width: '170px', height: '200px' } : undefined}>
+                  <div
+                    className={`relative rounded-lg transition-all duration-300 ${isMobile ? 'w-full p-4 flex items-center z-[25]' : 'w-[300px] h-[229px] p-6 z-[25] bg-[#141B22] border-2 border-transparent hover:border-[#21e786] hover:shadow-[0_0_20px_rgba(33,231,134,0.3)]'}`}
+                    style={isMobile ? { width: '170px', height: '200px' } : undefined}
+                  >
+                    {isMobile && (
+                      <img
+                        className="absolute inset-0 w-full h-full rounded-lg z-0"
+                        alt="Card background"
+                        src={cardMobileBg.src}
+                        style={{ objectFit: 'fill' }}
+                      />
+                    )}
 
-                    <div className={`flex flex-col ${isMobile ? 'gap-2 w-full' : 'gap-3'}`}>
+                    <div className={`flex flex-col ${isMobile ? 'gap-2 w-full relative z-10' : 'gap-3'}`}>
                       {/* Period */}
                       {!isMobile && (
                         <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#cccccc] text-left tracking-[-0.36px] ${isMobile ? 'text-xs leading-[14px]' : 'text-[16px] leading-[18px]'}`}>
@@ -419,7 +455,7 @@ export const RecognitionSection = (): JSX.Element => {
       </div>
 
       {/* Navigation buttons */}
-      <div className="w-full max-w-[1680px] mx-auto relative z-10">
+      <div className="w-full max-w-[1680px] mx-auto relative z-20">
         <div className="flex items-center justify-center mt-8">
           <div className="relative cursor-pointer">
             <img
