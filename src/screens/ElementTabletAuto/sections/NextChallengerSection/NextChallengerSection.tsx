@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { useWindowWidth } from "../../../../breakpoints";
 import badgeImage from "../../../../assets/body.png";
@@ -189,7 +189,8 @@ export const NextChallengerSection = (): JSX.Element => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [applauseClicks, setApplauseClicks] = useState<Record<number, number>>({});
-  const cardsPerPage = isMobile ? 4 : isTablet ? 6 : 6;
+  const [isPaused, setIsPaused] = useState(false);
+  const cardsPerPage = isMobile ? 4 : isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(challengerCards.length / cardsPerPage));
 
   const currentCards = challengerCards.slice(
@@ -218,22 +219,36 @@ export const NextChallengerSection = (): JSX.Element => {
     }, 400);
   };
 
-  const handleNextPage = () => {
-    if (isTransitioning || currentPage === totalPages - 1) return;
+  const handleNextPage = useCallback(() => {
+    if (isTransitioning) return;
     setSlideDirection('left');
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1));
+      setCurrentPage((prev) => {
+        // Loop back to the beginning if at the end
+        return prev === totalPages - 1 ? 0 : Math.min(totalPages - 1, prev + 1);
+      });
       setTimeout(() => {
         setIsTransitioning(false);
         setSlideDirection(null);
       }, 50);
     }, 400);
-  };
+  }, [isTransitioning, totalPages]);
+
+  // Auto-slide every 5 seconds (pause when hovering)
+  useEffect(() => {
+    if (isPaused) return;
+
+    const interval = setInterval(() => {
+      handleNextPage();
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(interval);
+  }, [handleNextPage, isPaused]);
 
   return (
     <section className={`flex flex-col items-start ${isMobile ? 'py-10' : isTablet ? 'px-10 py-16' : 'px-[120px] py-[150px]'} w-full bg-[#040b11]`}>
-      <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} py-0 w-full bg-[#040b11] max-w-[1680px] mx-auto ${isMobile ? 'mb-6' : 'mb-[50px]'}`}>
+      <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} py-0 w-full bg-[#040b11] max-w-[1680px] mx-auto ${isMobile ? 'mb-4' : 'mb-[33px]'} ${isTablet ? 'relative z-10' : ''}`}>
         <header className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} gap-2.5 w-full relative`}>
           {/* 좌측 장식 이미지 */}
           {!isMobile && (
@@ -258,11 +273,11 @@ export const NextChallengerSection = (): JSX.Element => {
           )}
 
           {isMobile ? (
-            <div className="relative z-10 flex flex-col items-start py-4 gap-3" style={{ paddingLeft: '20px' }}>
-              <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans" style={{ fontSize: '16px' }}>
+            <div className="relative z-10 flex flex-col items-start py-4" style={{ paddingLeft: '20px', gap: '10px' }}>
+              <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
                 Next Challenger
               </h2>
-              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left tracking-[-0.60px]" style={{ fontSize: '12px', lineHeight: '18px' }}>
+              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left tracking-[-0.60px]" style={{ fontSize: 'clamp(12px, 3vw, 16px)', lineHeight: 'clamp(18px, 4.5vw, 24px)' }}>
                 아쉽지만 이번주에는 목표 달성에 실패한 크루들이에요.
                 <br />
                 실패는 성공의 어머니!
@@ -271,14 +286,14 @@ export const NextChallengerSection = (): JSX.Element => {
               </p>
             </div>
           ) : (
-            <div className="relative z-10 flex flex-col items-center py-4 gap-4">
+            <div className="relative z-10 flex flex-col items-center py-4" style={{ gap: '14px' }}>
               <div className="flex items-center gap-5">
                 <img
                   className="flex-shrink-0 w-6 h-6"
                   alt="Logo"
                   src="https://c.animaapp.com/O1XpzcZm/img/logo-3.svg"
                 />
-                <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans whitespace-nowrap text-[32px] leading-[40px]">
+                <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans whitespace-nowrap text-[32px] leading-[44px]">
                   Next Challenger
                 </h2>
                 <img
@@ -300,7 +315,18 @@ export const NextChallengerSection = (): JSX.Element => {
 
       <div className={`py-0 flex flex-col items-start w-full relative ${isMobile ? 'gap-6 px-5' : 'gap-[50px]'}`}>
         {/* Main content wrapper with max-width for centering */}
-        <div className={`${!isMobile && !isTablet ? 'max-w-[1680px] mx-auto w-full relative' : 'w-full'}`}>
+        <div className={`${!isMobile && !isTablet ? 'max-w-[1680px] mx-auto w-full relative' : 'w-full relative'}`}>
+          {/* Tablet center illustration - overlapping with cards */}
+          {!isMobile && isTablet && (
+            <div className="absolute left-1/2 -translate-x-1/2 -top-[70px] z-0">
+              <img
+                className="w-auto h-auto max-w-[500px]"
+                alt="Next Challenger illustration"
+                src="https://c.animaapp.com/O1XpzcZm/img/image-4@2x.png"
+              />
+            </div>
+          )}
+          {/* Right side illustration - only on desktop */}
           {!isMobile && !isTablet && (
             <div className="absolute right-0 top-1/2 -translate-y-1/2">
               <img
@@ -311,13 +337,17 @@ export const NextChallengerSection = (): JSX.Element => {
             </div>
           )}
 
-          <div className={`grid ${isMobile || isTablet ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'w-full items-center justify-items-center' : 'gap-[30px]'} ${isTablet ? 'w-[480px] mx-auto' : !isMobile ? 'w-[1000px]' : ''} relative z-10 transition-all duration-500 ease-out ${
+          <div
+            className={`grid ${isMobile || isTablet ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'w-full items-center justify-items-center' : 'gap-[30px]'} ${isTablet ? 'w-[480px] mx-auto mt-[250px]' : !isMobile ? 'w-[1000px]' : ''} relative z-10 transition-all duration-500 ease-out ${
             isTransitioning
               ? slideDirection === 'left'
                 ? 'opacity-0 -translate-x-20'
                 : 'opacity-0 translate-x-20'
               : 'opacity-100 translate-x-0'
-          }`}>
+          }`}
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
           {currentCards.map((card) => (
             <article key={card.id} className={`relative w-full ${isMobile ? 'mb-[30px] flex justify-center' : ''}`}>
               {isMobile ? (
@@ -342,10 +372,10 @@ export const NextChallengerSection = (): JSX.Element => {
                       <img
                         className="absolute object-contain cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
                         style={{
-                          width: 'clamp(126px, 31.5vw, 168px)',
-                          height: 'clamp(126px, 31.5vw, 168px)',
-                          bottom: '-30px',
-                          right: '-35px'
+                          width: (applauseClicks[card.id] || 0) > 0 ? 'clamp(132.3px, 33.075vw, 176.4px)' : 'clamp(126px, 31.5vw, 168px)',
+                          height: (applauseClicks[card.id] || 0) > 0 ? 'clamp(132.3px, 33.075vw, 176.4px)' : 'clamp(126px, 31.5vw, 168px)',
+                          bottom: (applauseClicks[card.id] || 0) > 0 ? '-41px' : '-38px',
+                          right: (applauseClicks[card.id] || 0) > 0 ? '-41px' : '-38px'
                         }}
                         alt="Badge"
                         src={(applauseClicks[card.id] || 0) > 0 ? buttonApplauseChecked.src : "/buttonApplause.png"}
@@ -358,14 +388,15 @@ export const NextChallengerSection = (): JSX.Element => {
 
                   {/* 다음 기회에... badge at top center - skewed rectangle */}
                   <div className="absolute left-1/2 -translate-x-1/2 z-50" style={{ top: 'clamp(-14px, -3.6vw, -11px)' }}>
-                    <div className="inline-flex items-center justify-center bg-[#2d1a1f] border-2 border-[#E52B50] shadow-[0px_0px_20px_#E52B5066] rounded-md" style={{
+                    <div className="inline-flex items-center justify-center bg-[#2d1a1f] border border-[#E52B50] shadow-[0px_0px_20px_#E52B5066] rounded-md" style={{
                       padding: 'clamp(5px, 1.35vw, 7px) clamp(11px, 2.7vw, 14px)',
                       transform: 'skewX(-10deg)'
                     }}>
-                      <span className="font-bold text-[#E52B50] leading-[normal] whitespace-nowrap font-ria-sans" style={{
+                      <span className="font-bold leading-[normal] whitespace-nowrap font-ria-sans" style={{
                         fontSize: 'clamp(11px, 2.7vw, 13px)',
                         transform: 'skewX(10deg)',
-                        display: 'inline-block'
+                        display: 'inline-block',
+                        color: '#E52B50'
                       }}>
                         다음 기회에...
                       </span>
@@ -374,9 +405,9 @@ export const NextChallengerSection = (): JSX.Element => {
                 </div>
               ) : (
                 <Card
-                  className={`relative w-full h-[235px] bg-transparent border-0`}
+                  className={`relative w-full h-[235px] bg-transparent border-0 shadow-none outline-none`}
                 >
-                <CardContent className="p-0 h-[235px]">
+                <CardContent className="p-0 h-[235px] border-0 shadow-none outline-none">
                   <div className="flex flex-col w-full h-[215px] items-start gap-2.5 pt-[37px] pb-[30px] px-[30px] absolute top-5 left-0">
                     <img
                       className="absolute w-[100.00%] h-full top-0 left-0"
@@ -426,7 +457,7 @@ export const NextChallengerSection = (): JSX.Element => {
 
                   <div className="absolute top-[-16px] left-1/2 -translate-x-1/2">
                     <img
-                      className="w-[162px] h-auto object-contain"
+                      className="w-[162px] h-auto object-contain scale-[1.144]"
                       alt="다음 기회에 배지"
                       src={badgeImage.src}
                     />
@@ -441,8 +472,8 @@ export const NextChallengerSection = (): JSX.Element => {
 
         {/* Pagination buttons */}
         <div className={`${!isMobile && !isTablet ? 'max-w-[1680px] mx-auto w-full relative' : 'w-full'}`}>
-          <div className={`flex justify-center ${!isMobile && !isTablet ? 'w-[1000px] mt-[64px]' : 'w-full'} ${isMobile ? 'mt-0' : isTablet ? 'mt-8' : ''}`}>
-            <div className="relative cursor-pointer">
+          <div className={`flex justify-center ${!isMobile && !isTablet ? 'w-[1000px] mt-[64px]' : 'w-full'} ${isMobile ? '-mt-[25px]' : isTablet ? 'mt-8' : ''}`}>
+            <div className={`relative cursor-pointer ${isMobile ? 'scale-[0.8]' : ''}`}>
               <img
                 className="w-auto h-auto"
                 alt="Pagination"

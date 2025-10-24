@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "../../../../components/ui/button";
 import { useWindowWidth } from "../../../../breakpoints";
+import { ConfirmedBadge } from "../../../../components/ConfirmedBadge";
+import { PendingBadge } from "../../../../components/PendingBadge";
 
 // 전체 이벤트 리스트 (여러 날에 걸친 이벤트)
 // 이전 달(9월) 날짜는 음수로 표시
@@ -81,6 +83,14 @@ export const CalendarSection = (): JSX.Element => {
   }, []);
 
   const handleEventClick = (eventId: number) => {
+    // 해당 이벤트 찾기
+    const event = events.find(e => e.id === eventId);
+
+    // 회색(#555555) 이벤트는 클릭 불가
+    if (event && event.color.includes('#555555')) {
+      return;
+    }
+
     setSelectedEvents(prev => {
       const newSet = new Set(prev);
       if (newSet.has(eventId)) {
@@ -109,7 +119,7 @@ export const CalendarSection = (): JSX.Element => {
   };
 
   return (
-    <section className={`flex flex-col items-center ${isMobile ? 'px-3 py-5' : isTablet ? 'px-10 py-20' : 'px-[120px] py-20'} w-full bg-[#040b11] relative`}>
+    <section className={`flex flex-col items-center ${isMobile ? 'px-3 pt-[90px] pb-5' : isTablet ? 'px-10 py-20' : 'px-[120px] py-20'} w-full bg-[#040b11] relative`}>
       <div className="w-full max-w-[1680px] mx-auto relative">
         {/* 상단 왼쪽 빛나는 곡선 border */}
         <div className={`absolute top-0 left-0 w-[250px] h-[60px] pointer-events-none ${isTablet || isMobile ? 'hidden' : ''}`}>
@@ -132,12 +142,11 @@ export const CalendarSection = (): JSX.Element => {
         {isMobile ? (
           <div className="relative flex flex-col items-center mb-6">
             {/* 배지 */}
-            <img
-              src={isConfirmed ? "/badge.png" : "/calendar-badge.png"}
-              alt={isConfirmed ? "일정 확인 완료" : "일정 확인 필요"}
-              className="h-auto cursor-pointer"
-              style={{ width: '140px' }}
-            />
+            {isConfirmed ? (
+              <ConfirmedBadge width={140} className="cursor-pointer" />
+            ) : (
+              <PendingBadge width={140} className="cursor-pointer" />
+            )}
           </div>
         ) : isTablet ? (
           <div className="relative flex items-center justify-between mb-8 max-w-[686px] mx-auto">
@@ -163,11 +172,11 @@ export const CalendarSection = (): JSX.Element => {
             </div>
 
             {/* 오른쪽: 배지 */}
-            <img
-              src={isConfirmed ? "/badge.png" : "/calendar-badge.png"}
-              alt={isConfirmed ? "일정 확인 완료" : "일정 확인 필요"}
-              className="h-auto cursor-pointer"
-            />
+            {isConfirmed ? (
+              <ConfirmedBadge width={140} className="cursor-pointer" />
+            ) : (
+              <PendingBadge width={140} className="cursor-pointer" />
+            )}
           </div>
         ) : (
           <div className="relative flex items-center justify-between mb-8 pt-[37px] px-[48px]">
@@ -195,11 +204,11 @@ export const CalendarSection = (): JSX.Element => {
               </button>
             </div>
 
-            <img
-              src={isConfirmed ? "/badge.png" : "/calendar-badge.png"}
-              alt={isConfirmed ? "일정 확인 완료" : "일정 확인 필요"}
-              className="h-auto cursor-pointer"
-            />
+            {isConfirmed ? (
+              <ConfirmedBadge width={184} className="cursor-pointer" />
+            ) : (
+              <PendingBadge width={184} className="cursor-pointer" />
+            )}
           </div>
         )}
 
@@ -236,14 +245,10 @@ export const CalendarSection = (): JSX.Element => {
               </div>
               {/* 캘린더 그리드 */}
               {calendarData.map((week, weekIndex) => (
-                <div key={weekIndex} className="grid grid-cols-7 border-b border-[#2a2f36] last:border-b-0">
-                  {week.map((day, dayIndex) => {
-                    // 이 날짜에 시작하는 이벤트들만 필터링
-                    const startingEvents = events?.filter(event =>
-                      event?.startDate === day.date
-                    ) || [];
-
-                    return (
+                <div key={weekIndex} className="relative border-b border-[#2a2f36] last:border-b-0">
+                  {/* 날짜 셀 그리드 */}
+                  <div className="grid grid-cols-7">
+                    {week.map((day, dayIndex) => (
                       <div
                         key={dayIndex}
                         className={`min-h-[60px] p-1.5 border-r border-[#2a2f36] last:border-r-0 relative ${
@@ -256,7 +261,7 @@ export const CalendarSection = (): JSX.Element => {
                           <span
                             className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-xs ${
                               day.isToday
-                                ? "text-[#21e786]"
+                                ? "text-[#21e786] underline decoration-[#21e786] underline-offset-2"
                                 : day.isCurrentMonth
                                   ? "text-white"
                                   : "text-[#767676]"
@@ -265,43 +270,70 @@ export const CalendarSection = (): JSX.Element => {
                             {Math.abs(day.date)}
                           </span>
                         </div>
-                        <div className="flex flex-col gap-0.5 relative">
-                          {startingEvents.map((event, eventIndex) => {
-                            // 이벤트 기간 계산 (일수)
-                            const eventSpan = event.endDate - event.startDate + 1;
-
-                            // 일수에 따른 너비 설정
-                            let eventWidth;
-                            if (eventSpan === 1) {
-                              eventWidth = 34;
-                            } else if (eventSpan === 2) {
-                              eventWidth = 74;
-                            } else {
-                              eventWidth = 114;
-                            }
-
-                            // 배경색 추출
-                            const bgColorMatch = event.color.match(/bg-\[([^\]]+)\]/);
-                            const bgColor = bgColorMatch ? bgColorMatch[1] : '#555555';
-
-                            return (
-                              <div
-                                key={eventIndex}
-                                className="rounded-sm absolute"
-                                style={{
-                                  width: `${eventWidth}px`,
-                                  height: '3px',
-                                  backgroundColor: bgColor,
-                                  top: `${eventIndex * 4}px`,
-                                  left: '0'
-                                }}
-                              />
-                            );
-                          })}
-                        </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
+
+                  {/* 이벤트 레이어 (절대 위치) */}
+                  <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none overflow-visible">
+                    <div className="grid grid-cols-7 h-full">
+                      {week.map((day, dayIndex) => {
+                        // 이 날짜에 시작하는 이벤트들만 필터링
+                        const startingEvents = events?.filter(event =>
+                          event?.startDate === day.date
+                        ) || [];
+
+                        return (
+                          <div key={dayIndex} className="relative pt-[22px] px-1.5">
+                            {startingEvents.map((event, eventIndex) => {
+                              // 이벤트가 이 주에서 몇 개의 셀을 차지하는지 계산
+                              const startIndex = week.findIndex(d => d.date === event.startDate);
+                              const endIndex = week.findIndex(d => d.date === event.endDate);
+                              const spanDays = endIndex >= startIndex ? endIndex - startIndex + 1 : 1;
+
+                              // 모바일 셀 너비 계산 (화면 너비 - 좌우 패딩) / 7
+                              // 패딩 px-3 = 12px * 2 = 24px
+                              const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 375;
+                              const mobileCellWidth = Math.floor((screenWidth - 24) / 7);
+
+                              // 일정 너비 = (셀 너비 × 일수) - 패딩(6px)
+                              const eventWidth = mobileCellWidth * spanDays - 6;
+
+                              // 배경색 추출
+                              const bgColorMatch = event.color.match(/bg-\[([^\]]+)\]/);
+                              let bgColor = bgColorMatch ? bgColorMatch[1] : '#555555';
+
+                              // 모바일 전용 색상 매핑
+                              const mobileColorMap: { [key: string]: string } = {
+                                '#555555': '#555555',  // 회색 그대로
+                                '#eae8fd': '#5C9DFF',  // 파랑 계열
+                                '#fdece7': '#FFCA5C',  // 노란 계열
+                                '#fde8f9': '#EE8FC4',  // 분홍 계열
+                                '#e6feee': '#69D698',  // 초록 계열
+                              };
+
+                              bgColor = mobileColorMap[bgColor] || bgColor;
+
+                              return (
+                                <div
+                                  key={eventIndex}
+                                  className="rounded-sm absolute"
+                                  style={{
+                                    width: `${eventWidth}px`,
+                                    height: '3px',
+                                    backgroundColor: bgColor,
+                                    top: `${eventIndex * 4}px`,
+                                    left: '0',
+                                    zIndex: 10
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               ))}
             </>
@@ -323,7 +355,12 @@ export const CalendarSection = (): JSX.Element => {
                     ...event,
                     length: event.endDate - event.startDate + 1
                   }))
-                  .sort((a, b) => b.length - a.length);
+                  .sort((a, b) => {
+                    // 시작 날짜가 다르면 빠른 것부터
+                    if (a.startDate !== b.startDate) return a.startDate - b.startDate;
+                    // 시작 날짜가 같으면 긴 것부터
+                    return b.length - a.length;
+                  });
 
                 // 각 이벤트의 행(row) 계산 - 겹치지 않도록
                 const eventRows = new Map();
@@ -413,18 +450,21 @@ export const CalendarSection = (): JSX.Element => {
                     {/* 이벤트 레이어 (절대 위치) */}
                     <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none overflow-hidden">
                       <div className="grid grid-cols-7 h-full">
-                        {week.map((day, dayIndex) => (
+                        {week.map((day, dayIndex) => {
+                          // 이 날짜에서 시작하는 이벤트만 렌더링
+                          const startingEvents = weekEvents.filter(event => event.startDate === day.date);
+
+                          return (
                           <div key={dayIndex} className="relative pt-[38px] px-2 overflow-visible">
-                            {weekEvents
-                              .filter(event => event.startDate === day.date)
+                            {startingEvents
                               .map((event) => {
                                 const startIndex = week.findIndex(d => d.date === event.startDate);
                                 const endIndex = week.findIndex(d => d.date === event.endDate);
                                 const spanDays = endIndex >= startIndex ? endIndex - startIndex + 1 : 1;
 
-                                const row = eventRows.get(event);
+                                const row = eventRows.get(event) ?? 0;
                                 const eventHeight = 24;
-                                const gap = 6;
+                                const gap = 8;
 
                                 // 태블릿 일정 너비: 1일=86px, 2일=184px, 3일=282px, 4일=380px
                                 const eventWidth = 98 * spanDays - 12;
@@ -435,11 +475,12 @@ export const CalendarSection = (): JSX.Element => {
                                 const textColor = textColorMatch ? textColorMatch[1] : '#aaaaaa';
 
                                 const isSelected = selectedEvents.has(event.id);
+                                const isDisabled = bgColor === '#555555';
 
                                 return (
                                   <div
                                     key={event.id}
-                                    className={`px-2 py-1 rounded cursor-pointer transition-all duration-300 pointer-events-auto absolute flex items-center justify-between ${isSelected ? 'ring-1 ring-[#21e786] ring-opacity-60' : ''}`}
+                                    className={`px-2 py-1 rounded transition-all duration-300 absolute flex items-center justify-between overflow-hidden ${isDisabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer pointer-events-auto'} ${isSelected ? 'ring-1 ring-[#21e786] ring-opacity-60' : ''}`}
                                     style={{
                                       width: `${eventWidth}px`,
                                       height: `${eventHeight}px`,
@@ -448,23 +489,44 @@ export const CalendarSection = (): JSX.Element => {
                                       backgroundColor: bgColor,
                                       color: textColor,
                                       transform: isSelected ? 'scale(1.01)' : 'scale(1)',
-                                      boxShadow: isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none'
+                                      boxShadow: isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none',
+                                      opacity: isDisabled ? 0.6 : 1,
+                                      position: 'relative'
                                     }}
                                     onClick={() => handleEventClick(event.id)}
                                     onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor = textColor;
-                                      e.currentTarget.style.color = bgColor;
-                                      e.currentTarget.style.transform = 'scale(1.02)';
-                                      e.currentTarget.style.boxShadow = '0 3px 8px rgba(33, 231, 134, 0.3)';
+                                      if (!isDisabled) {
+                                        // 배경색과 텍스트색 반전
+                                        e.currentTarget.style.backgroundColor = textColor;
+                                        e.currentTarget.style.color = bgColor;
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.boxShadow = `0 6px 16px ${textColor}40`;
+                                        e.currentTarget.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+
+                                        const textSpan = e.currentTarget.querySelector('span');
+                                        if (textSpan) {
+                                          textSpan.style.color = bgColor;
+                                          textSpan.style.fontWeight = '600';
+                                        }
+                                      }
                                     }}
                                     onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = bgColor;
-                                      e.currentTarget.style.color = textColor;
-                                      e.currentTarget.style.transform = isSelected ? 'scale(1.01)' : 'scale(1)';
-                                      e.currentTarget.style.boxShadow = isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none';
+                                      if (!isDisabled) {
+                                        // 원래 색상으로 복구
+                                        e.currentTarget.style.backgroundColor = bgColor;
+                                        e.currentTarget.style.color = textColor;
+                                        e.currentTarget.style.transform = isSelected ? 'scale(1.01)' : 'scale(1)';
+                                        e.currentTarget.style.boxShadow = isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none';
+
+                                        const textSpan = e.currentTarget.querySelector('span');
+                                        if (textSpan) {
+                                          textSpan.style.color = textColor;
+                                          textSpan.style.fontWeight = '500';
+                                        }
+                                      }
                                     }}
                                   >
-                                    <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-[10px] leading-tight truncate">
+                                    <span className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-[10px] leading-tight ${isSelected ? 'whitespace-nowrap overflow-hidden text-ellipsis' : 'truncate'}`}>
                                       {event.icon} {event.text}
                                     </span>
                                     {isSelected && (
@@ -478,7 +540,8 @@ export const CalendarSection = (): JSX.Element => {
                                 );
                               })}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -515,33 +578,45 @@ export const CalendarSection = (): JSX.Element => {
                   ...event,
                   length: event.endDate - event.startDate + 1
                 }))
-                .sort((a, b) => b.length - a.length); // 긴 일정부터 배치
+                .sort((a, b) => {
+                  // 시작 날짜가 다르면 빠른 것부터
+                  if (a.startDate !== b.startDate) return a.startDate - b.startDate;
+                  // 시작 날짜가 같으면 긴 것부터
+                  return b.length - a.length;
+                }); // 날짜 순으로 배치
 
               // 각 이벤트의 행(row) 계산
               const eventRows = new Map();
+              const rowOccupancy: Array<Array<{start: number, end: number}>> = [];
+
               weekEvents.forEach(event => {
-                let row = 0;
                 const eventStart = Math.max(event.startDate, weekStartDate);
                 const eventEnd = Math.min(event.endDate, weekEndDate);
 
-                // 이미 배치된 이벤트들과 겹치는지 확인
+                let row = 0;
+                // 사용 가능한 행 찾기
                 while (true) {
-                  let hasConflict = false;
-                  for (const [otherEvent, otherRow] of eventRows) {
-                    if (otherRow === row) {
-                      const otherStart = Math.max(otherEvent.startDate, weekStartDate);
-                      const otherEnd = Math.min(otherEvent.endDate, weekEndDate);
-                      // 날짜 범위가 겹치는지 확인
-                      if (!(eventEnd < otherStart || eventStart > otherEnd)) {
-                        hasConflict = true;
-                        break;
-                      }
-                    }
+                  // 이 행이 존재하지 않으면 초기화
+                  if (!rowOccupancy[row]) {
+                    rowOccupancy[row] = [];
                   }
-                  if (!hasConflict) break;
+
+                  // 이 행에서 현재 이벤트와 겹치는 다른 이벤트가 있는지 확인
+                  const hasConflict = rowOccupancy[row].some(occupied => {
+                    // 날짜 범위가 겹치는지 확인
+                    return !(eventEnd < occupied.start || eventStart > occupied.end);
+                  });
+
+                  if (!hasConflict) {
+                    // 겹치지 않으면 이 행에 배치
+                    rowOccupancy[row].push({ start: eventStart, end: eventEnd });
+                    eventRows.set(event, row);
+                    break;
+                  }
+
+                  // 겹치면 다음 행으로
                   row++;
                 }
-                eventRows.set(event, row);
               });
 
               return (
@@ -602,17 +677,20 @@ export const CalendarSection = (): JSX.Element => {
                   {/* 이벤트 레이어 (절대 위치) */}
                   <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none overflow-hidden">
                     <div className="grid grid-cols-7 h-full">
-                      {week.map((day, dayIndex) => (
-                        <div key={dayIndex} className="relative pt-[54px] px-3 overflow-visible">
-                          {weekEvents
-                            .filter(event => event.startDate === day.date)
+                      {week.map((day, dayIndex) => {
+                        // 이 날짜에서 시작하는 이벤트만 렌더링
+                        const startingEvents = weekEvents.filter(event => event.startDate === day.date);
+
+                        return (
+                        <div key={dayIndex} className="relative pt-[52px] px-3 overflow-visible">
+                          {startingEvents
                             .map((event) => {
                               // 이 주의 셀들 중에서 이벤트가 포함되는 셀 개수 계산
                               const startIndex = week.findIndex(d => d.date === event.startDate);
                               const endIndex = week.findIndex(d => d.date === event.endDate);
                               const spanDays = endIndex >= startIndex ? endIndex - startIndex + 1 : 1;
 
-                              const row = eventRows.get(event);
+                              const row = eventRows.get(event) ?? 0;
                               const eventHeight = 39; // 이벤트 높이
                               const gap = 12; // 이벤트 간격
 
@@ -646,11 +724,12 @@ export const CalendarSection = (): JSX.Element => {
                               const textColor = textColorMatch ? textColorMatch[1] : '#aaaaaa';
 
                               const isSelected = selectedEvents.has(event.id);
+                              const isDisabled = bgColor === '#555555';
 
                               return (
                                 <div
                                   key={event.id}
-                                  className={`group px-3 py-2 rounded cursor-pointer transition-all duration-300 pointer-events-auto absolute flex items-center justify-between ${isSelected ? 'ring-1 ring-[#21e786] ring-opacity-60' : ''}`}
+                                  className={`group px-3 py-2 rounded transition-all duration-300 absolute flex items-center justify-between overflow-hidden ${isDisabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer pointer-events-auto'} ${isSelected ? 'ring-1 ring-[#21e786] ring-opacity-60' : ''}`}
                                   style={{
                                     width: `${eventWidth}px`,
                                     height: '39px',
@@ -659,37 +738,59 @@ export const CalendarSection = (): JSX.Element => {
                                     backgroundColor: bgColor,
                                     color: textColor,
                                     transform: isSelected ? 'scale(1.01)' : 'scale(1)',
-                                    boxShadow: isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none'
+                                    boxShadow: isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none',
+                                    opacity: isDisabled ? 0.6 : 1,
+                                    position: 'relative'
                                   }}
                                   onClick={() => handleEventClick(event.id)}
                                   onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = textColor;
-                                    e.currentTarget.style.color = bgColor;
-                                    e.currentTarget.style.transform = 'scale(1.02)';
-                                    e.currentTarget.style.boxShadow = '0 3px 8px rgba(33, 231, 134, 0.3)';
+                                    if (!isDisabled) {
+                                      // 배경색과 텍스트색 반전
+                                      e.currentTarget.style.backgroundColor = textColor;
+                                      e.currentTarget.style.color = bgColor;
+                                      e.currentTarget.style.transform = 'translateY(-2px)';
+                                      e.currentTarget.style.boxShadow = `0 6px 16px ${textColor}40`;
+                                      e.currentTarget.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+
+                                      const textSpan = e.currentTarget.querySelector('span');
+                                      if (textSpan) {
+                                        textSpan.style.color = bgColor;
+                                        textSpan.style.fontWeight = '600';
+                                      }
+                                    }
                                   }}
                                   onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = bgColor;
-                                    e.currentTarget.style.color = textColor;
-                                    e.currentTarget.style.transform = isSelected ? 'scale(1.01)' : 'scale(1)';
-                                    e.currentTarget.style.boxShadow = isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none';
+                                    if (!isDisabled) {
+                                      // 원래 색상으로 복구
+                                      e.currentTarget.style.backgroundColor = bgColor;
+                                      e.currentTarget.style.color = textColor;
+                                      e.currentTarget.style.transform = isSelected ? 'scale(1.01)' : 'scale(1)';
+                                      e.currentTarget.style.boxShadow = isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none';
+
+                                      const textSpan = e.currentTarget.querySelector('span');
+                                      if (textSpan) {
+                                        textSpan.style.color = textColor;
+                                        textSpan.style.fontWeight = '500';
+                                      }
+                                    }
                                   }}
                                 >
-                                  <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-base leading-tight">
+                                  <span className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-base leading-tight ${isSelected ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}>
                                     {event.icon} {event.text}
                                   </span>
                                   {isSelected && (
                                     <img
                                       src="/icons/iconFireCalendar.png"
                                       alt="Selected"
-                                      className="w-5 h-5 mr-3"
+                                      className="w-5 h-5 mr-3 flex-shrink-0"
                                     />
                                   )}
                                 </div>
                               );
                             })}
                         </div>
-                      ))}
+                      );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -699,7 +800,13 @@ export const CalendarSection = (): JSX.Element => {
         </div>
 
         {/* Footer */}
-        <div className={`mt-0 flex flex-col items-center gap-6 bg-[#141b22] rounded-b-lg ${isMobile ? 'py-6 px-4' : 'py-10 px-8'} ${isTablet ? 'max-w-[686px] mx-auto' : ''} relative overflow-hidden`}>
+        <div className={`mt-0 flex flex-col items-center bg-[#141b22] relative overflow-hidden ${
+          isConfirmed
+            ? (isMobile ? 'py-[10px] rounded-b-lg' : isTablet ? 'py-[30px] rounded-b-lg' : 'py-[40px] rounded-b-lg')
+            : isMobile
+              ? 'py-6 px-4 gap-6 rounded-b-lg'
+              : 'py-10 px-8 gap-6 rounded-b-lg'
+        } ${isTablet ? 'max-w-[686px] mx-auto' : ''}`}>
           {/* Footer 오른쪽 하단 빛나는 곡선 border */}
           {!isMobile && (
             <div className="absolute -bottom-[10px] -right-[1px] w-[250px] h-[60px] pointer-events-none">
@@ -717,50 +824,55 @@ export const CalendarSection = (): JSX.Element => {
               </svg>
             </div>
           )}
-          <div className="flex flex-col items-center gap-3">
-            {isMobile ? (
-              <>
-                <div className="text-center">
-                  <div className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">클럽 일정</div>
-                  <p className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-xs mt-1 mb-1">
-                    을 확인하고 3개의 기대 표현을 보내주세요!
-                  </p>
-                  <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
-                    클럽 전체 일정은 캘린더를 통해 확인해주세요
-                  </p>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-2xl">
-                  <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-[32px]">클럽 일정</span>을 확인하고 3개의 기대 표현을 보내주세요!
-                </h3>
-                <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-sm">
-                  활동 일정 클릭 시 자동 선택됩니다.
-                </p>
-                <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
-                  '기대'는 앞으로 2주 내의 클럽 활동 중 두근두근 기대가 되는 활동을 표시하는 나의 '찜콩'입니다.
-                  <br />
-                  클럽의 중요한 활동을 놓치는 일 없이 다 후루룹짭짭..해서, 성장의 근수저가 되보자구요!
-                </p>
-              </>
-            )}
-          </div>
+          {/* 일정 확인 후에는 내용 숨김 */}
+          {isConfirmed ? null : (
+            <>
+              <div className="flex flex-col items-center gap-3">
+                {isMobile ? (
+                  <>
+                    <div className="text-center">
+                      <div className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">클럽 일정</div>
+                      <p className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-xs mt-1 mb-1">
+                        을 확인하고 3개의 기대 표현을 보내주세요!
+                      </p>
+                      <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
+                        클럽 전체 일정은 캘린더를 통해 확인해주세요
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-2xl">
+                      <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-[32px]">클럽 일정</span>을 확인하고 3개의 기대 표현을 보내주세요!
+                    </h3>
+                    <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-sm">
+                      활동 일정 클릭 시 자동 선택됩니다.
+                    </p>
+                    <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
+                      '기대'는 앞으로 2주 내의 클럽 활동 중 두근두근 기대가 되는 활동을 표시하는 나의 '찜콩'입니다.
+                      <br />
+                      클럽의 중요한 활동을 놓치는 일 없이 다 후루룹짭짭..해서, 성장의 근수저가 되보자구요!
+                    </p>
+                  </>
+                )}
+              </div>
 
-          <Button
-            className={`inline-flex items-center justify-center gap-2 h-auto bg-[#21e786] hover:bg-[#1bc970] ${isMobile ? 'px-4 py-2 w-[204px]' : 'px-8 py-3'}`}
-            onClick={() => {
-              if (isMobile) {
-                router.push('/calendar-events');
-              } else {
-                setIsModalOpen(true);
-              }
-            }}
-          >
-            <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#040b11] ${isMobile ? 'text-sm' : 'text-base'}`}>
-              일정 확인하고 기대 표현 보내기
-            </span>
-          </Button>
+              <Button
+                className={`inline-flex items-center justify-center gap-2 h-auto bg-[#21e786] hover:bg-[#1bc970] ${isMobile ? 'px-4 py-2 w-[204px]' : 'px-8 py-3'}`}
+                onClick={() => {
+                  if (isMobile) {
+                    router.push('/calendar-events');
+                  } else {
+                    setIsModalOpen(true);
+                  }
+                }}
+              >
+                <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#040b11] ${isMobile ? 'text-sm' : 'text-base'}`}>
+                  일정 확인하고 기대 표현 보내기
+                </span>
+              </Button>
+            </>
+          )}
         </div>
         </div>
       </div>

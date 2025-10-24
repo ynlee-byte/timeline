@@ -3,8 +3,9 @@ import { useWindowWidth } from "../../../../breakpoints";
 import lineImage from "../../../../assets/line.png";
 import paginationImage from "../../../../assets/pagenation.png";
 import bgImage from "../../../../assets/인정응원BG.png";
-import cardMobileBg from "../../../../assets/card-mobile bg.png";
+import cardMobileBg from "../../../../assets/cardReview - mobile.png";
 import cardMy02 from "../../../../assets/cardMy02.png";
+import borderSmall from "../../../../assets/border small.png";
 
 const recognitionCards = [
   {
@@ -212,12 +213,24 @@ export const RecognitionSection = (): JSX.Element => {
     setCurrentCardIndex((prevIndex) => {
       const step = isMobile ? 1 : isTablet ? 3 : 5;
       if (direction === 'next') {
-        return Math.min(prevIndex + step, recognitionCards.length - step);
+        const maxIndex = recognitionCards.length - step;
+        const nextIndex = prevIndex + step;
+        // If we reach the end, go back to the beginning
+        return nextIndex > maxIndex ? 0 : nextIndex;
       } else {
         return Math.max(prevIndex - step, 0);
       }
     });
   }, [isMobile, isTablet]);
+
+  // Auto-slide every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      navigateCards('next');
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(interval);
+  }, [navigateCards]);
 
   // Mobile: card width = 170px, gap = 24px
   // Total movement per card = 170px + 24px = 194px
@@ -226,32 +239,48 @@ export const RecognitionSection = (): JSX.Element => {
     : `translateX(-${currentCardIndex * cardWidthWithGap}px)`;
 
   return (
-    <section className={`flex flex-col items-center w-full bg-[#040b11] relative overflow-visible ${isMobile ? 'py-10' : 'pt-[88px] pb-20'}`}>
-      {/* Background image - Desktop only */}
-      {!isMobile && !isTablet && (
-        <div className="absolute inset-0 w-full h-full z-0" style={{ top: '-30px' }}>
-          <img
-            className="w-full h-full object-cover"
-            alt="Background"
-            src={bgImage.src}
-          />
-        </div>
-      )}
-
-      {/* Background image - Mobile only */}
-      {isMobile && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-0" style={{ top: '80px', width: '196px', height: '252px' }}>
-          <img
-            className="w-full h-full object-contain"
-            alt="Background"
-            src={bgImage.src}
-          />
-        </div>
-      )}
+    <section className={`flex flex-col items-center w-full bg-[#040b11] relative overflow-hidden ${isMobile ? 'pt-[88px] pb-20' : 'pt-[88px] pb-20'}`}>
+      {/* Background image */}
+      <div className="absolute z-0 overflow-hidden" style={{
+        top: '-30px',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: 'calc(100% + 30px)'
+      }}>
+        <img
+          className="absolute top-0 left-0 w-full h-full object-cover"
+          alt="Background"
+          src={bgImage.src}
+          style={isTablet ? {
+            width: '110%',
+            height: '110%',
+            left: '-5%',
+            top: '-5%',
+            objectFit: 'cover'
+          } : isMobile ? {
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          } : undefined}
+        />
+      </div>
 
       {/* Timeline line image - full width */}
       {!isMobile && (
         <div className={`absolute left-0 right-0 w-full h-[5px] z-10 ${isTablet ? 'top-[300px]' : 'top-[333px]'}`}>
+          <img
+            className="w-full h-full object-cover"
+            alt="Timeline"
+            src={lineImage.src}
+          />
+        </div>
+      )}
+
+      {/* Timeline line - horizontal line for mobile */}
+      {isMobile && (
+        <div className="absolute left-0 right-0 w-full h-[2px] z-0" style={{ top: '211px' }}>
           <img
             className="w-full h-full object-cover"
             alt="Timeline"
@@ -299,64 +328,64 @@ export const RecognitionSection = (): JSX.Element => {
       </div>
 
       {/* Timeline with cards - full width without padding */}
-      <div className="relative w-full z-10">
-          {/* Timeline line - horizontal line for mobile */}
-          {isMobile && (
-            <div className="absolute left-0 right-0 w-full h-[2px] z-0" style={{ top: '40px' }}>
-              <img
-                className="w-full h-full object-cover"
-                alt="Timeline"
-                src={lineImage.src}
-              />
-            </div>
-          )}
-
+      <div className="relative w-full z-10 overflow-hidden">
           {/* Cards container with horizontal scroll */}
           <div
             ref={sliderRef}
-            className={`relative ${isMobile ? 'w-full overflow-x-hidden overflow-y-visible px-0' : isTablet ? 'w-[1010px] overflow-hidden mx-auto' : 'w-[1720px] overflow-hidden mx-auto'}`}
+            className={`relative ${isMobile ? 'w-full overflow-x-hidden overflow-y-visible px-0' : isTablet ? 'w-[1010px] overflow-visible mx-auto' : 'w-[1720px] overflow-hidden mx-auto'}`}
             style={isMobile ? { paddingTop: '20px' } : undefined}
           >
             <div
               className={`inline-flex flex-row transition-transform duration-500 ease-in-out ${isMobile ? 'gap-6' : 'gap-[55px]'}`}
-              style={{ transform: translateXValue }}
+              style={{
+                transform: translateXValue,
+                paddingLeft: isMobile ? 'calc((100vw - 170px) / 2)' : undefined
+              }}
             >
               {recognitionCards.map((card, index) => (
-                <div key={card.id} className={`relative flex flex-col items-center flex-shrink-0 ${isMobile ? '-mt-[15px]' : 'w-[300px]'}`} style={isMobile ? { width: '170px' } : undefined}>
+                <div key={card.id} className={`relative flex flex-col items-center flex-shrink-0 ${isMobile ? 'w-[170px] -mt-[15px]' : 'w-[300px]'}`}>
                   {/* Timeline dot and dashed line */}
                   <div className={`relative w-full flex flex-col items-center ${isMobile ? 'h-[70px]' : 'h-[201px]'}`}>
                     {/* Timeline dot with outer and inner circles */}
-                    <div className={`absolute left-1/2 -translate-x-1/2 rounded-full bg-[#21e786] opacity-20 z-30 flex items-center justify-center ${isMobile ? 'top-[15px] w-[40px] h-[40px]' : 'top-[45px] w-[60px] h-[60px]'}`} />
-                    <div className={`absolute left-1/2 -translate-x-1/2 rounded-full bg-[#21e786] z-40 ${isMobile ? 'top-[27px] w-[16px] h-[16px]' : 'top-[60px] w-[30px] h-[30px]'}`} />
+                    <div className={`absolute left-1/2 -translate-x-1/2 rounded-full bg-[#21e786] opacity-20 z-30 flex items-center justify-center ${isMobile ? 'top-[15px] w-[35px] h-[35px]' : 'top-[45px] w-[60px] h-[60px]'}`} />
+                    <div className={`absolute left-1/2 -translate-x-1/2 rounded-full bg-[#21e786] z-40 ${isMobile ? 'top-[24px] w-[17px] h-[17px]' : 'top-[60px] w-[30px] h-[30px]'}`} />
                     {/* Dashed vertical line */}
-                    <div className={`absolute left-1/2 -translate-x-1/2 w-0.5 border-l-2 border-dashed border-white opacity-70 ${isMobile ? 'z-[15]' : 'z-[15]'} ${isMobile ? 'top-[43px] h-[42px]' : 'top-[75px] h-[126px]'}`} />
+                    <div className={`absolute left-1/2 -translate-x-1/2 w-0.5 border-l-2 border-dashed border-white opacity-70 z-[15] ${isMobile ? 'top-[41px] h-[44px]' : 'top-[75px] h-[126px]'}`} />
                   </div>
 
                   {/* Bottom Card Section */}
-                  <div
-                    className={`relative rounded-lg transition-all duration-300 ${isMobile ? 'w-full p-4 flex items-center z-[25]' : 'w-[300px] h-[229px] p-6 z-[25] bg-[#141B22] border-2 border-transparent hover:border-[#21e786] hover:shadow-[0_0_20px_rgba(33,231,134,0.3)]'}`}
-                    style={isMobile ? { width: '170px', height: '200px' } : undefined}
-                  >
-                    {isMobile && (
-                      <img
-                        className="absolute inset-0 w-full h-full rounded-lg z-0"
-                        alt="Card background"
-                        src={cardMobileBg.src}
-                        style={{ objectFit: 'fill' }}
-                      />
+                  <div className={`relative rounded-lg transition-all duration-300 z-[25] ${isMobile ? 'w-[170px] h-[185px] bg-[#141B22]' : 'group w-[300px] h-[229px] p-6 bg-[#141B22] border-2 border-transparent'}`}>
+                    {/* Border decorations - visible on hover (desktop/tablet only) */}
+                    {!isMobile && (
+                      <>
+                        <img
+                          src={borderSmall.src}
+                          alt=""
+                          className="absolute top-0 left-0 w-auto h-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        />
+                        <img
+                          src={borderSmall.src}
+                          alt=""
+                          className="absolute bottom-0 right-0 w-auto h-auto rotate-180 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        />
+                      </>
                     )}
 
-                    <div className={`flex flex-col ${isMobile ? 'gap-2 w-full relative z-10' : 'gap-3'}`}>
-                      {/* Period */}
-                      {!isMobile && (
-                        <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#cccccc] text-left tracking-[-0.36px] ${isMobile ? 'text-xs leading-[14px]' : 'text-[16px] leading-[18px]'}`}>
+                    <div className={`flex flex-col ${isMobile ? 'w-full h-full relative z-10 p-4' : 'gap-3'}`}>
+                      {/* Period - Mobile shows at top, Desktop shows at top */}
+                      {isMobile ? (
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#888888] text-left text-[12px] leading-[14px] mb-1.5">
+                          {card.period.split('·')[0]?.trim() || card.period}
+                        </p>
+                      ) : (
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#cccccc] text-left tracking-[-0.36px] text-[16px] leading-[18px]">
                           {card.period}
                         </p>
                       )}
 
                       {/* Title with icon */}
                       {isMobile ? (
-                        <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-left text-lg leading-[22px]">
+                        <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-left text-[15px] leading-[18px] mb-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
                           {card.title}
                         </h3>
                       ) : (
@@ -373,48 +402,59 @@ export const RecognitionSection = (): JSX.Element => {
                       )}
 
                       {/* Description */}
-                      <div className={`flex items-start justify-start ${isMobile ? '' : 'min-h-[60px]'}`}>
-                        <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-white tracking-[-0.42px] text-left overflow-hidden text-ellipsis ${isMobile ? 'text-sm leading-[18px] [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]' : 'text-[16px] leading-[21px]'}`}>
+                      {isMobile ? (
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left text-[12px] leading-[16px] mb-1.5 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
                           {card.description}
                         </p>
-                      </div>
+                      ) : (
+                        <div className="flex items-start justify-start min-h-[60px]">
+                          <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white tracking-[-0.42px] text-left overflow-hidden text-ellipsis text-[16px] leading-[21px]">
+                            {card.description}
+                          </p>
+                        </div>
+                      )}
 
-                      {/* Stars and Badge button in row */}
+                      {/* Stars */}
                       {isMobile ? (
-                        <>
-                          <div className="flex items-center justify-start gap-0.5 -mt-1">
-                            {[...Array(5)].map((_, i) => (
-                              <span
-                                key={i}
-                                className={`text-base ${i < card.stars ? 'text-white' : 'text-[#666666]'}`}
-                              >
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                          <div className="flex items-center justify-between mt-1">
-                            <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#cccccc] text-xs">
-                              {card.period.split('·')[1]?.trim() || ''}
-                            </p>
-                            <button
-                              onClick={() => handleButtonClick(card.id)}
-                              className={`rounded-full flex items-center justify-center font-normal transition-all duration-300 hover:scale-110 hover:brightness-125 font-ria-sans cursor-pointer w-11 h-11 text-sm ${
-                                clickedButtons[card.id]
-                                  ? 'bg-[#FFF802] text-[#040B11]'
-                                  : 'bg-[#040B11] text-white border-2 border-white border-opacity-30'
-                              }`}
-                              style={
-                                clickedButtons[card.id]
-                                  ? {
-                                      boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)'
-                                    }
-                                  : undefined
-                              }
+                        <div className="flex items-center justify-start gap-0.5 mb-auto">
+                          {[...Array(5)].map((_, i) => (
+                            <span
+                              key={i}
+                              className={`text-[13px] ${i < card.stars ? 'text-white' : 'text-[#666666]'}`}
                             >
-                              {card.badge}
-                            </button>
-                          </div>
-                        </>
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {/* Bottom row - Badge button */}
+                      {isMobile ? (
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#888888] text-[10px] overflow-hidden text-ellipsis whitespace-nowrap max-w-[80px]">
+                            {card.period.split('·')[1]?.trim() || ''}
+                          </p>
+                          <button
+                            onClick={() => handleButtonClick(card.id)}
+                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-500 ease-in-out active:scale-95 font-ria-sans cursor-pointer w-[40px] h-[40px] text-[11px] ${
+                              clickedButtons[card.id]
+                                ? 'bg-[#FFF802] text-[#040B11] scale-105'
+                                : 'bg-[#040B11] text-white border border-white/30 scale-100'
+                            }`}
+                            style={
+                              clickedButtons[card.id]
+                                ? {
+                                    boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
+                                    transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                                  }
+                                : {
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                  }
+                            }
+                          >
+                            {card.badge}
+                          </button>
+                        </div>
                       ) : (
                         <div className="flex items-center justify-between -mt-2">
                           <div className="flex items-center gap-0.5">
@@ -429,17 +469,20 @@ export const RecognitionSection = (): JSX.Element => {
                           </div>
                           <button
                             onClick={() => handleButtonClick(card.id)}
-                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-300 hover:scale-110 hover:brightness-125 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
+                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-500 ease-in-out hover:scale-[1.08] hover:brightness-110 active:scale-95 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
                               clickedButtons[card.id]
-                                ? 'bg-[#FFF802] text-[#040B11]'
-                                : 'bg-[#040B11] text-white border-2 border-white border-opacity-30'
+                                ? 'bg-[#FFF802] text-[#040B11] scale-105'
+                                : 'bg-[#040B11] text-white border-2 border-white border-opacity-30 scale-100'
                             }`}
                             style={
                               clickedButtons[card.id]
                                 ? {
-                                    boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)'
+                                    boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
+                                    transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
                                   }
-                                : undefined
+                                : {
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                  }
                             }
                           >
                             {card.badge}
@@ -457,7 +500,7 @@ export const RecognitionSection = (): JSX.Element => {
       {/* Navigation buttons */}
       <div className="w-full max-w-[1680px] mx-auto relative z-20">
         <div className="flex items-center justify-center mt-8">
-          <div className="relative cursor-pointer">
+          <div className={`relative cursor-pointer ${isMobile ? 'scale-[0.8]' : ''}`}>
             <img
               className="w-auto h-auto"
               alt="Pagination"
