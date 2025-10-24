@@ -1,0 +1,29 @@
+<svg width="140" height="56" viewBox="0 0 140 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with glow effect -->
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Main badge background -->
+  <rect x="2" y="2" width="136" height="52" rx="26" fill="#0D3B2E" filter="url(#glow)"/>
+  <rect x="2" y="2" width="136" height="52" rx="26" stroke="#21E786" stroke-width="3"/>
+
+  <!-- Medal icon (left side) -->
+  <g transform="translate(18, 16)">
+    <!-- Medal circle -->
+    <circle cx="12" cy="12" r="10" fill="#FFD700"/>
+    <circle cx="12" cy="12" r="8" fill="#FFA500"/>
+    <circle cx="12" cy="12" r="6" fill="#FFD700"/>
+    <!-- Star in medal -->
+    <path d="M12 6 L13.5 10.5 L18 10.5 L14.5 13.5 L16 18 L12 15 L8 18 L9.5 13.5 L6 10.5 L10.5 10.5 Z" fill="#FFA500"/>
+  </g>
+
+  <!-- Text "목표 달성!" -->
+  <text x="48" y="34" font-family="'Ria Sans', 'Pretendard', sans-serif" font-size="18" font-weight="bold" fill="#21E786">목표 달성!</text>
+</svg>
