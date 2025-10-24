@@ -7,7 +7,7 @@ import selectButton from "../../../../../assets/selectButton.png";
 import selectButton02 from "../../../../../assets/selectButton02.png";
 import selectButton03Mobile from "../../../../../assets/selectButton03 -m.png";
 import selectButton05 from "../../../../../assets/selectButton05.png";
-import icon00 from "../../../../../assets/0000.png";
+import selectButton00 from "../../../../../assets/00.png";
 // Notice modal images now loaded from public folder
 import { useWindowWidth } from "../../../../../breakpoints";
 
@@ -424,26 +424,12 @@ export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClos
 
                     {/* Request B */}
                     <div className={`${isMobile ? 'mb-3' : 'mb-[3%]'}`}>
-                      <div className="flex items-center gap-1" style={{
+                      <h3 className="font-ria-sans font-bold text-[#767676]" style={{
+                        fontSize: isMobile ? '12px' : isTablet ? '11px' : '14px',
                         marginBottom: isMobile ? '4px' : '3%'
                       }}>
-                        {isMobile && (
-                          <img
-                            src={icon00.src}
-                            alt="Request B icon"
-                            style={{
-                              width: '16px',
-                              height: '16px',
-                              flexShrink: 0
-                            }}
-                          />
-                        )}
-                        <h3 className="font-ria-sans font-bold text-[#767676]" style={{
-                          fontSize: isMobile ? '12px' : isTablet ? '11px' : '14px'
-                        }}>
-                          Request B
-                        </h3>
-                      </div>
+                        Request B
+                      </h3>
                       <p className="[font-family:'Pretendard',sans-serif] font-medium text-[#555555]" style={{
                         fontSize: isMobile ? '14px' : isTablet ? '14px' : '18px',
                         lineHeight: isMobile ? '1.4' : '1.5',
@@ -479,7 +465,7 @@ export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClos
                       marginTop: isMobile ? '10px' : undefined
                     }}>
                       <img
-                        src={selectButton05.src}
+                        src={isMobile ? selectButton00.src : selectButton05.src}
                         alt="넘어 가기"
                         onClick={() => setStep(3)}
                         className="cursor-pointer transition-transform duration-200 hover:scale-105"
