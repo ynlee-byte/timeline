@@ -849,7 +849,7 @@ export const CalendarSection = (): JSX.Element => {
                       활동 일정 클릭 시 자동 선택됩니다.
                     </p>
                     <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
-                      '기대'는 앞으로 2주 내의 클럽 활동 중 두근두근 기대가 되는 활동을 표시하는 나의 '찜콩'입니다. (테스트)
+                      '기대'는 앞으로 2주 내의 클럽 활동 중 두근두근 기대가 되는 활동을 표시하는 나의 '찜콩'입니다. (테스트2)
                       <br />
                       클럽의 중요한 활동을 놓치는 일 없이 다 후루룹짭짭..해서, 성장의 근수저가 되보자구요!
                     </p>
