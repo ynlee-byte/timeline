@@ -293,7 +293,7 @@ export const MainContentSection = (): JSX.Element => {
       `}</style>
       {isMobile ? (
         <header className="w-full">
-          <h1 className="font-bold text-white text-left font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
+          <h1 className="[font-family:'Ria'] font-bold text-white text-left font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
             나의 카드
           </h1>
         </header>
@@ -305,7 +305,7 @@ export const MainContentSection = (): JSX.Element => {
             src="https://c.animaapp.com/O1XpzcZm/img/logo-1.svg"
           />
 
-          <h1 className="relative w-fit mt-[-1.00px] font-bold text-white text-[32px] tracking-[0] leading-[normal] font-ria-sans">
+          <h1 className="[font-family:'Ria'] relative w-fit mt-[-1.00px] font-bold text-white text-[32px] tracking-[0] leading-[normal] font-ria-sans">
             나의 카드
           </h1>
 

@@ -11,7 +11,7 @@ export const HeaderSection = (): JSX.Element => {
   const isTablet = screenWidth >= 768 && screenWidth < 1280;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
 
   const handleAuthClick = () => {
     if (user) {
@@ -60,9 +60,14 @@ export const HeaderSection = (): JSX.Element => {
 
               <div className="flex items-center gap-4">
                 {user && (
-                  <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-sm">
-                    {user.email}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-sm">
+                      {profile?.full_name || '사용자'}
+                    </span>
+                    <span className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm">
+                      ({user.email})
+                    </span>
+                  </div>
                 )}
                 <Button variant="ghost" size="icon" className="w-10 h-10 p-0 hover:bg-transparent">
                   <img className="w-6 h-6" alt="Search" src="https://c.animaapp.com/O1XpzcZm/img/logo.svg" />
@@ -203,8 +208,13 @@ export const HeaderSection = (): JSX.Element => {
 
               {/* User Info (Mobile/Tablet) */}
               {user && (
-                <div className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-white ${isMobile ? 'text-sm mb-4' : 'text-base mb-6'}`}>
-                  {user.email}
+                <div className={`flex flex-col gap-1 ${isMobile ? 'mb-4' : 'mb-6'}`}>
+                  <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white ${isMobile ? 'text-sm' : 'text-base'}`}>
+                    {profile?.full_name || '사용자'}
+                  </span>
+                  <span className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                    {user.email}
+                  </span>
                 </div>
               )}
 

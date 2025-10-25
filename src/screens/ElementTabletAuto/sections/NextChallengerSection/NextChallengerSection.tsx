@@ -274,7 +274,7 @@ export const NextChallengerSection = (): JSX.Element => {
 
           {isMobile ? (
             <div className="relative z-10 flex flex-col items-start py-4" style={{ paddingLeft: '20px', gap: '10px' }}>
-              <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
+              <h2 className="[font-family:'Ria'] font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
                 Next Challenger
               </h2>
               <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left tracking-[-0.60px]" style={{ fontSize: 'clamp(12px, 3vw, 16px)', lineHeight: 'clamp(18px, 4.5vw, 24px)' }}>
@@ -293,7 +293,7 @@ export const NextChallengerSection = (): JSX.Element => {
                   alt="Logo"
                   src="https://c.animaapp.com/O1XpzcZm/img/logo-3.svg"
                 />
-                <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans whitespace-nowrap text-[32px] leading-[44px]">
+                <h2 className="[font-family:'Ria']  font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans whitespace-nowrap text-[32px] leading-[44px]">
                   Next Challenger
                 </h2>
                 <img

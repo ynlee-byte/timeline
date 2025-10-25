@@ -293,7 +293,7 @@ export const RecognitionSection = (): JSX.Element => {
       <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} w-full max-w-[1680px] mx-auto relative z-10 ${isMobile ? 'gap-6 px-5 mb-6' : isTablet ? 'gap-[40px] px-10 mb-[13px]' : 'gap-[50px] px-[120px] mb-[48px]'}`}>
         <header className={`flex flex-col ${isMobile ? 'items-start w-full' : 'items-center'} ${isMobile ? 'gap-3' : 'gap-[15px]'}`}>
           {isMobile ? (
-            <h2 className="font-bold text-white text-[20px] text-left font-ria-sans">
+            <h2 className="[font-family:'Ria'] font-bold text-white text-[20px] text-left font-ria-sans">
               인정과 응원 보내기
             </h2>
           ) : (
@@ -303,7 +303,7 @@ export const RecognitionSection = (): JSX.Element => {
                 alt="Logo"
                 src="https://c.animaapp.com/O1XpzcZm/img/logo-1.svg"
               />
-              <h2 className="font-bold text-white tracking-[0] leading-[normal] font-ria-sans text-[32px]">
+              <h2 className="[font-family:'Ria'] font-bold text-white tracking-[0] leading-[normal] text-[32px] font-ria-sans">
                 인정과 응원 보내기
               </h2>
               <img
