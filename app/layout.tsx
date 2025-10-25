@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ClientLayout } from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
   title: "Anima Project - Next.js",
@@ -51,7 +53,13 @@ export default function RootLayout({
           `
         }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <ClientLayout>
+            {children}
+          </ClientLayout>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

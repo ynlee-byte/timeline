@@ -15,6 +15,8 @@ import noticeModalSuccessMobile from "../../../../../assets/noticeModal-m.png";
 import noticeModalFail from "../../../../../icons/noticeModal-fail.png";
 import noticeModalFailMobile from "../../../../../assets/noticeModal-m2.png";
 import { useWindowWidth } from "../../../../../breakpoints";
+import { useAuth } from "../../../../../contexts/AuthContext";
+import { createJudgment } from "../../../../../lib/services/judgmentService";
 
 // Custom scrollbar styles
 const scrollbarStyles = `
@@ -51,23 +53,53 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
 }) => {
   const [reflectionText, setReflectionText] = useState("");
   const [showNotice, setShowNotice] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const maxLength = 50;
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
   const submitButtonRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   if (!isOpen) return null;
 
-  const handleSubmit = () => {
-    if (reflectionText.trim()) {
+  const handleSubmit = async () => {
+    // 로그인 확인
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    // 유효성 검사
+    if (!reflectionText.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await createJudgment({
+        achieved: type === 'success',
+        comment: reflectionText,
+      });
+
       setShowNotice(true);
       // 팝업은 클릭해야만 닫힘 (자동으로 닫히지 않음)
+    } catch (error) {
+      console.error('Error submitting judgment:', error);
+      alert('판정 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleNoticeClose = () => {
     setShowNotice(false);
+
+    // 초기화
+    setReflectionText("");
+
     if (onComplete) {
       onComplete();
     }
@@ -284,12 +316,12 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
                 <div ref={submitButtonRef} className={`flex justify-center ${isMobile ? 'mt-1.5' : isTablet ? 'mt-2' : 'mt-3'}`}>
                   <button
                     onClick={handleSubmit}
-                    disabled={!reflectionText.trim()}
-                    className="disabled:cursor-not-allowed transition-transform duration-200 hover:scale-105 disabled:hover:scale-100"
+                    disabled={!reflectionText.trim() || isSubmitting}
+                    className="disabled:cursor-not-allowed transition-transform duration-200 hover:scale-105 disabled:hover:scale-100 disabled:opacity-50"
                   >
                     <img
                       src={isMobile ? selectButton04Mobile.src : selectButton02.src}
-                      alt="작성 완료"
+                      alt={isSubmitting ? "저장중..." : "작성 완료"}
                       className={`${isMobile ? 'h-auto' : isTablet ? 'h-[32px]' : 'h-[40px]'} w-auto`}
                     />
                   </button>

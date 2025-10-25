@@ -1,19 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { createReview } from "@/lib/services/reviewService";
+import { canWriteReview, getCurrentDayOfWeek, getDayName } from "@/lib/utils/dateUtils";
 
 interface ReviewCardModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onComplete?: () => void;
 }
 
-export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClose }) => {
+export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClose, onComplete }) => {
   const [step, setStep] = useState(1);
   const [selectedActivity, setSelectedActivity] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canWrite, setCanWrite] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    // 모달이 열릴 때마다 날짜 체크
+    if (isOpen) {
+      setCanWrite(canWriteReview());
+    }
+  }, [isOpen]);
 
   const activityOptions = [
     "아쉬움 없음",
@@ -39,7 +53,87 @@ export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClos
     }
   };
 
+  const handleSubmit = async () => {
+    // 로그인 확인
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    // 유효성 검사
+    if (!selectedActivity || !reviewText || rating === 0) {
+      alert('모든 항목을 입력해주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await createReview({
+        activity: selectedActivity,
+        review_text: reviewText,
+        rating: rating,
+      });
+
+      alert('리뷰가 성공적으로 저장되었습니다!');
+
+      // 초기화
+      setStep(1);
+      setSelectedActivity("");
+      setReviewText("");
+      setRating(0);
+
+      if (onComplete) {
+        onComplete();
+      }
+
+      onClose();
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('리뷰 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!isOpen) return null;
+
+  // 날짜 제약으로 작성 불가능한 경우
+  if (!canWrite) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/80"
+          onClick={onClose}
+        />
+
+        {/* Warning Modal */}
+        <div className="relative w-full max-w-[500px] bg-[#040b11] rounded-[40px] p-12 border-[3px] border-red-500/50 flex flex-col items-center gap-6" style={{
+          boxShadow: '0px 0px 80px rgba(239, 68, 68, 0.3)'
+        }}>
+          <span className="text-[64px]">🚫</span>
+          <h2 className="font-ria-sans font-bold text-white text-[28px] text-center">
+            리뷰 카드 작성 불가
+          </h2>
+          <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-[16px] text-center leading-relaxed">
+            리뷰 카드는 <span className="text-[#21e786] font-bold">월요일, 화요일, 수요일</span>에만 작성할 수 있습니다.
+          </p>
+          <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-gray-400 text-[14px] text-center">
+            오늘은 <span className="text-white font-semibold">{getDayName(getCurrentDayOfWeek())}</span>입니다.
+          </p>
+          <Button
+            onClick={onClose}
+            className="px-12 py-4 bg-red-500 hover:bg-red-600 rounded-2xl transition-all"
+          >
+            <span className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[17px]">
+              확인
+            </span>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -262,11 +356,12 @@ export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClos
                 {/* Submit Button */}
                 <div className="flex justify-center">
                   <Button
-                    onClick={onClose}
-                    className="px-12 py-4 bg-[#21e786] hover:bg-[#1bc876] rounded-2xl shadow-[0px_0px_30px_rgba(33,231,134,0.3)] transition-all border-2 border-[#21e786]"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || !reviewText || rating === 0}
+                    className="px-12 py-4 bg-[#21e786] hover:bg-[#1bc876] rounded-2xl shadow-[0px_0px_30px_rgba(33,231,134,0.3)] transition-all border-2 border-[#21e786] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-[#040b11] text-[17px]">
-                      제출하기
+                      {isSubmitting ? '저장중...' : '제출하기'}
                     </span>
                   </Button>
                 </div>

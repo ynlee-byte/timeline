@@ -4,7 +4,12 @@ import { Button } from "../../../../components/ui/button";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { useWindowWidth } from "../../../../breakpoints";
 import { ReviewCardModal, GoalCardModal, JudgmentCardModal } from "./components";
-import { useState, useEffect } from "react";
+import { LoginModal } from "../../../../components/LoginModal";
+import { useState, useEffect, useCallback } from "react";
+import { canWriteReview, canWriteGoal, canWriteJudgment } from "../../../../lib/utils/dateUtils";
+import { hasWrittenReviewThisWeek, getLatestReview, Review } from "../../../../lib/services/reviewService";
+import { getLatestJudgment, Judgment } from "../../../../lib/services/judgmentService";
+import { useAuth } from "../../../../contexts/AuthContext";
 import cardMy02 from "../../../../assets/cardMy02.png";
 import cardMy04 from "../../../../assets/cardMy04.png";
 import noticeModalSuccess from "../../../../assets/noticeModal-suscess.png";
@@ -14,39 +19,16 @@ import bodyBadge from "../../../../assets/body.png";
 import cloudIcon from "../../../../icons/cloud.png";
 import ringIcon from "../../../../icons/ring.png";
 
-const cardData = [
-  {
-    type: "review",
-    badge: "월, 화, 수",
-    title: "지난주 리뷰",
-    icon: {
-      vector: "https://c.animaapp.com/O1XpzcZm/img/group-30-1@2x.png", // Chat bubble icon
-    },
-  },
-  {
-    type: "judgment",
-    badge: "월, 화, 수",
-    title: "지난주 판정",
-    medalBadge: "목표 달성!",
-  },
-  {
-    type: "goal",
-    badge: "목, 금, 토",
-    title: "다음주 목표",
-    icon: {
-      vector1: "https://c.animaapp.com/O1XpzcZm/img/vector-1.svg", // Heart icon
-    },
-  },
-];
-
 export const MainContentSection = (): JSX.Element => {
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
+  const { user } = useAuth();
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isJudgmentModalOpen, setIsJudgmentModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [judgmentModalType, setJudgmentModalType] = useState<'success' | 'fail'>('success');
   const [isReviewCompleted, setIsReviewCompleted] = useState(false);
   const [isJudgmentCompleted, setIsJudgmentCompleted] = useState<false | 'success' | 'fail'>(false);
@@ -59,6 +41,49 @@ export const MainContentSection = (): JSX.Element => {
   const [isJudgmentCardExpanded, setIsJudgmentCardExpanded] = useState(false);
   const [isGoalCardExpanded, setIsGoalCardExpanded] = useState(false);
   const [isScheduleChecked, setIsScheduleChecked] = useState(false);
+  const [reviewBadgeText, setReviewBadgeText] = useState("월, 화, 수");
+  const [latestReview, setLatestReview] = useState<Review | null>(null);
+  const [latestJudgment, setLatestJudgment] = useState<Judgment | null>(null);
+
+  // 현재 요일 기반으로 작성 가능 기간 업데이트
+  const updatePeriodBasedOnDay = useCallback(() => {
+    const canReview = canWriteReview();
+    const canGoal = canWriteGoal();
+
+    if (canReview) {
+      setCurrentPeriod('mon-wed');
+    } else if (canGoal) {
+      setCurrentPeriod('thu-sat');
+    } else {
+      setCurrentPeriod('not-period');
+    }
+  }, []);
+
+  // 카드 데이터
+  const cardData = [
+    {
+      type: "review",
+      badge: reviewBadgeText,
+      title: "지난주 리뷰",
+      icon: {
+        vector: "https://c.animaapp.com/O1XpzcZm/img/group-30-1@2x.png", // Chat bubble icon
+      },
+    },
+    {
+      type: "judgment",
+      badge: "월, 화, 수",
+      title: "지난주 판정",
+      medalBadge: "목표 달성!",
+    },
+    {
+      type: "goal",
+      badge: "목, 금, 토",
+      title: "다음주 목표",
+      icon: {
+        vector1: "https://c.animaapp.com/O1XpzcZm/img/vector-1.svg", // Heart icon
+      },
+    },
+  ];
 
   // 이번주 목표 데이터
   const [weeklyGoal, setWeeklyGoal] = useState({
@@ -77,16 +102,113 @@ export const MainContentSection = (): JSX.Element => {
     }
   }, []);
 
+  // 컴포넌트 마운트 시 요일 기반 기간 설정
+  useEffect(() => {
+    updatePeriodBasedOnDay();
+  }, [updatePeriodBasedOnDay]);
+
+  // DevDebugPanel의 요일 변경 이벤트 감지
+  useEffect(() => {
+    const handleDayChange = () => {
+      updatePeriodBasedOnDay();
+    };
+
+    window.addEventListener('dayChanged', handleDayChange);
+    return () => {
+      window.removeEventListener('dayChanged', handleDayChange);
+    };
+  }, [updatePeriodBasedOnDay]);
+
+  // 컴포넌트 마운트 시 리뷰 작성 여부 확인
+  useEffect(() => {
+    const checkReviewStatus = async () => {
+      const hasReview = await hasWrittenReviewThisWeek();
+      if (hasReview) {
+        setIsReviewCompleted(true);
+        setReviewBadgeText("작성 완료 ✓");
+      }
+    };
+    checkReviewStatus();
+  }, []);
+
+  // 퍼블리셔 디버그 패널의 상태에 따라 리뷰 배지 텍스트 업데이트
+  useEffect(() => {
+    if (currentPeriod === 'mon-wed') {
+      if (isReviewCompleted) {
+        setReviewBadgeText("작성 완료 ✓");
+      } else {
+        setReviewBadgeText("월, 화, 수");
+      }
+    } else if (currentPeriod === 'thu-sat') {
+      if (isReviewCompleted) {
+        setReviewBadgeText("작성 완료 ✓");
+      } else {
+        setReviewBadgeText("작성 기간이 아닙니다");
+      }
+    }
+  }, [currentPeriod, isReviewCompleted]);
+
+  // 최신 리뷰 데이터 가져오기
+  useEffect(() => {
+    const fetchLatestReview = async () => {
+      const review = await getLatestReview();
+      setLatestReview(review);
+      // 리뷰가 있으면 완료 상태로 설정
+      if (review) {
+        setIsReviewCompleted(true);
+      }
+    };
+
+    // 사용자가 로그인한 경우에만 리뷰 가져오기
+    if (user) {
+      fetchLatestReview();
+    } else {
+      // 로그아웃 시 state 초기화
+      setLatestReview(null);
+      setIsReviewCompleted(false);
+    }
+  }, [user]); // user가 변경될 때마다 리뷰 가져오기
+
+  // 최신 판정 데이터 가져오기
+  useEffect(() => {
+    const fetchLatestJudgment = async () => {
+      const judgment = await getLatestJudgment();
+      setLatestJudgment(judgment);
+      // 판정이 있으면 완료 상태로 설정
+      if (judgment) {
+        setIsJudgmentCompleted(judgment.achieved ? 'success' : 'fail');
+      }
+    };
+
+    // 사용자가 로그인한 경우에만 판정 가져오기
+    if (user) {
+      fetchLatestJudgment();
+    } else {
+      // 로그아웃 시 state 초기화
+      setLatestJudgment(null);
+      setIsJudgmentCompleted(false);
+    }
+  }, [user]); // user가 변경될 때마다 판정 가져오기
+
   const openReviewModal = () => {
-    if (currentPeriod === 'not-period') {
-      alert('기간이 아닙니다.');
+    // 로그인 체크
+    if (!user) {
+      alert('로그인 후 이용해주세요!');
+      setIsLoginModalOpen(true);
       return;
     }
+    // 날짜 체크는 ReviewCardModal 내부에서 처리됨
     setIsReviewModalOpen(true);
   };
   const closeReviewModal = () => setIsReviewModalOpen(false);
 
   const openGoalModal = () => {
+    // 로그인 체크
+    if (!user) {
+      alert('로그인 후 이용해주세요!');
+      setIsLoginModalOpen(true);
+      return;
+    }
     if (currentPeriod === 'not-period') {
       alert('기간이 아닙니다.');
       return;
@@ -96,19 +218,33 @@ export const MainContentSection = (): JSX.Element => {
   const closeGoalModal = () => setIsGoalModalOpen(false);
 
   const openJudgmentModal = () => {
+    // 로그인 체크
+    if (!user) {
+      alert('로그인 후 이용해주세요!');
+      setIsLoginModalOpen(true);
+      return;
+    }
     setIsJudgmentModalOpen(true);
   };
   const closeJudgmentModal = () => setIsJudgmentModalOpen(false);
 
-  const handleReviewComplete = () => {
+  const handleReviewComplete = async () => {
     console.log('Review completed!');
     setIsReviewCompleted(true);
+    setReviewBadgeText("작성 완료 ✓");
+
+    // 리뷰 제출 후 최신 리뷰 데이터 다시 가져오기
+    const review = await getLatestReview();
+    setLatestReview(review);
   };
 
-  const handleJudgmentComplete = () => {
+  const handleJudgmentComplete = async () => {
     console.log('Judgment completed!');
     setIsJudgmentCompleted(judgmentModalType);
-    // 팝업은 JudgmentCardModal 내부에서 처리됨
+
+    // 판정 제출 후 최신 판정 데이터 다시 가져오기
+    const judgment = await getLatestJudgment();
+    setLatestJudgment(judgment);
   };
 
   const handleGoalComplete = () => {
@@ -350,7 +486,7 @@ export const MainContentSection = (): JSX.Element => {
                               활동
                             </p>
                             <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
-                              앵그레 Wisdom
+                              {latestReview?.activity || "활동 정보 없음"}
                             </h3>
                           </div>
 
@@ -367,7 +503,7 @@ export const MainContentSection = (): JSX.Element => {
                                   width="15"
                                   height="15"
                                   viewBox="0 0 24 24"
-                                  fill="#ffffff"
+                                  fill={star <= (latestReview?.rating || 0) ? "#ffffff" : "#444444"}
                                   xmlns="http://www.w3.org/2000/svg"
                                 >
                                   <path d="M12 2L14.09 8.92L21 9.77L16.5 14.14L17.63 21L12 17.77L6.37 21L7.5 14.14L3 9.77L9.91 8.92L12 2Z" />
@@ -375,7 +511,7 @@ export const MainContentSection = (): JSX.Element => {
                               ))}
                             </div>
                             <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white" style={{ fontSize: 'clamp(12px, 3vw, 16px)', lineHeight: '1.5' }}>
-                              위즈덤을 작성에이하느라 작성하지 못해서너무 아쉽다 ππ 명강이 되었을텐데 ~ ππ
+                              {latestReview?.review_text || ""}
                             </p>
                           </div>
                         </>
@@ -541,7 +677,7 @@ export const MainContentSection = (): JSX.Element => {
                               나의 멘트
                             </p>
                             <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white" style={{ fontSize: 'clamp(12px, 3vw, 16px)', lineHeight: '1.5' }}>
-                              난 멋져! 난 해냈어 피드백 5개 이상인 총 7개를 크루들에게 제공했어! 난 짱이야 ~
+                              {latestJudgment?.comment || ""}
                             </p>
 
                             {/* Reaction count */}
@@ -940,7 +1076,7 @@ export const MainContentSection = (): JSX.Element => {
                               활동
                             </p>
                             <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-[18px] tracking-[0] leading-[normal]">
-                              앵그레 Wisdom
+                              {latestReview?.activity || "활동 정보 없음"}
                             </h3>
                           </div>
 
@@ -957,7 +1093,7 @@ export const MainContentSection = (): JSX.Element => {
                                   width="22"
                                   height="22"
                                   viewBox="0 0 24 24"
-                                  fill="#ffffff"
+                                  fill={star <= (latestReview?.rating || 0) ? "#ffffff" : "#444444"}
                                   xmlns="http://www.w3.org/2000/svg"
                                 >
                                   <path d="M12 2L14.09 8.92L21 9.77L16.5 14.14L17.63 21L12 17.77L6.37 21L7.5 14.14L3 9.77L9.91 8.92L12 2Z" />
@@ -965,7 +1101,7 @@ export const MainContentSection = (): JSX.Element => {
                               ))}
                             </div>
                             <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-[16px] tracking-[0] leading-[21px]">
-                              위즈덤을 작성에이하느라 작성하지 못해서너무 아쉽다 ππ 명강이 되었을텐데 ~ ππ
+                              {latestReview?.review_text || ""}
                             </p>
                           </div>
                         </div>
@@ -1141,10 +1277,10 @@ export const MainContentSection = (): JSX.Element => {
                           {/* Confidence message section */}
                           <div className="flex flex-col gap-1">
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
-                              자신감 멘트
+                              나의 멘트
                             </p>
                             <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-[16px] tracking-[0] leading-[21px]">
-                              난 멋져 난 해냈어 피드백을 5개 이상인 총 7개를 크루들에게 제공했어! 난 짱이야 ~ 난 짱이야 ~
+                              {latestJudgment?.comment || ""}
                             </p>
 
                             {/* Reaction count */}
@@ -1222,10 +1358,10 @@ export const MainContentSection = (): JSX.Element => {
                           {/* Regret message section */}
                           <div className="flex flex-col gap-[5px]">
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
-                              아쉬운 멘트
+                              나의 멘트
                             </p>
                             <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-[16px] tracking-[0] leading-[21px]">
-                              저번주는 너무 바빠서 피드백을 2개밖에 남기지 못했네요 ㅠㅠㅠㅠ 목표를 달성하지 못했으면 자기전에 한개씩이라도 하고 자기!
+                              {latestJudgment?.comment || ""}
                             </p>
 
                             {/* Reaction count */}
@@ -1529,16 +1665,17 @@ export const MainContentSection = (): JSX.Element => {
       <ReviewCardModal isOpen={isReviewModalOpen} onClose={closeReviewModal} onComplete={handleReviewComplete} />
       <GoalCardModal isOpen={isGoalModalOpen} onClose={closeGoalModal} onComplete={handleGoalComplete} />
       <JudgmentCardModal isOpen={isJudgmentModalOpen} onClose={closeJudgmentModal} onComplete={handleJudgmentComplete} type={judgmentModalType} />
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
 
       {/* 성공/실패 팝업 - JudgmentCardModal 내부에서 처리됨 */}
 
       {/* 디버그 패널 - 개발용 */}
-      <div className="fixed bottom-4 right-4 z-[9999]">
+      <div className="fixed bottom-4 right-4 z-[9999] mb-10">
         {isDebugPanelOpen ? (
           <div className="bg-black/90 border border-[#21e786] rounded-lg p-4 min-w-[250px]">
             <div className="flex items-center justify-between mb-3 border-b border-[#21e786] pb-2">
               <h3 className="text-[#21e786] font-bold text-sm">
-                🛠️ 디버그 패널
+                🎨 퍼블리셔 디버그 패널
               </h3>
               <button
                 onClick={() => setIsDebugPanelOpen(false)}
