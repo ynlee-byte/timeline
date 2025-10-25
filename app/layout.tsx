@@ -16,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        <meta charSet="utf-8" />
         <style dangerouslySetInnerHTML={{
           __html: `
             @import url("https://fonts.googleapis.com/css?family=Bakbak+One:var(--button-big-font-weight),400");
