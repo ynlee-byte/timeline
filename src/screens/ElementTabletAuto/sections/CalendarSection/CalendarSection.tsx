@@ -34,38 +34,61 @@ const events = [
   { id: 21, text: "앵무새 발표", startDate: 18, endDate: 18, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
 ];
 
-const calendarData = [
-  // Week 1 (이전 달 날짜는 음수로 표시)
-  [
-    { date: -28, isCurrentMonth: false },
-    { date: -29, isCurrentMonth: false },
-    { date: -30, isCurrentMonth: false },
-    { date: 1, isCurrentMonth: true },
-    { date: 2, isCurrentMonth: true },
-    { date: 3, isCurrentMonth: true },
-    { date: 4, isCurrentMonth: true },
-  ],
-  // Week 2
-  [
-    { date: 5, isCurrentMonth: true },
-    { date: 6, isCurrentMonth: true, isToday: true },
-    { date: 7, isCurrentMonth: true },
-    { date: 8, isCurrentMonth: true },
-    { date: 9, isCurrentMonth: true },
-    { date: 10, isCurrentMonth: true },
-    { date: 11, isCurrentMonth: true },
-  ],
-  // Week 3
-  [
-    { date: 12, isCurrentMonth: true },
-    { date: 13, isCurrentMonth: true },
-    { date: 14, isCurrentMonth: true },
-    { date: 15, isCurrentMonth: true },
-    { date: 16, isCurrentMonth: true },
-    { date: 17, isCurrentMonth: true },
-    { date: 18, isCurrentMonth: true },
-  ],
-];
+/**
+ * 특정 월의 캘린더 데이터 생성
+ */
+function generateCalendarData(year: number, month: number) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const prevMonthLastDay = new Date(year, month, 0);
+
+  const firstDayOfWeek = firstDay.getDay(); // 0 (일요일) ~ 6 (토요일)
+  const totalDays = lastDay.getDate();
+
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const todayDate = today.getDate();
+
+  const calendarData: Array<Array<{date: number, isCurrentMonth: boolean, isToday?: boolean}>> = [];
+  let week: Array<{date: number, isCurrentMonth: boolean, isToday?: boolean}> = [];
+
+  // 이전 달 날짜로 채우기
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    week.push({
+      date: -(prevMonthLastDay.getDate() - i),
+      isCurrentMonth: false
+    });
+  }
+
+  // 현재 달 날짜 채우기
+  for (let day = 1; day <= totalDays; day++) {
+    week.push({
+      date: day,
+      isCurrentMonth: true,
+      isToday: isCurrentMonth && day === todayDate
+    });
+
+    // 토요일이면 주 완성 후 새로운 주 시작
+    if (week.length === 7) {
+      calendarData.push(week);
+      week = [];
+    }
+  }
+
+  // 마지막 주의 남은 날짜를 다음 달로 채우기
+  if (week.length > 0) {
+    let nextMonthDay = 1;
+    while (week.length < 7) {
+      week.push({
+        date: -(nextMonthDay++),
+        isCurrentMonth: false
+      });
+    }
+    calendarData.push(week);
+  }
+
+  return calendarData;
+}
 
 export const CalendarSection = (): JSX.Element => {
   const router = useRouter();
@@ -73,12 +96,44 @@ export const CalendarSection = (): JSX.Element => {
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
   const { user } = useAuth();
+
+  // 현재 날짜로 초기화
+  const now = new Date();
+  const [currentYear, setCurrentYear] = useState(now.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(now.getMonth()); // 0-11
+
   const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showMaxAlert, setShowMaxAlert] = useState(false);
   const [canShowFooter, setCanShowFooter] = useState(true); // 초기값 true로 hydration 에러 방지
+
+  // 동적으로 캘린더 데이터 생성
+  const calendarData = generateCalendarData(currentYear, currentMonth);
+
+  // 이전 달로 이동
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentYear(currentYear - 1);
+      setCurrentMonth(11);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  // 다음 달로 이동
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentYear(currentYear + 1);
+      setCurrentMonth(0);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  // 년.월 형식으로 표시
+  const displayDate = `${currentYear}. ${String(currentMonth + 1).padStart(2, '0')}`;
 
   // 클라이언트에서만 요일 체크
   useEffect(() => {
@@ -190,7 +245,7 @@ export const CalendarSection = (): JSX.Element => {
           <div className="relative flex items-center justify-between mb-8 max-w-[686px] mx-auto">
             {/* 왼쪽: 날짜 선택기 */}
             <div className="flex items-center gap-2 px-4 py-2 bg-[#141b22] rounded-lg border-2 border-[#ffffff4c]">
-              <button className="w-5 h-5">
+              <button className="w-5 h-5" onClick={handlePrevMonth}>
                 <img
                   alt="Previous month"
                   src="https://c.animaapp.com/O1XpzcZm/img/frame-3.svg"
@@ -198,10 +253,10 @@ export const CalendarSection = (): JSX.Element => {
               </button>
 
               <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
-                2025. 10
+                {displayDate}
               </span>
 
-              <button className="w-5 h-5">
+              <button className="w-5 h-5" onClick={handleNextMonth}>
                 <img
                   alt="Next month"
                   src="https://c.animaapp.com/O1XpzcZm/img/frame-4.svg"
@@ -225,7 +280,7 @@ export const CalendarSection = (): JSX.Element => {
             </h2>
 
             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-[#141b22] rounded-lg border-2 border-[#ffffff4c]">
-              <button className="w-5 h-5">
+              <button className="w-5 h-5" onClick={handlePrevMonth}>
                 <img
                   alt="Previous month"
                   src="https://c.animaapp.com/O1XpzcZm/img/frame-3.svg"
@@ -233,10 +288,10 @@ export const CalendarSection = (): JSX.Element => {
               </button>
 
               <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
-                2025. 10
+                {displayDate}
               </span>
 
-              <button className="w-5 h-5">
+              <button className="w-5 h-5" onClick={handleNextMonth}>
                 <img
                   alt="Next month"
                   src="https://c.animaapp.com/O1XpzcZm/img/frame-4.svg"
@@ -258,17 +313,17 @@ export const CalendarSection = (): JSX.Element => {
             <>
               {/* 날짜 선택기 */}
               <div className="flex items-center justify-center gap-4 px-6 py-3 bg-[#141b22]">
-                <button className="w-5 h-5">
+                <button className="w-5 h-5" onClick={handlePrevMonth}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M15 18L9 12L15 6" stroke="#21e786" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
 
                 <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base">
-                  2025. 10
+                  {displayDate}
                 </span>
 
-                <button className="w-5 h-5">
+                <button className="w-5 h-5" onClick={handleNextMonth}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 18L15 12L9 6" stroke="#21e786" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
