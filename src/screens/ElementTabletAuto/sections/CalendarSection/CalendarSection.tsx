@@ -73,6 +73,7 @@ export const CalendarSection = (): JSX.Element => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [showMaxAlert, setShowMaxAlert] = useState(false);
 
   // localStorage에서 일정 확인 상태 불러오기
   useEffect(() => {
@@ -101,8 +102,13 @@ export const CalendarSection = (): JSX.Element => {
         if (newSet.size < 3) {
           // 3개 미만이면 추가
           newSet.add(eventId);
+        } else {
+          // 3개 이상이면 커스텀 alert 표시
+          setShowMaxAlert(true);
+          setTimeout(() => {
+            setShowMaxAlert(false);
+          }, 2500);
         }
-        // 3개 이상이면 아무것도 하지 않음
       }
       return newSet;
     });
@@ -833,7 +839,7 @@ export const CalendarSection = (): JSX.Element => {
                     <div className="text-center">
                       <div className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">클럽 일정</div>
                       <p className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-xs mt-1 mb-1">
-                        을 확인하고 3개의 기대 표현을 보내주세요!
+                        을 확인하고 3개의 기대 표현을 보내주세요!ㅇㅇㅇㄴ
                       </p>
                       <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
                         클럽 전체 일정은 캘린더를 통해 확인해주세요
@@ -920,6 +926,21 @@ export const CalendarSection = (): JSX.Element => {
           </span>
         </div>
       )}
+
+      {/* 최대 찜콩 수 초과 알림 */}
+        {showMaxAlert && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+                <div className="pointer-events-auto bg-gradient-to-r from-[#ff6b6b] to-[#ee5a52] text-white px-10 py-5 rounded-2xl shadow-2xl border-2 border-[#ff8787]">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">⚠️</span>
+                        <span className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-lg">
+          최대 찜콩 수를 초과했습니다
+        </span>
+                    </div>
+                </div>
+            </div>
+        )}
+
     </section>
   );
 };
