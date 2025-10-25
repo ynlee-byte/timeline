@@ -102,7 +102,7 @@ export const HeaderSection = (): JSX.Element => {
 
           <div className={`absolute ${isMobile ? 'top-[470px]' : 'top-[437px]'} left-1/2 -translate-x-1/2 inline-flex flex-col items-center gap-12`}>
             <div className="inline-flex flex-col items-center gap-3">
-              <h2 className={`[text-shadow:0px_4px_10px_#00000080] font-extrabold text-white ${isMobile ? 'text-[38px] leading-[38px]' : 'text-[80px] leading-[80px]'} tracking-[0] whitespace-nowrap font-ria-sans`}>
+              <h2 className={`[text-shadow:0px_4px_10px_#00000080] [font-family:'Ria'] font-extrabold text-white ${isMobile ? 'text-[38px] leading-[38px]' : 'text-[80px] leading-[80px]'} tracking-[0] whitespace-nowrap`}>
                 타임라인
               </h2>
               <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-on-surface ${isMobile ? 'text-xs leading-[18px]' : 'text-xl leading-[30px]'} tracking-[-0.60px] whitespace-nowrap`}>

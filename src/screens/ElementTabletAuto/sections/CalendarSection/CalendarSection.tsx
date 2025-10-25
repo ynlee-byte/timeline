@@ -217,8 +217,10 @@ export const CalendarSection = (): JSX.Element => {
             )}
           </div>
         ) : (
+
+
           <div className="relative flex items-center justify-between mb-8 pt-[37px] px-[48px]">
-            <h2 className="font-bold text-white text-[32px] tracking-[0] leading-[normal] font-ria-sans">
+            <h2 className="font-bold text-white text-[32px] tracking-[0] leading-[normal] [font-family:'Ria']">
               캘린더
             </h2>
 
