@@ -6,8 +6,19 @@ import bgImage from "../../../../assets/인정응원BG.png";
 import cardMobileBg from "../../../../assets/cardReview - mobile.png";
 import cardMy02 from "../../../../assets/cardMy02.png";
 import borderSmall from "../../../../assets/border small.png";
+import { getAllReviews } from "../../../../lib/services/reviewService";
+import { getAllGoals } from "../../../../lib/services/goalService";
+import {
+  sendRecognitionToReview,
+  cancelRecognitionOnReview,
+  sendRecognitionToGoal,
+  cancelRecognitionOnGoal,
+  getUserSentReviewRecognitions,
+  getUserSentGoalRecognitions
+} from "../../../../lib/services/recognitionService";
+import { useAuth } from "../../../../contexts/AuthContext";
 
-const recognitionCards = [
+const recognitionCardsDefault = [
   {
     id: 1,
     period: "9월 1주차 리뷰 · 송지영 크루",
@@ -194,19 +205,175 @@ export const RecognitionSection = (): JSX.Element => {
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
+  const { user } = useAuth();
 
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [clickedButtons, setClickedButtons] = useState<Record<number, boolean>>({});
+  const [clickedButtons, setClickedButtons] = useState<Record<string, boolean>>({});
+  const [recognitionCards, setRecognitionCards] = useState<any[]>([]);
+  const [myRecognitions, setMyRecognitions] = useState<{reviews: string[], goals: string[]}>({ reviews: [], goals: [] });
   const sliderRef = useRef<HTMLDivElement>(null);
   const cardWidth = 300; // Fixed width of card
   const cardGap = 55; // Gap between cards
   const cardWidthWithGap = cardWidth + cardGap; // Total space per card
 
-  const handleButtonClick = (cardId: number) => {
-    setClickedButtons((prev) => ({
-      ...prev,
-      [cardId]: !prev[cardId]
-    }));
+  // Load reviews and goals from database
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Fetch both reviews and goals in parallel
+        const [reviews, goals, myReviewRecognitions, myGoalRecognitions] = await Promise.all([
+          getAllReviews(),
+          getAllGoals(),
+          getUserSentReviewRecognitions(),
+          getUserSentGoalRecognitions()
+        ]);
+
+        // Create a map of recognized review/goal IDs
+        const recognizedReviewIds = myReviewRecognitions.map((r: any) => r.review_id);
+        const recognizedGoalIds = myGoalRecognitions.map((r: any) => r.goal_id);
+
+        setMyRecognitions({
+          reviews: recognizedReviewIds,
+          goals: recognizedGoalIds
+        });
+
+        // Transform reviews to card format (badge: "인정")
+        const reviewCards = reviews.map((review: any) => ({
+          id: `review-${review.id}`,
+          originalId: review.id,
+          user_id: review.user_id,
+          period: `10월 5주차 리뷰 · ${review.profiles?.full_name || '크루'}`,
+          title: review.activity,
+          description: review.review_text,
+          stars: review.rating,
+          badge: "인정",
+          badgeType: "recognize",
+          created_at: review.created_at,
+        }));
+
+        // Transform goals to card format (badge: "응원")
+        const goalCards = goals.map((goal: any) => ({
+          id: `goal-${goal.id}`,
+          originalId: goal.id,
+          user_id: goal.user_id,
+          period: `10월 5주차 목표 · ${goal.profiles?.full_name || '크루'}`,
+          title: goal.activity,
+          description: goal.goal_text,
+          stars: goal.rating,
+          badge: "응원",
+          badgeType: "support",
+          created_at: goal.created_at,
+        }));
+
+        // Combine and sort by created_at (most recent first)
+        const allCards = [...reviewCards, ...goalCards].sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        // Set initial clicked state for already recognized items
+        const initialClickedState: Record<string, boolean> = {};
+        recognizedReviewIds.forEach((id: string) => {
+          initialClickedState[`review-${id}`] = true;
+        });
+        recognizedGoalIds.forEach((id: string) => {
+          initialClickedState[`goal-${id}`] = true;
+        });
+        setClickedButtons(initialClickedState);
+
+        // Use real data if available, otherwise use default data
+        setRecognitionCards(allCards.length > 0 ? allCards : recognitionCardsDefault);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        // Fallback to default data on error
+        setRecognitionCards(recognitionCardsDefault);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const handleButtonClick = async (card: any) => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    // 본인의 카드인지 확인
+    if (card.user_id === user.id) {
+      alert('본인의 것에는 인정/응원을 남길 수 없어요!');
+      return;
+    }
+
+    const isReview = card.id.startsWith('review-');
+    const isCurrentlyClicked = clickedButtons[card.id] || false;
+
+    try {
+      if (isCurrentlyClicked) {
+        // 취소하기
+        if (isReview) {
+          await cancelRecognitionOnReview(card.originalId);
+        } else {
+          await cancelRecognitionOnGoal(card.originalId);
+        }
+
+        // 상태 업데이트
+        setClickedButtons((prev) => ({
+          ...prev,
+          [card.id]: false
+        }));
+
+        // myRecognitions 업데이트
+        if (isReview) {
+          setMyRecognitions(prev => ({
+            ...prev,
+            reviews: prev.reviews.filter(id => id !== card.originalId)
+          }));
+        } else {
+          setMyRecognitions(prev => ({
+            ...prev,
+            goals: prev.goals.filter(id => id !== card.originalId)
+          }));
+        }
+      } else {
+        // 보내기
+        if (isReview) {
+          await sendRecognitionToReview(card.originalId, card.user_id);
+        } else {
+          await sendRecognitionToGoal(card.originalId, card.user_id);
+        }
+
+        // 상태 업데이트
+        setClickedButtons((prev) => ({
+          ...prev,
+          [card.id]: true
+        }));
+
+        // myRecognitions 업데이트
+        if (isReview) {
+          setMyRecognitions(prev => ({
+            ...prev,
+            reviews: [...prev.reviews, card.originalId]
+          }));
+        } else {
+          setMyRecognitions(prev => ({
+            ...prev,
+            goals: [...prev.goals, card.originalId]
+          }));
+        }
+      }
+    } catch (error: any) {
+      // 에러 메시지 표시
+      console.error('Recognition error details:', {
+        error,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorDetails: error?.details,
+        cardId: card.id,
+        userId: user?.id,
+        cardUserId: card.user_id
+      });
+      alert(error?.message || '오류가 발생했습니다.');
+    }
   };
 
   const navigateCards = useCallback((direction: 'next' | 'prev') => {
@@ -221,7 +388,7 @@ export const RecognitionSection = (): JSX.Element => {
         return Math.max(prevIndex - step, 0);
       }
     });
-  }, [isMobile, isTablet]);
+  }, [isMobile, isTablet, recognitionCards.length]);
 
   // Auto-slide every 5 seconds
   useEffect(() => {
@@ -435,7 +602,7 @@ export const RecognitionSection = (): JSX.Element => {
                             {card.period.split('·')[1]?.trim() || ''}
                           </p>
                           <button
-                            onClick={() => handleButtonClick(card.id)}
+                            onClick={() => handleButtonClick(card)}
                             className={`rounded-full flex items-center justify-center font-normal transition-all duration-500 ease-in-out active:scale-95 font-ria-sans cursor-pointer w-[40px] h-[40px] text-[11px] ${
                               clickedButtons[card.id]
                                 ? 'bg-[#FFF802] text-[#040B11] scale-105'
@@ -468,7 +635,7 @@ export const RecognitionSection = (): JSX.Element => {
                             ))}
                           </div>
                           <button
-                            onClick={() => handleButtonClick(card.id)}
+                            onClick={() => handleButtonClick(card)}
                             className={`rounded-full flex items-center justify-center font-normal transition-all duration-500 ease-in-out hover:scale-[1.08] hover:brightness-110 active:scale-95 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
                               clickedButtons[card.id]
                                 ? 'bg-[#FFF802] text-[#040B11] scale-105'
