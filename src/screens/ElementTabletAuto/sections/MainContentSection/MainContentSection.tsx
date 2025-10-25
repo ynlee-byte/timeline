@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from "react";
 import { canWriteReview, canWriteGoal, canWriteJudgment } from "../../../../lib/utils/dateUtils";
 import { hasWrittenReviewThisWeek, getLatestReview, Review } from "../../../../lib/services/reviewService";
 import { getLatestJudgment, Judgment } from "../../../../lib/services/judgmentService";
+import { getLatestGoal, Goal } from "../../../../lib/services/goalService";
 import { useAuth } from "../../../../contexts/AuthContext";
 import cardMy02 from "../../../../assets/cardMy02.png";
 import cardMy04 from "../../../../assets/cardMy04.png";
@@ -44,6 +45,7 @@ export const MainContentSection = (): JSX.Element => {
   const [reviewBadgeText, setReviewBadgeText] = useState("월, 화, 수");
   const [latestReview, setLatestReview] = useState<Review | null>(null);
   const [latestJudgment, setLatestJudgment] = useState<Judgment | null>(null);
+  const [latestGoal, setLatestGoal] = useState<Goal | null>(null);
 
   // 현재 요일 기반으로 작성 가능 기간 업데이트
   const updatePeriodBasedOnDay = useCallback(() => {
@@ -190,6 +192,27 @@ export const MainContentSection = (): JSX.Element => {
     }
   }, [user]); // user가 변경될 때마다 판정 가져오기
 
+  // 최신 목표 데이터 가져오기
+  useEffect(() => {
+    const fetchLatestGoal = async () => {
+      const goal = await getLatestGoal();
+      setLatestGoal(goal);
+      // 목표가 있으면 완료 상태로 설정
+      if (goal) {
+        setIsGoalCompleted(true);
+      }
+    };
+
+    // 사용자가 로그인한 경우에만 목표 가져오기
+    if (user) {
+      fetchLatestGoal();
+    } else {
+      // 로그아웃 시 state 초기화
+      setLatestGoal(null);
+      setIsGoalCompleted(false);
+    }
+  }, [user]); // user가 변경될 때마다 목표 가져오기
+
   const openReviewModal = () => {
     // 로그인 체크
     if (!user) {
@@ -247,9 +270,13 @@ export const MainContentSection = (): JSX.Element => {
     setLatestJudgment(judgment);
   };
 
-  const handleGoalComplete = () => {
+  const handleGoalComplete = async () => {
     console.log('Goal completed!');
     setIsGoalCompleted(true);
+
+    // 목표 제출 후 최신 목표 데이터 다시 가져오기
+    const goal = await getLatestGoal();
+    setLatestGoal(goal);
   };
 
   return (
@@ -1548,7 +1575,7 @@ export const MainContentSection = (): JSX.Element => {
                                   width="22"
                                   height="22"
                                   viewBox="0 0 24 24"
-                                  fill="#ffffff"
+                                  fill={star <= (latestGoal?.rating || 0) ? "#ffffff" : "#666666"}
                                   xmlns="http://www.w3.org/2000/svg"
                                 >
                                   <path d="M12 2L14.09 8.92L21 9.77L16.5 14.14L17.63 21L12 17.77L6.37 21L7.5 14.14L3 9.77L9.91 8.92L12 2Z" />
@@ -1556,7 +1583,7 @@ export const MainContentSection = (): JSX.Element => {
                               ))}
                             </div>
                             <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-[16px] tracking-[0] leading-[21px]">
-                              이번주 위즈덤은 내가 제일 빨리 제출해야지 1등으로 해서 다른 사람들의 찬사를 받아야겠다 !!
+                              {latestGoal?.goal_text || '목표를 작성해주세요.'}
                             </p>
                           </div>
                         </div>
@@ -1672,6 +1699,7 @@ export const MainContentSection = (): JSX.Element => {
       {/* 디버그 패널 - 개발용 */}
       <div className="fixed bottom-4 right-4 z-[9999] mb-10">
         {isDebugPanelOpen ? (
+
           <div className="bg-black/90 border border-[#21e786] rounded-lg p-4 min-w-[250px]">
             <div className="flex items-center justify-between mb-3 border-b border-[#21e786] pb-2">
               <h3 className="text-[#21e786] font-bold text-sm">
@@ -1881,17 +1909,16 @@ export const MainContentSection = (): JSX.Element => {
         ) : (
           <button
             onClick={() => setIsDebugPanelOpen(true)}
-            className="bg-[#21e786] hover:bg-[#1bc970] text-black font-bold px-6 py-4 rounded-full shadow-2xl transition-all hover:scale-110 text-lg"
+            className="bg-[#21e786] hover:bg-[#1bc970] text-black px-4 font-medium py-2 rounded-full shadow-2xl transition-all hover:scale-110 text-lg mb-3"
             style={{
               boxShadow: '0 0 30px rgba(33, 231, 134, 0.8)',
               animation: 'pulse 2s infinite'
             }}
           >
-            🛠️ 디버그 패널
+            🛠️ UI 패널
           </button>
         )}
       </div>
     </section>
   );
 };
-

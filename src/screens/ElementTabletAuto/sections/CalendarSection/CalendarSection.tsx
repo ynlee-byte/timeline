@@ -4,6 +4,9 @@ import { Button } from "../../../../components/ui/button";
 import { useWindowWidth } from "../../../../breakpoints";
 import { ConfirmedBadge } from "../../../../components/ConfirmedBadge";
 import { PendingBadge } from "../../../../components/PendingBadge";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { confirmCalendar, hasConfirmedCalendarThisWeek } from "../../../../lib/services/calendarService";
+import { canWriteReview } from "../../../../lib/utils/dateUtils";
 
 // 전체 이벤트 리스트 (여러 날에 걸친 이벤트)
 // 이전 달(9월) 날짜는 음수로 표시
@@ -69,19 +72,41 @@ export const CalendarSection = (): JSX.Element => {
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
+  const { user } = useAuth();
   const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showMaxAlert, setShowMaxAlert] = useState(false);
+  const [canShowFooter, setCanShowFooter] = useState(true); // 초기값 true로 hydration 에러 방지
 
-  // localStorage에서 일정 확인 상태 불러오기
+  // 클라이언트에서만 요일 체크
   useEffect(() => {
-    const confirmed = localStorage.getItem('calendarConfirmed');
-    if (confirmed === 'true') {
-      setIsConfirmed(true);
-    }
+    setCanShowFooter(canWriteReview());
   }, []);
+
+  // DevDebugPanel의 요일 변경 이벤트 감지
+  useEffect(() => {
+    const handleDayChanged = () => {
+      setCanShowFooter(canWriteReview());
+    };
+
+    window.addEventListener('dayChanged', handleDayChanged);
+    return () => window.removeEventListener('dayChanged', handleDayChanged);
+  }, []);
+
+  // Supabase에서 일정 확인 상태 불러오기
+  useEffect(() => {
+    const checkConfirmation = async () => {
+      if (user) {
+        const confirmed = await hasConfirmedCalendarThisWeek();
+        setIsConfirmed(confirmed);
+      } else {
+        setIsConfirmed(false);
+      }
+    };
+    checkConfirmation();
+  }, [user]);
 
   const handleEventClick = (eventId: number) => {
     // 해당 이벤트 찾기
@@ -114,14 +139,21 @@ export const CalendarSection = (): JSX.Element => {
     });
   };
 
-  const handleConfirm = () => {
-    setIsModalOpen(false);
-    setIsConfirmed(true);
-    localStorage.setItem('calendarConfirmed', 'true');
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-    }, 4000);
+  const handleConfirm = async () => {
+    try {
+      // Supabase에 저장
+      await confirmCalendar();
+
+      setIsModalOpen(false);
+      setIsConfirmed(true);
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 4000);
+    } catch (error) {
+      console.error('Error confirming calendar:', error);
+      alert('일정 확인 저장 중 오류가 발생했습니다.');
+    }
   };
 
   return (
@@ -219,7 +251,7 @@ export const CalendarSection = (): JSX.Element => {
         )}
 
         {/* Calendar Grid */}
-        <div className={`bg-[#1a1f26] rounded-lg overflow-hidden ${isTablet ? 'max-w-[686px] mx-auto' : ''}`}>
+        <div className={`bg-[#1a1f26] rounded-lg overflow-visible relative ${isTablet ? 'max-w-[686px] mx-auto' : ''}`}>
           {isMobile ? (
             <>
               {/* 날짜 선택기 */}
@@ -803,22 +835,13 @@ export const CalendarSection = (): JSX.Element => {
               );
             })
           )}
-        </div>
 
-        {/* Footer */}
-        <div className={`mt-0 flex flex-col items-center bg-[#141b22] relative overflow-hidden ${
-          isConfirmed
-            ? (isMobile ? 'py-[10px] rounded-b-lg' : isTablet ? 'py-[30px] rounded-b-lg' : 'py-[40px] rounded-b-lg')
-            : isMobile
-              ? 'py-6 px-4 gap-6 rounded-b-lg'
-              : 'py-10 px-8 gap-6 rounded-b-lg'
-        } ${isTablet ? 'max-w-[686px] mx-auto' : ''}`}>
-          {/* Footer 오른쪽 하단 빛나는 곡선 border */}
+          {/* 우측 하단 빛나는 곡선 border */}
           {!isMobile && (
-            <div className="absolute -bottom-[10px] -right-[1px] w-[250px] h-[60px] pointer-events-none">
+            <div className="absolute -bottom-[10px] -right-[1px] w-[250px] h-[60px] pointer-events-none z-10">
               <svg width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <filter id="glow-footer">
+                  <filter id="glow-calendar-footer">
                     <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                     <feMerge>
                       <feMergeNode in="coloredBlur"/>
@@ -826,60 +849,65 @@ export const CalendarSection = (): JSX.Element => {
                     </feMerge>
                   </filter>
                 </defs>
-                <path d="M250 0 C250 30, 250 45, 220 45 L0 45" stroke="#21e786" strokeWidth="3" fill="none" filter="url(#glow-footer)" strokeLinecap="round"/>
+                <path d="M250 0 C250 30, 250 45, 220 45 L0 45" stroke="#21e786" strokeWidth="3" fill="none" filter="url(#glow-calendar-footer)" strokeLinecap="round"/>
               </svg>
             </div>
           )}
-          {/* 일정 확인 후에는 내용 숨김 */}
-          {isConfirmed ? null : (
-            <>
-              <div className="flex flex-col items-center gap-3">
-                {isMobile ? (
-                  <>
-                    <div className="text-center">
-                      <div className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">클럽 일정</div>
-                      <p className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-xs mt-1 mb-1">
-                        을 확인하고 3개의 기대 표현을 보내주세요!ㅇㅇㅇㄴ
-                      </p>
-                      <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
-                        클럽 전체 일정은 캘린더를 통해 확인해주세요
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-2xl">
-                      <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-[32px]">클럽 일정</span>을 확인하고 3개의 기대 표현을 보내주세요!
-                    </h3>
-                    <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-sm">
-                      활동 일정 클릭 시 자동 선택됩니다.
-                    </p>
-                    <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
-                      '기대'는 앞으로 2주 내의 클럽 활동 중 두근두근 기대가 되는 활동을 표시하는 나의 '찜콩'입니다. (테스트2)
-                      <br />
-                      클럽의 중요한 활동을 놓치는 일 없이 다 후루룹짭짭..해서, 성장의 근수저가 되보자구요!
-                    </p>
-                  </>
-                )}
-              </div>
-
-              <Button
-                className={`inline-flex items-center justify-center gap-2 h-auto bg-[#21e786] hover:bg-[#1bc970] ${isMobile ? 'px-4 py-2 w-[204px]' : 'px-8 py-3'}`}
-                onClick={() => {
-                  if (isMobile) {
-                    router.push('/calendar-events');
-                  } else {
-                    setIsModalOpen(true);
-                  }
-                }}
-              >
-                <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#040b11] ${isMobile ? 'text-sm' : 'text-base'}`}>
-                  일정 확인하고 기대 표현 보내기
-                </span>
-              </Button>
-            </>
-          )}
         </div>
+
+        {/* Footer - 월,화,수이고 일정 확인 전에만 표시 */}
+        {canShowFooter && !isConfirmed && (
+          <div className={`mt-0 flex flex-col items-center bg-[#141b22] relative overflow-hidden ${
+            isMobile
+              ? 'py-6 px-4 gap-6 rounded-b-lg'
+              : 'py-10 px-8 gap-6 rounded-b-lg'
+          } ${isTablet ? 'max-w-[686px] mx-auto' : ''}`}>
+            <div className="flex flex-col items-center gap-3">
+              {isMobile ? (
+                <>
+                  <div className="text-center">
+                    <div className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">클럽 일정</div>
+                    <p className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-xs mt-1 mb-1">
+                      을 확인하고 3개의 기대 표현을 보내주세요!ㅇㅇㅇㄴ
+                    </p>
+                    <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
+                      클럽 전체 일정은 캘린더를 통해 확인해주세요
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-2xl">
+                    <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-[32px]">클럽 일정</span>을 확인하고 3개의 기대 표현을 보내주세요!
+                  </h3>
+                  <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-sm">
+                    활동 일정 클릭 시 자동 선택됩니다.
+                  </p>
+                  <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
+                    '기대'는 앞으로 2주 내의 클럽 활동 중 두근두근 기대가 되는 활동을 표시하는 나의 '찜콩'입니다. (테스트2)
+                    <br />
+                    클럽의 중요한 활동을 놓치는 일 없이 다 후루룹짭짭..해서, 성장의 근수저가 되보자구요!
+                  </p>
+                </>
+              )}
+            </div>
+
+            <Button
+              className={`inline-flex items-center justify-center gap-2 h-auto bg-[#21e786] hover:bg-[#1bc970] ${isMobile ? 'px-4 py-2 w-[204px]' : 'px-8 py-3'}`}
+              onClick={() => {
+                if (isMobile) {
+                  router.push('/calendar-events');
+                } else {
+                  setIsModalOpen(true);
+                }
+              }}
+            >
+              <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#040b11] ${isMobile ? 'text-sm' : 'text-base'}`}>
+                일정 확인하고 기대 표현 보내기
+              </span>
+            </Button>
+          </div>
+        )}
         </div>
       </div>
 
