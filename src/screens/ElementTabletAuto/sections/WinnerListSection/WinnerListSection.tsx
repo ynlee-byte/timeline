@@ -10,6 +10,8 @@ import buttonInspireCheck from "../../../../icons/buttonInspireCheck.png";
 import iconMedal from "../../../../icons/iconMedal.png";
 import iconMedal2 from "../../../../icons/iconMedal2.png";
 import { getWinnerCards, NextChallengerCard } from "../../../../lib/services/nextChallengerService";
+import { AlertModal } from "../../../../components/AlertModal";
+import { sendRecognitionToJudgment, cancelRecognitionToJudgment, getUserSentRecognitionsToJudgments } from "../../../../lib/services/recognitionJudgmentService";
 
 const winnerDataDummy = [
   {
@@ -142,10 +144,14 @@ export const WinnerListSection = (): JSX.Element => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
-  const [inspireClicks, setInspireClicks] = useState<Record<number, number>>({});
+  const [inspireClicks, setInspireClicks] = useState<Record<string, number>>({});
   const [isPaused, setIsPaused] = useState(false);
   const [winnerData, setWinnerData] = useState<NextChallengerCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [alertModal, setAlertModal] = useState<{ isOpen: boolean; message: string }>({
+    isOpen: false,
+    message: '',
+  });
 
   const cardsPerPage = isMobile || isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(winnerData.length / cardsPerPage));
@@ -155,13 +161,22 @@ export const WinnerListSection = (): JSX.Element => {
     (currentPage + 1) * cardsPerPage
   );
 
-  // Load Winner cards from DB
+  // Load Winner cards from DB and user's sent recognitions
   useEffect(() => {
     const loadWinnerData = async () => {
       setIsLoading(true);
       try {
+        // Load winner cards
         const cards = await getWinnerCards();
         setWinnerData(cards);
+
+        // Load user's sent recognitions
+        const sentRecognitions = await getUserSentRecognitionsToJudgments();
+        const clicks: Record<string, number> = {};
+        sentRecognitions.forEach((recognition: any) => {
+          clicks[recognition.judgment_id] = 1;
+        });
+        setInspireClicks(clicks);
       } catch (error) {
         console.error('Error loading winner cards:', error);
       } finally {
@@ -182,12 +197,32 @@ export const WinnerListSection = (): JSX.Element => {
     };
   }, []);
 
-  const handleInspireClick = (winnerId: number) => {
-    setInspireClicks((prev) => {
-      const currentClicks = prev[winnerId] || 0;
-      // Toggle: if already clicked, reset to 0, otherwise set to 1
-      return { ...prev, [winnerId]: currentClicks > 0 ? 0 : 1 };
-    });
+  const handleInspireClick = async (judgmentId: string, toUserId: string) => {
+    const isCurrentlyClicked = (inspireClicks[judgmentId] || 0) > 0;
+
+    try {
+      if (isCurrentlyClicked) {
+        // Cancel recognition
+        await cancelRecognitionToJudgment(judgmentId);
+        setInspireClicks((prev) => ({ ...prev, [judgmentId]: 0 }));
+      } else {
+        // Send recognition
+        await sendRecognitionToJudgment(judgmentId, toUserId);
+        setInspireClicks((prev) => ({ ...prev, [judgmentId]: 1 }));
+
+        // Show success modal
+        setAlertModal({
+          isOpen: true,
+          message: '당신의 목표 달성이 저에게 귀감이 되었습니다!😍',
+        });
+      }
+    } catch (error: any) {
+      // Show error modal
+      setAlertModal({
+        isOpen: true,
+        message: error.message || '오류가 발생했습니다.',
+      });
+    }
   };
 
   const handlePrevPage = () => {
@@ -387,8 +422,8 @@ export const WinnerListSection = (): JSX.Element => {
                           right: (inspireClicks[winner.id] || 0) > 0 ? '1.85px' : '8px'
                         }}
                         alt="Badge"
-                        src={(inspireClicks[winner.id] || 0) > 0 ? buttonInspireCheck.src : "/badgeIcon.png"}
-                        onClick={() => handleInspireClick(winner.id)}
+                        src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : "/badgeIcon.png"}
+                        onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
                       />
                     </div>
 
@@ -453,8 +488,8 @@ export const WinnerListSection = (): JSX.Element => {
                       <img
                         className="absolute cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
                         alt="Inspire button"
-                        src={(inspireClicks[winner.id] || 0) > 0 ? buttonInspireCheck.src : buttonInspire.src}
-                        onClick={() => handleInspireClick(winner.id)}
+                        src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : buttonInspire.src}
+                        onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
                         style={{
                           width: (inspireClicks[winner.id] || 0) > 0 ? '70px' : '50px',
                           height: (inspireClicks[winner.id] || 0) > 0 ? '70px' : '50px',
@@ -504,6 +539,13 @@ export const WinnerListSection = (): JSX.Element => {
           </div>
         </div>
       </div>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ isOpen: false, message: '' })}
+        message={alertModal.message}
+      />
     </section>
   );
 };

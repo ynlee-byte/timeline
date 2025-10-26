@@ -10,6 +10,8 @@ import { canWriteReview, canWriteGoal, canWriteJudgment } from "../../../../lib/
 import { hasWrittenReviewThisWeek, getLatestReview, Review } from "../../../../lib/services/reviewService";
 import { getLatestJudgment, Judgment } from "../../../../lib/services/judgmentService";
 import { getLatestGoal, Goal } from "../../../../lib/services/goalService";
+import { getReceivedApplauseCount } from "../../../../lib/services/applauseService";
+import { getReceivedRecognitionCount } from "../../../../lib/services/recognitionJudgmentService";
 import { useAuth } from "../../../../contexts/AuthContext";
 import cardMy02 from "../../../../assets/cardMy02.png";
 import cardMy04 from "../../../../assets/cardMy04.png";
@@ -46,6 +48,7 @@ export const MainContentSection = (): JSX.Element => {
   const [latestReview, setLatestReview] = useState<Review | null>(null);
   const [latestJudgment, setLatestJudgment] = useState<Judgment | null>(null);
   const [latestGoal, setLatestGoal] = useState<Goal | null>(null);
+  const [receivedReactionsCount, setReceivedReactionsCount] = useState<number>(0);
 
   // 현재 요일 기반으로 작성 가능 기간 업데이트
   const updatePeriodBasedOnDay = useCallback(() => {
@@ -171,7 +174,7 @@ export const MainContentSection = (): JSX.Element => {
     }
   }, [user]); // user가 변경될 때마다 리뷰 가져오기
 
-  // 최신 판정 데이터 가져오기
+  // 최신 판정 데이터 및 받은 귀감/박수 개수 가져오기
   useEffect(() => {
     const fetchLatestJudgment = async () => {
       const judgment = await getLatestJudgment();
@@ -179,6 +182,19 @@ export const MainContentSection = (): JSX.Element => {
       // 판정이 있으면 완료 상태로 설정
       if (judgment) {
         setIsJudgmentCompleted(judgment.achieved ? 'success' : 'fail');
+
+        // 받은 귀감/박수 개수 가져오기
+        if (user) {
+          if (judgment.achieved) {
+            // 성공한 경우 귀감 개수
+            const count = await getReceivedRecognitionCount(user.id);
+            setReceivedReactionsCount(count);
+          } else {
+            // 실패한 경우 박수 개수
+            const count = await getReceivedApplauseCount(user.id);
+            setReceivedReactionsCount(count);
+          }
+        }
       }
     };
 
@@ -189,6 +205,7 @@ export const MainContentSection = (): JSX.Element => {
       // 로그아웃 시 state 초기화
       setLatestJudgment(null);
       setIsJudgmentCompleted(false);
+      setReceivedReactionsCount(0);
     }
   }, [user]); // user가 변경될 때마다 판정 가져오기
 
@@ -718,7 +735,7 @@ export const MainContentSection = (): JSX.Element => {
                                 className="w-4 h-4"
                               />
                               <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>
-                                22
+                                {receivedReactionsCount}
                               </span>
                             </div>
                           </div>
@@ -859,7 +876,7 @@ export const MainContentSection = (): JSX.Element => {
                               활동
                             </p>
                             <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
-                              앵그레 Wisdom
+                              엥크레 Wisdom
                             </h3>
                           </div>
 
@@ -1321,7 +1338,7 @@ export const MainContentSection = (): JSX.Element => {
                                 src="/icon.png"
                               />
                               <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-[14px] tracking-[0] leading-[normal]">
-                                22
+                                {receivedReactionsCount}
                               </span>
                             </div>
                           </div>
@@ -1404,7 +1421,7 @@ export const MainContentSection = (): JSX.Element => {
                                 />
                               </div>
                               <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-[14px] tracking-[0] leading-[normal] leading-[20px]">
-                                8
+                                {receivedReactionsCount}
                               </span>
                             </div>
                           </div>
@@ -1561,7 +1578,7 @@ export const MainContentSection = (): JSX.Element => {
                               활동
                             </p>
                             <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-[18px] tracking-[0] leading-[normal]">
-                              앵그레 Wisdom
+                              엥크레 Wisdom
                             </h3>
                           </div>
 

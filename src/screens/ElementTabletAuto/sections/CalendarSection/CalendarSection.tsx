@@ -11,7 +11,7 @@ import { canWriteReview } from "../../../../lib/utils/dateUtils";
 // 전체 이벤트 리스트 (여러 날에 걸친 이벤트)
 // 이전 달(9월) 날짜는 음수로 표시
 const events = [
-  { id: 1, text: "앵크레 에세이", startDate: -29, endDate: 1, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📓" },
+  { id: 1, text: "엥크레 에세이", startDate: -29, endDate: 1, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📓" },
   { id: 2, text: "중앙 시작 브리핑", startDate: -29, endDate: -29, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📢" },
   { id: 3, text: "엥크레 Wisdom", startDate: 1, endDate: 2, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "▼" },
   { id: 4, text: "중앙 중간 브리핑", startDate: 1, endDate: 1, color: "-29일 bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📢" },
@@ -21,17 +21,17 @@ const events = [
   { id: 8, text: "중앙 시작 브리핑", startDate: 6, endDate: 6, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📢" },
   { id: 9, text: "앵크레 Wisdom", startDate: 8, endDate: 9, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
   { id: 10, text: "중앙 중간 브리핑", startDate: 8, endDate: 8, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📢" },
-  { id: 11, text: "앵크레 인포데스크", startDate: 9, endDate:11, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "💬" },
+  { id: 11, text: "엥크레 인포데스크", startDate: 9, endDate:11, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "💬" },
   { id: 12, text: "중앙 마감 브리핑", startDate: 11, endDate: 11, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📢" },
   { id: 13, text: "앵고라 주제 공모", startDate: 13, endDate: 15, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
   { id: 14, text: "콘텐츠 초안 제출", startDate: 13, endDate: 13, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]", icon: "📝" },
   { id: 15, text: "클럽 캘린더 공표", startDate: 15, endDate: 15, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📅" },
-  { id: 16, text: "앵고라 주제 공표", startDate: 16, endDate: 16, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 16, text: "엥고라 주제 공표", startDate: 16, endDate: 16, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
   { id: 17, text: "커리어 일정 공표", startDate: 16, endDate: 16, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📄" },
   { id: 18, text: "주차 결과물 제출", startDate: 16, endDate: 16, color: "bg-[#e6feee]", textColor: "text-[#04ae3e]", icon: "🗓️" },
   { id: 19, text: "앵고라 진행", startDate: 17, endDate: 17, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
   { id: 20, text: "콘텐츠 최종 제출", startDate: 17, endDate: 17, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]", icon: "📝" },
-  { id: 21, text: "앵무새 발표", startDate: 18, endDate: 18, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 21, text: "엥무새 발표", startDate: 18, endDate: 18, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
 ];
 
 /**

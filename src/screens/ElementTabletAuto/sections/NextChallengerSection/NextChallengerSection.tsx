@@ -276,7 +276,7 @@ export const NextChallengerSection = (): JSX.Element => {
         // Show success modal
         setAlertModal({
           isOpen: true,
-          message: '당신은 나에게 귀감이 되었습니다!',
+          message: '당신의 목표는 달성되지 못했지만, 시도와 도전에 충분히 박수드리고 싶습니다! 다음 기회를 또 노려보자구요!',
         });
       }
     } catch (error: any) {
@@ -334,7 +334,7 @@ export const NextChallengerSection = (): JSX.Element => {
         <header className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} gap-2.5 w-full relative`}>
           {/* 좌측 장식 이미지 */}
           {!isMobile && (
-            <div className="absolute left-0 top-1/2 -translate-y-[calc(50%+50px)] opacity-60">
+            <div className="absolute left-0 top-1/2 -translate-y-[calc(50%+50px)] opacity-60 z-20">
               <img
                 className="w-auto h-auto"
                 alt="Decoration"
@@ -345,7 +345,7 @@ export const NextChallengerSection = (): JSX.Element => {
 
           {/* 우측 장식 이미지 */}
           {!isMobile && (
-            <div className="absolute right-0 top-1/2 -translate-y-[calc(50%+50px)] opacity-60">
+            <div className="absolute right-0 top-1/2 -translate-y-[calc(50%+50px)] opacity-60 z-20">
               <img
                 className="w-auto h-auto"
                 alt="Decoration"
@@ -583,6 +583,7 @@ export const NextChallengerSection = (): JSX.Element => {
         isOpen={alertModal.isOpen}
         onClose={() => setAlertModal({ isOpen: false, message: '' })}
         message={alertModal.message}
+        type="applause"
       />
     </section>
   );
