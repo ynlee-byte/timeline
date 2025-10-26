@@ -9,8 +9,9 @@ import buttonInspire from "../../../../icons/buttonInspire.png";
 import buttonInspireCheck from "../../../../icons/buttonInspireCheck.png";
 import iconMedal from "../../../../icons/iconMedal.png";
 import iconMedal2 from "../../../../icons/iconMedal2.png";
+import { getWinnerCards, NextChallengerCard } from "../../../../lib/services/nextChallengerService";
 
-const winnerData = [
+const winnerDataDummy = [
   {
     id: 1,
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
@@ -143,6 +144,9 @@ export const WinnerListSection = (): JSX.Element => {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [inspireClicks, setInspireClicks] = useState<Record<number, number>>({});
   const [isPaused, setIsPaused] = useState(false);
+  const [winnerData, setWinnerData] = useState<NextChallengerCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const cardsPerPage = isMobile || isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(winnerData.length / cardsPerPage));
 
@@ -150,6 +154,33 @@ export const WinnerListSection = (): JSX.Element => {
     currentPage * cardsPerPage,
     (currentPage + 1) * cardsPerPage
   );
+
+  // Load Winner cards from DB
+  useEffect(() => {
+    const loadWinnerData = async () => {
+      setIsLoading(true);
+      try {
+        const cards = await getWinnerCards();
+        setWinnerData(cards);
+      } catch (error) {
+        console.error('Error loading winner cards:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadWinnerData();
+
+    // 판정 업데이트 이벤트 리스너
+    const handleJudgmentUpdate = () => {
+      console.log('Judgment updated! Refreshing winner cards...');
+      loadWinnerData();
+    };
+
+    window.addEventListener('judgmentUpdated', handleJudgmentUpdate);
+    return () => {
+      window.removeEventListener('judgmentUpdated', handleJudgmentUpdate);
+    };
+  }, []);
 
   const handleInspireClick = (winnerId: number) => {
     setInspireClicks((prev) => {
@@ -200,9 +231,9 @@ export const WinnerListSection = (): JSX.Element => {
   }, [handleNextPage, isPaused]);
 
   return (
-    <section className={`flex flex-col items-start ${isMobile ? 'py-10' : isTablet ? 'px-10 py-16' : 'px-[120px] py-20'} w-full bg-[#040b11]`}>
+    <section className={`flex flex-col items-start ${isMobile ? 'py-10 min-h-[600px]' : isTablet ? 'px-10 py-16 min-h-[900px]' : 'px-[120px] py-20 min-h-[1100px]'} w-full bg-[#040b11]`}>
       <div className={`flex flex-col ${isMobile ? 'items-start px-5' : 'items-center'} w-full max-w-[1680px] mx-auto ${isMobile ? 'gap-6' : 'gap-[50px]'} ${isTablet ? 'relative z-10' : ''}`}>
-        <header className={`inline-flex flex-col ${isMobile ? 'items-start mb-6' : 'items-center mb-[50px]'} gap-2.5`}>
+        <header className={`inline-flex flex-col ${isMobile ? 'items-start mb-6' : 'items-center mb-[50px]'} gap-2.5 relative z-10`}>
           {isMobile ? (
             <div className="relative pt-6">
               <h2 className="[font-family:'Ria']  w-fit bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent tracking-[0] leading-[normal] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
@@ -336,7 +367,7 @@ export const WinnerListSection = (): JSX.Element => {
                       {/* Left content */}
                       <div className="flex flex-col items-start justify-center flex-1 max-w-full">
                         <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] mb-1 overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>
-                          {winner.name}
+                          {winner.crewName}
                         </p>
                         <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white mb-1 overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
                           {winner.title}
@@ -401,7 +432,7 @@ export const WinnerListSection = (): JSX.Element => {
                               </h3>
 
                               <p className="flex items-center justify-center w-fit [font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-base tracking-[-0.48px] leading-[19.2px] whitespace-nowrap">
-                                {winner.name}
+                                {winner.crewName}
                               </p>
 
                               {/* Crown Icon */}

@@ -268,6 +268,9 @@ export const MainContentSection = (): JSX.Element => {
     // 판정 제출 후 최신 판정 데이터 다시 가져오기
     const judgment = await getLatestJudgment();
     setLatestJudgment(judgment);
+
+    // Winner/NextChallenger 섹션에 새로고침 이벤트 발생
+    window.dispatchEvent(new CustomEvent('judgmentUpdated'));
   };
 
   const handleGoalComplete = async () => {
@@ -280,7 +283,7 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   return (
-    <section className={`flex flex-col items-center justify-center ${isMobile ? 'gap-6 px-5 py-10' : isTablet ? 'gap-[40px] px-10 py-16' : 'gap-[50px] px-[120px] py-20'} relative w-full bg-[#040b11] overflow-hidden`}>
+    <section className={`flex flex-col items-center justify-center ${isMobile ? 'gap-6 px-5 py-10 min-h-[800px]' : isTablet ? 'gap-[40px] px-10 py-16 min-h-[1000px]' : 'gap-[50px] px-[120px] py-20 min-h-[1200px]'} relative w-full bg-[#040b11] overflow-hidden`}>
       <style>{`
         @keyframes fadeIn {
           from {
