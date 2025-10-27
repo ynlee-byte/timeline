@@ -165,6 +165,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setError(null);
+                // 탭 전환 시 입력 필드 초기화
+                setEmail('');
+                setPassword('');
+                setName('');
               }}
               className="text-sm text-[#21e786] hover:text-[#1bc876] transition-colors [font-family:'Pretendard-Regular',Helvetica]"
             >
