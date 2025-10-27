@@ -144,7 +144,7 @@ const recognitionCardsDefault = [
     description: "사용자들이 요청한 새 기능을 개발하겠습니다!",
     stars: 4,
     badge: "응원",
-ㅏ    badgeType: "support",
+    badgeType: "support",
   },
   {
     id: 15,
