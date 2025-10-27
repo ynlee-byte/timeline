@@ -6,7 +6,7 @@ import { useWindowWidth } from "../../../../breakpoints";
 import { ReviewCardModal, GoalCardModal, JudgmentCardModal } from "./components";
 import { LoginModal } from "../../../../components/LoginModal";
 import { useState, useEffect, useCallback } from "react";
-import { canWriteReview, canWriteGoal, canWriteJudgment } from "../../../../lib/utils/dateUtils";
+import { canWriteReview, canWriteGoal, canWriteJudgment, getCurrentWeekMonday, getCurrentWeekSunday, formatDateWithDay } from "../../../../lib/utils/dateUtils";
 import { hasWrittenReviewThisWeek, getLatestReview, Review } from "../../../../lib/services/reviewService";
 import { getLatestJudgment, Judgment } from "../../../../lib/services/judgmentService";
 import { getLatestGoal, Goal } from "../../../../lib/services/goalService";
@@ -95,9 +95,20 @@ export const MainContentSection = (): JSX.Element => {
     activity: "위즈덤 활동 피드백 제공하기",
     confidenceMessage: "이번주 위즈덤은 내가 제일 빨리 제출해야지 1등으로 해서 다른 사람들의 찬사를 받아야겠다 !!",
     rating: 5,
-    startDate: "2025.10.20 (월)",
-    endDate: "2025.10.26 (일)"
+    startDate: "",
+    endDate: ""
   });
+
+  // 컴포넌트 마운트 시 현재 주의 날짜 계산
+  useEffect(() => {
+    const monday = getCurrentWeekMonday();
+    const sunday = getCurrentWeekSunday();
+    setWeeklyGoal(prev => ({
+      ...prev,
+      startDate: formatDateWithDay(monday),
+      endDate: formatDateWithDay(sunday)
+    }));
+  }, []);
 
   // localStorage에서 일정 확인 상태 불러오기
   useEffect(() => {

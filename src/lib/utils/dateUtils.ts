@@ -121,3 +121,39 @@ export function formatDate(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * Get the Monday of the current week
+ */
+export function getCurrentWeekMonday(): Date {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 일요일이면 -6, 아니면 1-dayOfWeek
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+/**
+ * Get the Sunday of the current week (6 days after Monday)
+ */
+export function getCurrentWeekSunday(): Date {
+  const monday = getCurrentWeekMonday();
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return sunday;
+}
+
+/**
+ * Format date to "YYYY.MM.DD (요일)" format
+ */
+export function formatDateWithDay(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dayOfWeek = date.getDay();
+  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+  return `${year}.${month}.${day} (${dayNames[dayOfWeek]})`;
+}
