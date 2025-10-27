@@ -1,78 +1,159 @@
-import { supabase } from "../supabase/client";
+import { createClient } from '../supabase/client';
 
 export interface NextChallengerCard {
-  id: string | number;
-  user_id?: string;
-  userId?: string;
-  title: string;
-  description: string;
-  status?: "pending" | "completed" | "winner";
-  created_at?: string;
-  updated_at?: string;
-  applause_count?: number;
-  recognition_count?: number;
+  id: number;
+  userId: string;
+  judgment_id?: string; // UUID for Winner List cards
   profileImage?: string;
-  crewName?: string;
-  bgImage?: string;
-  bgSubImage?: string;
-  badgeImage?: string;
-  [key: string]: any;
+  title: string;
+  crewName: string;
+  description: string;
+  bgImage: string;
+  bgSubImage: string;
+  badgeImage: string;
+  created_at: string;
 }
 
 /**
- * Get all next challenger cards (judgments where achieved = false)
- * These are users who didn't achieve their goals
+ * 목표 달성에 실패한 판정 카드 목록 가져오기 (Next Challenger)
  */
 export async function getNextChallengerCards(): Promise<NextChallengerCard[]> {
-  try {
-    const { data, error } = await supabase
-      .from("judgments")
-      .select(`
-        *,
-        goal:goals(*),
-        profile:profiles(*)
-      `)
-      .eq("achieved", false)
-      .order("created_at", { ascending: false });
+  const supabase = createClient();
 
-    if (error) {
-      console.warn("Database not configured or table missing, using fallback data");
-      return [];
-    }
+  // 먼저 모든 판정 데이터 확인
+  const { data: allJudgments } = await supabase
+    .from('judgments')
+    .select('id, achieved, comment, created_at')
+    .order('created_at', { ascending: false });
 
-    return data || [];
-  } catch (error) {
-    console.warn("Database error, using fallback data:", error);
+  console.log('All judgments in DB:', allJudgments);
+
+  // achieved: false인 판정 데이터 가져오기
+  const { data: judgments, error } = await supabase
+    .from('judgments')
+    .select('id, user_id, comment, created_at, achieved')
+    .eq('achieved', false)
+    .order('created_at', { ascending: false })
+    .limit(20); // 최근 20개만
+
+  if (error) {
+    console.error('Error fetching next challenger cards:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     return [];
   }
+
+  console.log('Judgments data:', judgments);
+  console.log('Number of judgments found:', judgments?.length || 0);
+
+  if (!judgments || judgments.length === 0) {
+    console.log('No judgments found with achieved: false');
+    return [];
+  }
+
+  // 각 판정에 대해 프로필 정보 가져오기
+  const cardsWithProfiles = await Promise.all(
+    judgments.map(async (judgment: any, index: number) => {
+      // 프로필 정보 조회
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', judgment.user_id)
+        .single();
+
+      // 배경 이미지 순환
+      const bgImages = [
+        "https://c.animaapp.com/O1XpzcZm/img/bg-5.svg",
+        "https://c.animaapp.com/O1XpzcZm/img/bg-6.svg",
+        "https://c.animaapp.com/O1XpzcZm/img/bg-7.svg"
+      ];
+
+      const badgeImages = [
+        "https://c.animaapp.com/O1XpzcZm/img/rectangle-34625310.svg",
+        "https://c.animaapp.com/O1XpzcZm/img/rectangle-34625310-1.svg",
+        "https://c.animaapp.com/O1XpzcZm/img/rectangle-34625310-2.svg"
+      ];
+
+      return {
+        id: index + 1, // 순차적인 ID
+        userId: judgment.user_id,
+        profileImage: profile?.avatar_url || "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
+        title: "지난주 목표", // 나중에 goal 정보와 연결
+        crewName: profile?.full_name ? `${profile.full_name} 크루` : "익명 크루",
+        description: judgment.comment,
+        bgImage: bgImages[index % bgImages.length],
+        bgSubImage: "https://c.animaapp.com/O1XpzcZm/img/bgsub-17@2x.png",
+        badgeImage: badgeImages[index % badgeImages.length],
+        created_at: judgment.created_at
+      };
+    })
+  );
+
+  return cardsWithProfiles;
 }
 
 /**
- * Get all winner cards (judgments where achieved = true)
- * These are users who achieved their goals
+ * 목표 달성에 성공한 판정 카드 목록 가져오기 (Winner List)
  */
 export async function getWinnerCards(): Promise<NextChallengerCard[]> {
-  try {
-    const { data, error } = await supabase
-      .from("judgments")
-      .select(`
-        *,
-        goal:goals(*),
-        profile:profiles(*)
-      `)
-      .eq("achieved", true)
-      .order("created_at", { ascending: false });
+  const supabase = createClient();
 
-    if (error) {
-      console.warn("Database not configured or table missing, using fallback data");
-      return [];
-    }
+  // achieved: true인 판정 데이터 가져오기
+  const { data: judgments, error } = await supabase
+    .from('judgments')
+    .select('id, user_id, comment, created_at')
+    .eq('achieved', true)
+    .order('created_at', { ascending: false })
+    .limit(20); // 최근 20개만
 
-    return data || [];
-  } catch (error) {
-    console.warn("Database error, using fallback data:", error);
+  if (error) {
+    console.error('Error fetching winner cards:', error);
     return [];
   }
+
+  if (!judgments || judgments.length === 0) {
+    return [];
+  }
+
+  // 각 판정에 대해 프로필 정보 가져오기
+  const cardsWithProfiles = await Promise.all(
+    judgments.map(async (judgment: any, index: number) => {
+      // 프로필 정보 조회
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', judgment.user_id)
+        .single();
+
+      // 배경 이미지 순환 (성공 카드는 초록색 배경)
+      const bgImages = [
+        "https://c.animaapp.com/O1XpzcZm/img/bg-2.svg",
+        "https://c.animaapp.com/O1XpzcZm/img/bg-3.svg",
+        "https://c.animaapp.com/O1XpzcZm/img/bg-4.svg"
+      ];
+
+      const badgeImages = [
+        "https://c.animaapp.com/O1XpzcZm/img/rectangle-34625310.svg",
+        "https://c.animaapp.com/O1XpzcZm/img/rectangle-34625310-1.svg",
+        "https://c.animaapp.com/O1XpzcZm/img/rectangle-34625310-2.svg"
+      ];
+
+      return {
+        id: index + 1, // 순차적인 ID
+        userId: judgment.user_id,
+        judgment_id: judgment.id, // UUID for recognition system
+        profileImage: profile?.avatar_url || "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
+        title: "지난주 목표", // 나중에 goal 정보와 연결
+        crewName: profile?.full_name ? `${profile.full_name} 크루` : "익명 크루",
+        description: judgment.comment,
+        bgImage: bgImages[index % bgImages.length],
+        bgSubImage: "https://c.animaapp.com/O1XpzcZm/img/bgsub-17@2x.png",
+        badgeImage: badgeImages[index % badgeImages.length],
+        created_at: judgment.created_at
+      };
+    })
+  );
+
+  return cardsWithProfiles;
 }
 
 /**
@@ -82,6 +163,7 @@ export async function createNextChallengerCard(
   title: string,
   description: string
 ): Promise<NextChallengerCard> {
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -106,7 +188,7 @@ export async function createNextChallengerCard(
     throw error;
   }
 
-  return data;
+  return data as any;
 }
 
 /**
@@ -116,6 +198,7 @@ export async function updateCardStatus(
   cardId: string,
   status: "pending" | "completed" | "winner"
 ): Promise<NextChallengerCard> {
+  const supabase = createClient();
   const achieved = status === "winner";
 
   const { data, error } = await supabase
@@ -129,5 +212,5 @@ export async function updateCardStatus(
     throw error;
   }
 
-  return data;
+  return data as any;
 }

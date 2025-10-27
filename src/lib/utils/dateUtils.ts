@@ -1,47 +1,95 @@
 /**
- * Check if the current day is Monday, Tuesday, or Wednesday
- * Used to determine if review writing is allowed
+ * 날짜 관련 유틸리티 함수
+ */
+
+const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+const MOCK_DAY_KEY = 'mock_day_of_week';
+
+export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0=일요일, 1=월요일, ..., 6=토요일
+
+/**
+ * 현재 요일 가져오기 (개발 모드에서는 모의 요일 사용 가능)
+ */
+export function getCurrentDayOfWeek(): DayOfWeek {
+  if (DEV_MODE && typeof window !== 'undefined') {
+    const mockDay = localStorage.getItem(MOCK_DAY_KEY);
+    if (mockDay !== null) {
+      return parseInt(mockDay) as DayOfWeek;
+    }
+  }
+
+  return new Date().getDay() as DayOfWeek;
+}
+
+/**
+ * 모의 요일 설정 (개발 모드에서만 동작)
+ */
+export function setMockDayOfWeek(day: DayOfWeek): void {
+  if (DEV_MODE && typeof window !== 'undefined') {
+    localStorage.setItem(MOCK_DAY_KEY, day.toString());
+  }
+}
+
+/**
+ * 모의 요일 제거 (실제 요일로 복귀)
+ */
+export function clearMockDayOfWeek(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(MOCK_DAY_KEY);
+  }
+}
+
+/**
+ * 현재 모의 요일 가져오기
+ */
+export function getMockDayOfWeek(): DayOfWeek | null {
+  if (DEV_MODE && typeof window !== 'undefined') {
+    const mockDay = localStorage.getItem(MOCK_DAY_KEY);
+    return mockDay !== null ? (parseInt(mockDay) as DayOfWeek) : null;
+  }
+  return null;
+}
+
+/**
+ * 요일 이름 가져오기
+ */
+export function getDayName(day: DayOfWeek): string {
+  const names = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+  return names[day];
+}
+
+/**
+ * 리뷰 카드 작성 가능 여부 확인 (월, 화, 수)
  */
 export function canWriteReview(): boolean {
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-
-  // Return true for Monday (1), Tuesday (2), and Wednesday (3)
-  return dayOfWeek >= 1 && dayOfWeek <= 3;
+  const day = getCurrentDayOfWeek();
+  // 1=월요일, 2=화요일, 3=수요일
+  return day >= 1 && day <= 3;
 }
 
 /**
- * Check if the current day allows goal writing
- * Can be customized based on your business logic
+ * 목표 카드 작성 가능 여부 확인 (목, 금, 토, 일)
  */
 export function canWriteGoal(): boolean {
-  // Allow goal writing on all days for now
-  return true;
+  const day = getCurrentDayOfWeek();
+  // 0=일요일, 4=목요일, 5=금요일, 6=토요일
+  return day === 0 || (day >= 4 && day <= 6);
 }
 
 /**
- * Check if the current day allows judgment writing
- * Can be customized based on your business logic
+ * 판정 카드 작성 가능 여부 확인 (일)
  */
 export function canWriteJudgment(): boolean {
-  // Allow judgment writing on all days for now
-  return true;
+  const day = getCurrentDayOfWeek();
+  // 0=일요일
+  return day === 0;
 }
 
 /**
- * Get the current day of week (0-6, Sunday = 0)
+ * 개발 모드 여부 확인
  */
-export function getCurrentDayOfWeek(): number {
-  const today = new Date();
-  return today.getDay();
-}
-
-/**
- * Get the name of a day from its number (0-6)
- */
-export function getDayName(dayNumber: number): string {
-  const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-  return days[dayNumber] || '';
+export function isDevMode(): boolean {
+  return DEV_MODE;
 }
 
 /**
