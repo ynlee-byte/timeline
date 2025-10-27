@@ -1,74 +1,62 @@
 "use client";
 
-import React from "react";
-import { Button } from "./ui/button";
+import React from 'react';
 
 interface AlertModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
   message: string;
-  confirmText?: string;
-  cancelText?: string;
-  onConfirm?: () => void;
-  type?: string;
+  type?: 'recognition' | 'applause'; // 귀감(초록) vs 박수(보라)
 }
 
-export function AlertModal({
-  isOpen,
-  onClose,
-  title = "",
-  message,
-  confirmText = "확인",
-  cancelText,
-  onConfirm,
-  type,
-}: AlertModalProps) {
+export const AlertModal: React.FC<AlertModalProps> = ({ isOpen, onClose, message, type = 'recognition' }) => {
   if (!isOpen) return null;
 
-  const handleConfirm = () => {
-    if (onConfirm) {
-      onConfirm();
-    }
-    onClose();
-  };
+  const isApplause = type === 'applause';
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
       onClick={onClose}
     >
       <div
-        className="relative bg-[#1a1f26] rounded-lg p-8 w-[90%] max-w-md"
+        className={`relative bg-[#1a1a1a] border-2 rounded-2xl p-8 w-full max-w-md ${
+          isApplause
+            ? 'border-[#E52B50] shadow-[0_0_30px_rgba(229,43,80,0.3)]'
+            : 'border-[#21e786] shadow-[0_0_30px_rgba(33,231,134,0.3)]'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {title && (
-          <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-xl mb-4">
-            {title}
-          </h2>
-        )}
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className={`absolute top-4 right-4 text-white transition-colors text-2xl ${
+            isApplause ? 'hover:text-[#E52B50]' : 'hover:text-[#21e786]'
+          }`}
+          aria-label="Close modal"
+        >
+          ✕
+        </button>
 
-        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-base mb-6">
-          {message}
-        </p>
+        {/* Message */}
+        <div className="flex flex-col items-center gap-6 mt-2">
+          <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-center text-lg leading-relaxed">
+            {message}
+          </p>
 
-        <div className="flex gap-3 justify-end">
-          {cancelText && (
-            <Button
-              onClick={onClose}
-              className="bg-[#2a2f36] hover:bg-[#3a3f46] text-white px-6 py-2 rounded [font-family:'Pretendard-SemiBold',Helvetica] font-semibold"
-            >
-              {cancelText}
-            </Button>
-          )}
-          <Button
-            onClick={handleConfirm}
-            className="bg-app-primary hover:bg-app-primary/90 text-[#141b22] px-6 py-2 rounded [font-family:'Pretendard-SemiBold',Helvetica] font-semibold"
+          {/* Confirm Button */}
+          <button
+            onClick={onClose}
+            className={`w-full font-semibold py-3 px-6 rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-all ${
+              isApplause
+                ? 'bg-gradient-to-r from-[#6D24C8] to-[#E52B50] hover:from-[#5a1ea8] hover:to-[#c92443] text-white'
+                : 'bg-[#21e786] hover:bg-[#1bc876] text-black'
+            }`}
           >
-            {confirmText}
-          </Button>
+            확인
+          </button>
         </div>
       </div>
     </div>
   );
-}
+};
