@@ -27,11 +27,21 @@ export async function createJudgment(data: CreateJudgmentData) {
     throw new Error('로그인이 필요합니다.');
   }
 
+  // 가장 최근 goal 가져오기 (있다면)
+  const { data: latestGoal } = await supabase
+    .from('goals')
+    .select('id')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
   const { data: judgment, error } = await supabase
     .from('judgments')
     .insert([
       {
         user_id: user.id,
+        goal_id: latestGoal?.id || null, // 최근 목표가 있으면 연결, 없으면 null
         achieved: data.achieved,
         comment: data.comment,
       }
