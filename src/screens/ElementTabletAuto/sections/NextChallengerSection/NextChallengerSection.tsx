@@ -256,8 +256,9 @@ export const NextChallengerSection = (): JSX.Element => {
     };
   }, []);
 
-  const handleApplauseClick = async (cardId: number) => {
-    const isCurrentlyClicked = (applauseClicks[cardId] || 0) > 0;
+  const handleApplauseClick = async (cardId: string | number) => {
+    const numericId = typeof cardId === 'string' ? parseInt(cardId, 10) : cardId;
+    const isCurrentlyClicked = (applauseClicks[numericId] || 0) > 0;
 
     // Find the card to get its userId
     const card = challengerCards.find(c => c.id === cardId);
@@ -266,12 +267,12 @@ export const NextChallengerSection = (): JSX.Element => {
     try {
       if (isCurrentlyClicked) {
         // Cancel applause
-        await cancelApplause(cardId);
-        setApplauseClicks((prev) => ({ ...prev, [cardId]: 0 }));
+        await cancelApplause(numericId);
+        setApplauseClicks((prev) => ({ ...prev, [numericId]: 0 }));
       } else {
         // Send applause
-        await sendApplause(cardId, card.userId);
-        setApplauseClicks((prev) => ({ ...prev, [cardId]: 1 }));
+        await sendApplause(card.userId || card.user_id || "", numericId);
+        setApplauseClicks((prev) => ({ ...prev, [numericId]: 1 }));
 
         // Show success modal
         setAlertModal({
