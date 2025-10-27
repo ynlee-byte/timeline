@@ -28,10 +28,20 @@ export async function getNextChallengerCards(): Promise<NextChallengerCard[]> {
 
   console.log('All judgments in DB:', allJudgments);
 
-  // achieved: false인 판정 데이터 가져오기
+  // achieved: false인 판정 데이터 가져오기 (goal 정보 포함)
   const { data: judgments, error } = await supabase
     .from('judgments')
-    .select('id, user_id, comment, created_at, achieved')
+    .select(`
+      id,
+      user_id,
+      comment,
+      created_at,
+      achieved,
+      goal_id,
+      goals (
+        activity
+      )
+    `)
     .eq('achieved', false)
     .order('created_at', { ascending: false })
     .limit(20); // 최근 20개만
@@ -73,11 +83,14 @@ export async function getNextChallengerCards(): Promise<NextChallengerCard[]> {
         "https://c.animaapp.com/O1XpzcZm/img/rectangle-34625310-2.svg"
       ];
 
+      // goal 정보에서 activity 가져오기
+      const activity = judgment.goals?.activity || "지난주 목표";
+
       return {
         id: index + 1, // 순차적인 ID
         userId: judgment.user_id,
         profileImage: profile?.avatar_url || "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
-        title: "지난주 목표", // 나중에 goal 정보와 연결
+        title: activity, // 실제 목표 활동명
         crewName: profile?.full_name ? `${profile.full_name} 크루` : "익명 크루",
         description: judgment.comment,
         bgImage: bgImages[index % bgImages.length],
@@ -97,10 +110,19 @@ export async function getNextChallengerCards(): Promise<NextChallengerCard[]> {
 export async function getWinnerCards(): Promise<NextChallengerCard[]> {
   const supabase = createClient();
 
-  // achieved: true인 판정 데이터 가져오기
+  // achieved: true인 판정 데이터 가져오기 (goal 정보 포함)
   const { data: judgments, error } = await supabase
     .from('judgments')
-    .select('id, user_id, comment, created_at')
+    .select(`
+      id,
+      user_id,
+      comment,
+      created_at,
+      goal_id,
+      goals (
+        activity
+      )
+    `)
     .eq('achieved', true)
     .order('created_at', { ascending: false })
     .limit(20); // 최근 20개만
@@ -137,12 +159,15 @@ export async function getWinnerCards(): Promise<NextChallengerCard[]> {
         "https://c.animaapp.com/O1XpzcZm/img/rectangle-34625310-2.svg"
       ];
 
+      // goal 정보에서 activity 가져오기
+      const activity = judgment.goals?.activity || "지난주 목표";
+
       return {
         id: index + 1, // 순차적인 ID
         userId: judgment.user_id,
         judgment_id: judgment.id, // UUID for recognition system
         profileImage: profile?.avatar_url || "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
-        title: "지난주 목표", // 나중에 goal 정보와 연결
+        title: activity, // 실제 목표 활동명
         crewName: profile?.full_name ? `${profile.full_name} 크루` : "익명 크루",
         description: judgment.comment,
         bgImage: bgImages[index % bgImages.length],

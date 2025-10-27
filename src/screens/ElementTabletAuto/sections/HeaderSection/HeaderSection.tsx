@@ -59,10 +59,10 @@ export const HeaderSection = (): JSX.Element => {
               </nav>
 
               <div className="flex items-center gap-4">
-                {user && (
+                {user && profile && profile.id === user.id && (
                   <div className="flex items-center gap-2">
                     <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-sm">
-                      {profile?.full_name || '사용자'}
+                      {profile.full_name || '사용자'}
                     </span>
                     <span className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm">
                       ({user.email})
@@ -207,10 +207,10 @@ export const HeaderSection = (): JSX.Element => {
               </nav>
 
               {/* User Info (Mobile/Tablet) */}
-              {user && (
+              {user && profile && profile.id === user.id && (
                 <div className={`flex flex-col gap-1 ${isMobile ? 'mb-4' : 'mb-6'}`}>
                   <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white ${isMobile ? 'text-sm' : 'text-base'}`}>
-                    {profile?.full_name || '사용자'}
+                    {profile.full_name || '사용자'}
                   </span>
                   <span className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] ${isMobile ? 'text-xs' : 'text-sm'}`}>
                     {user.email}

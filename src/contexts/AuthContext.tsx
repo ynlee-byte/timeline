@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      setProfile(null); // Clear profile when checking session
       setLoading(false);
     });
 
@@ -34,6 +35,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (!session?.user) {
+        // Clear profile immediately when user logs out
+        setProfile(null);
+      }
       setLoading(false);
     });
 
@@ -43,6 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Load profile when user changes
   useEffect(() => {
     if (user) {
+      // Clear old profile first to prevent flashing old data
+      setProfile(null);
       getProfile(user.id).then(setProfile).catch(console.error);
     } else {
       setProfile(null);
@@ -69,11 +76,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // 프로필이 이미 존재하면 무시 (트리거가 작동한 경우)
         // Error code 23505는 PostgreSQL의 unique_violation (중복 키)
         // 빈 에러 객체도 트리거가 정상 작동한 것으로 간주
+        const hasRealError = profileError?.message || profileError?.code || profileError?.details || profileError?.hint;
         if (profileError?.code === '23505' ||
             profileError?.message?.includes('duplicate') ||
-            !profileError?.message) {
-          console.log('Profile already exists (created by trigger), skipping manual creation');
+            !hasRealError) {
+          // 트리거가 이미 프로필을 생성한 경우 - 정상 동작
+          console.log('Profile already exists (created by trigger)');
         } else {
+          // 진짜 예상치 못한 에러인 경우만 로깅
           console.error('Unexpected error creating profile:', {
             error: profileError,
             message: profileError?.message,

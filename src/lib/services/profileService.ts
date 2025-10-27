@@ -92,15 +92,20 @@ export async function createProfile(userId: string, full_name: string): Promise<
     .single();
 
   if (error) {
-    console.error('Error creating profile details:', {
-      error,
-      errorMessage: error?.message,
-      errorCode: error?.code,
-      errorDetails: error?.details,
-      errorHint: error?.hint,
-      userId,
-      full_name
-    });
+    // 빈 에러 객체는 트리거가 정상 작동한 것이므로 무시
+    // error가 빈 객체이거나, message/code/details 중 아무것도 없으면 정상으로 간주
+    const hasRealError = error?.message || error?.code || error?.details || error?.hint;
+    if (hasRealError) {
+      console.error('Error creating profile details:', {
+        error,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorDetails: error?.details,
+        errorHint: error?.hint,
+        userId,
+        full_name
+      });
+    }
     throw error;
   }
 
