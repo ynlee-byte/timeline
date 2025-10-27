@@ -161,7 +161,7 @@ export const DevDebugPanel: React.FC = () => {
                 <button
                   key={day}
                   onClick={() => handleSetMockDay(day)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`relative z-[10000] px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     currentDay === day
                       ? 'bg-purple-600 text-white'
                       : 'bg-[#2a2a2a] text-gray-300 hover:bg-[#3a3a3a]'
