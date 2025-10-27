@@ -195,6 +195,13 @@ export const CalendarSection = (): JSX.Element => {
   };
 
   const handleConfirm = async () => {
+    // 로그인 체크
+    if (!user) {
+      alert('로그인이 필요합니다. 로그인 후 이용해주세요.');
+      router.push('/'); // 메인 페이지로 이동하여 로그인 유도
+      return;
+    }
+
     try {
       // Supabase에 저장
       await confirmCalendar();
@@ -205,9 +212,15 @@ export const CalendarSection = (): JSX.Element => {
       setTimeout(() => {
         setShowToast(false);
       }, 4000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error confirming calendar:', error);
-      alert('일정 확인 저장 중 오류가 발생했습니다.');
+      // 에러 메시지 확인
+      if (error.message === '로그인이 필요합니다.') {
+        alert('로그인이 필요합니다. 로그인 후 이용해주세요.');
+        router.push('/'); // 메인 페이지로 이동하여 로그인 유도
+      } else {
+        alert('일정 확인 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+      }
     }
   };
 
