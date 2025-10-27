@@ -10,7 +10,6 @@ import {
   canWriteReview,
   canWriteGoal,
   canWriteJudgment,
-  isDevMode,
   type DayOfWeek
 } from '@/lib/utils/dateUtils';
 import { hasWrittenReviewThisWeek } from '@/lib/services/reviewService';
@@ -69,11 +68,7 @@ export const DevDebugPanel: React.FC = () => {
     window.dispatchEvent(new Event('dayChanged'));
   };
 
-  // 개발 모드가 아니면 렌더링하지 않음
-  if (!isDevMode()) {
-    return null;
-  }
-
+  // 모든 환경에서 표시 (유저가 요일을 조정할 수 있도록)
   const days: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
   const realDay = new Date().getDay() as DayOfWeek;
 
