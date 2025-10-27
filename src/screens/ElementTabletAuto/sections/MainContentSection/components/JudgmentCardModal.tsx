@@ -15,6 +15,8 @@ import noticeModalSuccessMobile from "../../../../../assets/noticeModal-m.png";
 import noticeModalFail from "../../../../../icons/noticeModal-fail.png";
 import noticeModalFailMobile from "../../../../../assets/noticeModal-m2.png";
 import { useWindowWidth } from "../../../../../breakpoints";
+import { useAuth } from "../../../../../contexts/AuthContext";
+import { createJudgment } from "../../../../../lib/services/judgmentService";
 
 // Custom scrollbar styles
 const scrollbarStyles = `
@@ -51,23 +53,61 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
 }) => {
   const [reflectionText, setReflectionText] = useState("");
   const [showNotice, setShowNotice] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [achieved, setAchieved] = useState<boolean | null>(null); // 활동 이행 여부
   const maxLength = 50;
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
   const submitButtonRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   if (!isOpen) return null;
 
-  const handleSubmit = () => {
-    if (reflectionText.trim()) {
+  const handleSubmit = async () => {
+    // 로그인 확인
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    // 활동 이행 여부 선택 확인
+    if (achieved === null) {
+      alert('활동 이행 여부를 선택해주세요.');
+      return;
+    }
+
+    // 유효성 검사
+    if (!reflectionText.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await createJudgment({
+        achieved: achieved, // 사용자가 선택한 값 사용
+        comment: reflectionText,
+      });
+
       setShowNotice(true);
       // 팝업은 클릭해야만 닫힘 (자동으로 닫히지 않음)
+    } catch (error) {
+      console.error('Error submitting judgment:', error);
+      alert('판정 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleNoticeClose = () => {
     setShowNotice(false);
+
+    // 초기화
+    setReflectionText("");
+    setAchieved(null);
+
     if (onComplete) {
       onComplete();
     }
@@ -176,26 +216,26 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
                 className="relative w-full overflow-hidden flex items-center justify-center"
                 style={{
                   borderRadius: isMobile ? '12px' : '20px',
-                  background: type === 'success'
-                    ? 'linear-gradient(90deg, #10B981 0%, #FCD34D 100%)'
-                    : 'linear-gradient(90deg, #8B5CF6 0%, #EF4444 100%)',
+                  background: achieved === false
+                    ? 'linear-gradient(90deg, #8B5CF6 0%, #EF4444 100%)'
+                    : 'linear-gradient(90deg, #10B981 0%, #FCD34D 100%)',
                   aspectRatio: isMobile ? '280 / 70' : '880 / 122'
                 }}
               >
-                <div className={`flex flex-col items-center justify-center ${isMobile ? (type === 'fail' ? 'mt-[29px]' : 'mt-[38px]') : isTablet ? (type === 'fail' ? 'mt-[25px]' : 'mt-[33px]') : 'mt-[33px]'}`}>
-                  <span className={`font-ria-sans font-bold leading-none ${type === 'success' ? 'text-black' : 'text-white'} ${isMobile ? 'text-[12px]' : isTablet ? 'text-[14px]' : 'text-[24px]'}`} style={{
+                <div className={`flex flex-col items-center justify-center ${isMobile ? (achieved === false ? 'mt-[29px]' : 'mt-[38px]') : isTablet ? (achieved === false ? 'mt-[25px]' : 'mt-[33px]') : 'mt-[33px]'}`}>
+                  <span className={`font-ria-sans font-bold leading-none ${achieved === false ? 'text-white' : 'text-black'} ${isMobile ? 'text-[12px]' : isTablet ? 'text-[14px]' : 'text-[24px]'}`} style={{
                     lineHeight: isMobile ? '1' : undefined,
                     display: isMobile ? 'block' : undefined
                   }}>
                     앵크레 wisdom
                   </span>
                   <img
-                    src={type === 'success' ? (isMobile ? "/badge02-m.png" : "/badge02.png") : bodyBadge.src}
-                    alt={type === 'success' ? "목표 달성!" : "다음 기회에..."}
+                    src={achieved === false ? bodyBadge.src : (isMobile ? "/badge02-m.png" : "/badge02.png")}
+                    alt={achieved === false ? "다음 기회에..." : "목표 달성!"}
                     className={`h-auto`}
                     style={{
-                      width: type === 'success' ? (isMobile ? '171.6px' : isTablet ? '142.56px' : '198px') : (isMobile ? '132px' : isTablet ? '118.8px' : '150px'),
-                      marginTop: isMobile ? (type === 'success' ? '-30px' : '-13px') : (isTablet ? (type === 'success' ? '-15px' : '-6px') : (type === 'success' ? '-5px' : '0px')),
+                      width: achieved === false ? (isMobile ? '132px' : isTablet ? '118.8px' : '150px') : (isMobile ? '171.6px' : isTablet ? '142.56px' : '198px'),
+                      marginTop: isMobile ? (achieved === false ? '-13px' : '-30px') : (isTablet ? (achieved === false ? '-6px' : '-15px') : (achieved === false ? '0px' : '-5px')),
                       imageRendering: 'auto',
                       transform: 'translateZ(0)',
                       backfaceVisibility: 'hidden',
@@ -242,17 +282,45 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
                 {/* Main Text */}
                 <div className={`${isMobile ? 'mb-1.5' : isTablet ? 'mb-2' : 'mb-3'}`}>
                   <p className={`[font-family:'Pretendard-SemiBold',Helvetica] font-medium text-white ${isMobile ? 'text-[14px]' : isTablet ? 'text-[14px]' : 'text-[20px]'} leading-[1.4] ${isMobile ? 'mb-0.5' : 'mb-2'}`}>
-                    {type === 'success'
-                      ? (isMobile ? '본인이 달성한 목표에 대해 돌아보고, 성취감과 자신감을 표현해보세요! 마음껏 자랑해보자구요 !' : '본인이 달성한 목표에 대해 돌아보고, 성취감과 자신감을 표현해보세요! 마음껏 자랑해보자구요 !')
-                      : (isMobile ? '본인이 달성지 못한 목표에 대해 아쉬움, 그리고 그 아쉬움을 성찰하여 다음의 성장을 위한 다짐을 써주세요.' : '본인이 달성지 못한 목표에 대해 아쉬움, 그리고 그 아쉬움을 성찰하여 다음의 성장을 위한 다짐을 써주세요.')}
+                    {achieved === true
+                      ? '본인이 달성한 목표에 대해 돌아보고, 성취감과 자신감을 표현해보세요! 마음껏 자랑해보자구요 !'
+                      : (achieved === false
+                        ? '본인이 달성지 못한 목표에 대해 아쉬움, 그리고 그 아쉬움을 성찰하여 다음의 성장을 위한 다짐을 써주세요.'
+                        : '지난주 목표를 달성하셨나요?')}
                   </p>
                   {!isMobile && (
                   <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#808080] ${isTablet ? 'text-[11px]' : 'text-[14px]'} leading-[1.5]`}>
-                    {type === 'success'
+                    {achieved === true
                       ? '어머어머하네요..! 규모가 크든, 작든! 스스로 목표를 세우고, 정말 달성했다는 것. 미래의 나와 과거의 내가 안정적으로 연결되어 신뢰감 있게 움직일 수 있다는 증표에요! 많은 기업의 인사 담당자들이 사회로의 진출과 커리어 성장에 제일 중요한 것 이라고 지적하는 것입니다! 축하드립니다. 멋진 성장을 이루셨네요!'
-                      : '실망하셨나요? 천만의 말씀..! 목표를 세우고 실패하는 것은 아주 좋은 예행 연습이자 마음의 내성을 강하게 만드는 일입니다. 100전 100승 한 챔피언 보다 무서운 사람은 100전 100패를 하며 이를 갈고 있는 분노의 플레이어입니다. 목표를 설정했고, 노력한 당신, 충분히 박수받을만한 것 잘 아시죠?'}
+                      : (achieved === false
+                        ? '실망하셨나요? 천만의 말씀..! 목표를 세우고 실패하는 것은 아주 좋은 예행 연습이자 마음의 내성을 강하게 만드는 일입니다. 100전 100승 한 챔피언 보다 무서운 사람은 100전 100패를 하며 이를 갈고 있는 분노의 플레이어입니다. 목표를 설정했고, 노력한 당신, 충분히 박수받을만한 것 잘 아시죠?'
+                        : '활동 이행 여부를 선택하고 판정 카드를 작성해주세요. (추후 자동 판정 기능이 추가될 예정입니다)')}
                   </p>
                   )}
+                </div>
+
+                {/* 활동 이행 여부 선택 */}
+                <div className={`flex gap-2 ${isMobile ? 'mb-2' : 'mb-3'}`}>
+                  <button
+                    onClick={() => setAchieved(true)}
+                    className={`flex-1 py-2 px-4 rounded-lg transition-all ${
+                      achieved === true
+                        ? 'bg-green-600 text-white border-2 border-green-400'
+                        : 'bg-[#2a2a2a] text-gray-400 border-2 border-transparent hover:border-green-600'
+                    } ${isMobile ? 'text-[12px]' : 'text-[14px]'} font-medium`}
+                  >
+                    ✅ 달성했어요!
+                  </button>
+                  <button
+                    onClick={() => setAchieved(false)}
+                    className={`flex-1 py-2 px-4 rounded-lg transition-all ${
+                      achieved === false
+                        ? 'bg-red-600 text-white border-2 border-red-400'
+                        : 'bg-[#2a2a2a] text-gray-400 border-2 border-transparent hover:border-red-600'
+                    } ${isMobile ? 'text-[12px]' : 'text-[14px]'} font-medium`}
+                  >
+                    ❌ 다음 기회에...
+                  </button>
                 </div>
 
                 {/* Text Input */}
@@ -284,12 +352,12 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
                 <div ref={submitButtonRef} className={`flex justify-center ${isMobile ? 'mt-1.5' : isTablet ? 'mt-2' : 'mt-3'}`}>
                   <button
                     onClick={handleSubmit}
-                    disabled={!reflectionText.trim()}
-                    className="disabled:cursor-not-allowed transition-transform duration-200 hover:scale-105 disabled:hover:scale-100"
+                    disabled={!reflectionText.trim() || isSubmitting}
+                    className="disabled:cursor-not-allowed transition-transform duration-200 hover:scale-105 disabled:hover:scale-100 disabled:opacity-50"
                   >
                     <img
                       src={isMobile ? selectButton04Mobile.src : selectButton02.src}
-                      alt="작성 완료"
+                      alt={isSubmitting ? "저장중..." : "작성 완료"}
                       className={`${isMobile ? 'h-auto' : isTablet ? 'h-[32px]' : 'h-[40px]'} w-auto`}
                     />
                   </button>
@@ -309,7 +377,7 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
         >
           <div className="animate-fade-in">
             <img
-              src={type === 'success'
+              src={achieved === true
                 ? (isMobile ? noticeModalSuccessMobile.src : noticeModalSuccess.src)
                 : (isMobile ? noticeModalFailMobile.src : noticeModalFail.src)
               }

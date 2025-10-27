@@ -9,8 +9,11 @@ import buttonInspire from "../../../../icons/buttonInspire.png";
 import buttonInspireCheck from "../../../../icons/buttonInspireCheck.png";
 import iconMedal from "../../../../icons/iconMedal.png";
 import iconMedal2 from "../../../../icons/iconMedal2.png";
+import { getWinnerCards, NextChallengerCard } from "../../../../lib/services/nextChallengerService";
+import { AlertModal } from "../../../../components/AlertModal";
+import { sendRecognitionToJudgment, cancelRecognitionToJudgment, getUserSentRecognitionsToJudgments } from "../../../../lib/services/recognitionJudgmentService";
 
-const winnerData = [
+const winnerDataDummy = [
   {
     id: 1,
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
@@ -141,8 +144,15 @@ export const WinnerListSection = (): JSX.Element => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
-  const [inspireClicks, setInspireClicks] = useState<Record<number, number>>({});
+  const [inspireClicks, setInspireClicks] = useState<Record<string, number>>({});
   const [isPaused, setIsPaused] = useState(false);
+  const [winnerData, setWinnerData] = useState<NextChallengerCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [alertModal, setAlertModal] = useState<{ isOpen: boolean; message: string }>({
+    isOpen: false,
+    message: '',
+  });
+
   const cardsPerPage = isMobile || isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(winnerData.length / cardsPerPage));
 
@@ -151,12 +161,68 @@ export const WinnerListSection = (): JSX.Element => {
     (currentPage + 1) * cardsPerPage
   );
 
-  const handleInspireClick = (winnerId: number) => {
-    setInspireClicks((prev) => {
-      const currentClicks = prev[winnerId] || 0;
-      // Toggle: if already clicked, reset to 0, otherwise set to 1
-      return { ...prev, [winnerId]: currentClicks > 0 ? 0 : 1 };
-    });
+  // Load Winner cards from DB and user's sent recognitions
+  useEffect(() => {
+    const loadWinnerData = async () => {
+      setIsLoading(true);
+      try {
+        // Load winner cards
+        const cards = await getWinnerCards();
+        setWinnerData(cards);
+
+        // Load user's sent recognitions
+        const sentRecognitions = await getUserSentRecognitionsToJudgments();
+        const clicks: Record<string, number> = {};
+        sentRecognitions.forEach((recognition: any) => {
+          clicks[recognition.judgment_id] = 1;
+        });
+        setInspireClicks(clicks);
+      } catch (error) {
+        console.error('Error loading winner cards:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadWinnerData();
+
+    // 판정 업데이트 이벤트 리스너
+    const handleJudgmentUpdate = () => {
+      console.log('Judgment updated! Refreshing winner cards...');
+      loadWinnerData();
+    };
+
+    window.addEventListener('judgmentUpdated', handleJudgmentUpdate);
+    return () => {
+      window.removeEventListener('judgmentUpdated', handleJudgmentUpdate);
+    };
+  }, []);
+
+  const handleInspireClick = async (judgmentId: string, toUserId: string) => {
+    const isCurrentlyClicked = (inspireClicks[judgmentId] || 0) > 0;
+
+    try {
+      if (isCurrentlyClicked) {
+        // Cancel recognition
+        await cancelRecognitionToJudgment(judgmentId);
+        setInspireClicks((prev) => ({ ...prev, [judgmentId]: 0 }));
+      } else {
+        // Send recognition
+        await sendRecognitionToJudgment(judgmentId, toUserId);
+        setInspireClicks((prev) => ({ ...prev, [judgmentId]: 1 }));
+
+        // Show success modal
+        setAlertModal({
+          isOpen: true,
+          message: '당신의 목표 달성이 저에게 귀감이 되었습니다!😍',
+        });
+      }
+    } catch (error: any) {
+      // Show error modal
+      setAlertModal({
+        isOpen: true,
+        message: error.message || '오류가 발생했습니다.',
+      });
+    }
   };
 
   const handlePrevPage = () => {
@@ -200,12 +266,12 @@ export const WinnerListSection = (): JSX.Element => {
   }, [handleNextPage, isPaused]);
 
   return (
-    <section className={`flex flex-col items-start ${isMobile ? 'py-10' : isTablet ? 'px-10 py-16' : 'px-[120px] py-20'} w-full bg-[#040b11]`}>
+    <section className={`flex flex-col items-start ${isMobile ? 'py-10 min-h-[600px]' : isTablet ? 'px-10 py-16 min-h-[900px]' : 'px-[120px] py-20 min-h-[1100px]'} w-full bg-[#040b11]`}>
       <div className={`flex flex-col ${isMobile ? 'items-start px-5' : 'items-center'} w-full max-w-[1680px] mx-auto ${isMobile ? 'gap-6' : 'gap-[50px]'} ${isTablet ? 'relative z-10' : ''}`}>
-        <header className={`inline-flex flex-col ${isMobile ? 'items-start mb-6' : 'items-center mb-[50px]'} gap-2.5`}>
+        <header className={`inline-flex flex-col ${isMobile ? 'items-start mb-6' : 'items-center mb-[50px]'} gap-2.5 relative z-10`}>
           {isMobile ? (
             <div className="relative pt-6">
-              <h2 className="w-fit bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent tracking-[0] leading-[normal] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
+              <h2 className="[font-family:'Ria']  w-fit bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent tracking-[0] leading-[normal] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
                 Winner List
               </h2>
               {/* Star decorations for mobile - scaled down from desktop */}
@@ -239,7 +305,7 @@ export const WinnerListSection = (): JSX.Element => {
                   src="https://c.animaapp.com/O1XpzcZm/img/logo-3.svg"
                 />
 
-                <h2 className="w-fit mt-[-1.00px] bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent text-[32px] tracking-[0] leading-[normal] font-ria-sans">
+                <h2 className="[font-family:'Ria'] w-fit mt-[-1.00px] bg-[linear-gradient(90deg,rgba(255,234,148,1)_0%,rgba(255,255,255,1)_53%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-bold text-transparent text-[32px] tracking-[0] leading-[normal] font-ria-sans whitespace-nowrap">
                   Winner List
                 </h2>
 
@@ -336,7 +402,7 @@ export const WinnerListSection = (): JSX.Element => {
                       {/* Left content */}
                       <div className="flex flex-col items-start justify-center flex-1 max-w-full">
                         <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] mb-1 overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>
-                          {winner.name}
+                          {winner.crewName}
                         </p>
                         <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white mb-1 overflow-hidden text-ellipsis whitespace-nowrap max-w-full" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
                           {winner.title}
@@ -356,8 +422,8 @@ export const WinnerListSection = (): JSX.Element => {
                           right: (inspireClicks[winner.id] || 0) > 0 ? '1.85px' : '8px'
                         }}
                         alt="Badge"
-                        src={(inspireClicks[winner.id] || 0) > 0 ? buttonInspireCheck.src : "/badgeIcon.png"}
-                        onClick={() => handleInspireClick(winner.id)}
+                        src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : "/badgeIcon.png"}
+                        onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
                       />
                     </div>
 
@@ -401,7 +467,7 @@ export const WinnerListSection = (): JSX.Element => {
                               </h3>
 
                               <p className="flex items-center justify-center w-fit [font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-base tracking-[-0.48px] leading-[19.2px] whitespace-nowrap">
-                                {winner.name}
+                                {winner.crewName}
                               </p>
 
                               {/* Crown Icon */}
@@ -422,8 +488,8 @@ export const WinnerListSection = (): JSX.Element => {
                       <img
                         className="absolute cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
                         alt="Inspire button"
-                        src={(inspireClicks[winner.id] || 0) > 0 ? buttonInspireCheck.src : buttonInspire.src}
-                        onClick={() => handleInspireClick(winner.id)}
+                        src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : buttonInspire.src}
+                        onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
                         style={{
                           width: (inspireClicks[winner.id] || 0) > 0 ? '70px' : '50px',
                           height: (inspireClicks[winner.id] || 0) > 0 ? '70px' : '50px',
@@ -473,6 +539,13 @@ export const WinnerListSection = (): JSX.Element => {
           </div>
         </div>
       </div>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ isOpen: false, message: '' })}
+        message={alertModal.message}
+      />
     </section>
   );
 };

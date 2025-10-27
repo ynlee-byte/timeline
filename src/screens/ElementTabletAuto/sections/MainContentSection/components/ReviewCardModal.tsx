@@ -10,6 +10,7 @@ import selectButton05 from "../../../../../assets/selectButton05.png";
 import selectButton00 from "../../../../../assets/00.png";
 // Notice modal images now loaded from public folder
 import { useWindowWidth } from "../../../../../breakpoints";
+import { createReview } from "../../../../../lib/services/reviewService";
 
 // Custom scrollbar styles
 const scrollbarStyles = `
@@ -113,18 +114,30 @@ export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClos
     }
   };
 
-  const handleSubmit = () => {
-    setShowNotice(true);
+  const handleSubmit = async () => {
+    try {
+      // Supabase에 리뷰 저장
+      await createReview({
+        activity: selectedActivity,
+        review_text: reviewText,
+        rating: rating
+      });
 
-    // 3초 후 알림 모달과 메인 모달 닫기
-    setTimeout(() => {
-      setShowNotice(false);
-      handleClose();
-      // 작성 완료 콜백 호출
-      if (onComplete) {
-        onComplete();
-      }
-    }, 3000);
+      setShowNotice(true);
+
+      // 3초 후 알림 모달과 메인 모달 닫기
+      setTimeout(() => {
+        setShowNotice(false);
+        handleClose();
+        // 작성 완료 콜백 호출
+        if (onComplete) {
+          onComplete();
+        }
+      }, 3000);
+    } catch (error) {
+      console.error('리뷰 저장 실패:', error);
+      alert('리뷰 저장에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   return (

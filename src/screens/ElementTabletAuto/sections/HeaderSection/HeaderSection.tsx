@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { useWindowWidth } from "../../../../breakpoints";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { LoginModal } from "../../../../components/LoginModal";
 import backgroundImage from "../../../../assets/0e.png";
 
 export const HeaderSection = (): JSX.Element => {
@@ -8,6 +10,16 @@ export const HeaderSection = (): JSX.Element => {
   const isMobile = screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth >= 768 && screenWidth < 1280;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const { user, profile, signOut } = useAuth();
+
+  const handleAuthClick = () => {
+    if (user) {
+      signOut();
+    } else {
+      setIsLoginModalOpen(true);
+    }
+  };
 
   return (
     <section className={`relative w-full ${isMobile ? 'h-[620px]' : 'h-[798px]'}`}>
@@ -47,11 +59,24 @@ export const HeaderSection = (): JSX.Element => {
               </nav>
 
               <div className="flex items-center gap-4">
+                {user && (
+                  <div className="flex items-center gap-2">
+                    <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-sm">
+                      {profile?.full_name || '사용자'}
+                    </span>
+                    <span className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm">
+                      ({user.email})
+                    </span>
+                  </div>
+                )}
                 <Button variant="ghost" size="icon" className="w-10 h-10 p-0 hover:bg-transparent">
                   <img className="w-6 h-6" alt="Search" src="https://c.animaapp.com/O1XpzcZm/img/logo.svg" />
                 </Button>
-                <Button className="bg-app-primary hover:bg-app-primary/90 text-[#141b22] px-6 py-2 rounded-full [font-family:'Pretendard-SemiBold',Helvetica] font-semibold">
-                  로그인
+                <Button
+                  onClick={handleAuthClick}
+                  className="bg-app-primary hover:bg-app-primary/90 text-[#141b22] px-6 py-2 rounded-full [font-family:'Pretendard-SemiBold',Helvetica] font-semibold"
+                >
+                  {user ? '로그아웃' : '로그인'}
                 </Button>
               </div>
             </>
@@ -82,7 +107,7 @@ export const HeaderSection = (): JSX.Element => {
 
           <div className={`absolute ${isMobile ? 'top-[470px]' : 'top-[437px]'} left-1/2 -translate-x-1/2 inline-flex flex-col items-center gap-12`}>
             <div className="inline-flex flex-col items-center gap-3">
-              <h2 className={`[text-shadow:0px_4px_10px_#00000080] font-extrabold text-white ${isMobile ? 'text-[38px] leading-[38px]' : 'text-[80px] leading-[80px]'} tracking-[0] whitespace-nowrap font-ria-sans`}>
+              <h2 className={`[text-shadow:0px_4px_10px_#00000080] [font-family:'Ria'] font-extrabold text-white ${isMobile ? 'text-[38px] leading-[38px]' : 'text-[80px] leading-[80px]'} tracking-[0] whitespace-nowrap`}>
                 타임라인
               </h2>
               <p className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-on-surface ${isMobile ? 'text-xs leading-[18px]' : 'text-xl leading-[30px]'} tracking-[-0.60px] whitespace-nowrap`}>
@@ -92,6 +117,9 @@ export const HeaderSection = (): JSX.Element => {
           </div>
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
 
       {/* Mobile Menu Overlay */}
       {(isMobile || isTablet) && (
@@ -178,12 +206,27 @@ export const HeaderSection = (): JSX.Element => {
                 </a>
               </nav>
 
-              {/* Login Button */}
+              {/* User Info (Mobile/Tablet) */}
+              {user && (
+                <div className={`flex flex-col gap-1 ${isMobile ? 'mb-4' : 'mb-6'}`}>
+                  <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white ${isMobile ? 'text-sm' : 'text-base'}`}>
+                    {profile?.full_name || '사용자'}
+                  </span>
+                  <span className={`[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                    {user.email}
+                  </span>
+                </div>
+              )}
+
+              {/* Login/Logout Button */}
               <Button
                 className={`bg-app-primary hover:bg-app-primary/90 text-[#141b22] rounded-full [font-family:'Pretendard-SemiBold',Helvetica] font-semibold ${isMobile ? 'px-5 py-2.5 text-[14px]' : 'px-6 py-3 text-base'}`}
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleAuthClick();
+                }}
               >
-                로그인
+                {user ? '로그아웃' : '로그인'}
               </Button>
             </div>
           </div>

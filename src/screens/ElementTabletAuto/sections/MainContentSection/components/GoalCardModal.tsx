@@ -10,6 +10,8 @@ import selectButton05 from "../../../../../assets/selectButton05.png";
 import selectButton00 from "../../../../../assets/00.png";
 // Notice modal images now loaded from public folder
 import { useWindowWidth } from "../../../../../breakpoints";
+import { useAuth } from "../../../../../contexts/AuthContext";
+import { createGoal } from "../../../../../lib/services/goalService";
 
 // Custom scrollbar styles
 const scrollbarStyles = `
@@ -63,8 +65,10 @@ export const GoalCardModal: React.FC<GoalCardModalProps> = ({ isOpen, onClose, o
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(0);
   const [showNotice, setShowNotice] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const requestBButtonRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -113,17 +117,47 @@ export const GoalCardModal: React.FC<GoalCardModalProps> = ({ isOpen, onClose, o
     }
   };
 
-  const handleSubmit = () => {
-    setShowNotice(true);
+  const handleSubmit = async () => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
 
-    // 3초 후 알림 모달과 메인 모달 닫기
-    setTimeout(() => {
-      setShowNotice(false);
-      handleClose();
-      if (onComplete) {
-        onComplete();
-      }
-    }, 3000);
+    if (!reviewText.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
+
+    if (rating === 0) {
+      alert('별점을 선택해주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await createGoal({
+        activity: selectedActivity,
+        goal_text: reviewText,
+        rating: rating,
+      });
+
+      setShowNotice(true);
+
+      // 3초 후 알림 모달과 메인 모달 닫기
+      setTimeout(() => {
+        setShowNotice(false);
+        handleClose();
+        if (onComplete) {
+          onComplete();
+        }
+      }, 3000);
+    } catch (error) {
+      console.error('Error submitting goal:', error);
+      alert('목표 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

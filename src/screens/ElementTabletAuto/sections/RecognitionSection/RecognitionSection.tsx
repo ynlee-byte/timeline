@@ -6,8 +6,20 @@ import bgImage from "../../../../assets/인정응원BG.png";
 import cardMobileBg from "../../../../assets/cardReview - mobile.png";
 import cardMy02 from "../../../../assets/cardMy02.png";
 import borderSmall from "../../../../assets/border small.png";
+import { getAllReviews } from "../../../../lib/services/reviewService";
+import { getAllGoals } from "../../../../lib/services/goalService";
+import {
+  sendRecognitionToReview,
+  cancelRecognitionOnReview,
+  sendRecognitionToGoal,
+  cancelRecognitionOnGoal,
+  getUserSentReviewRecognitions,
+  getUserSentGoalRecognitions
+} from "../../../../lib/services/recognitionService";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { AlertModal } from "../../../../components/AlertModal";
 
-const recognitionCards = [
+const recognitionCardsDefault = [
   {
     id: 1,
     period: "9월 1주차 리뷰 · 송지영 크루",
@@ -194,34 +206,219 @@ export const RecognitionSection = (): JSX.Element => {
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
+  const { user } = useAuth();
 
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [clickedButtons, setClickedButtons] = useState<Record<number, boolean>>({});
+  const [clickedButtons, setClickedButtons] = useState<Record<string, boolean>>({});
+  const [recognitionCards, setRecognitionCards] = useState<any[]>([]);
+  const [myRecognitions, setMyRecognitions] = useState<{reviews: string[], goals: string[]}>({ reviews: [], goals: [] });
+  const [alertMessage, setAlertMessage] = useState<string>('');
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
   const cardWidth = 300; // Fixed width of card
   const cardGap = 55; // Gap between cards
   const cardWidthWithGap = cardWidth + cardGap; // Total space per card
 
-  const handleButtonClick = (cardId: number) => {
-    setClickedButtons((prev) => ({
-      ...prev,
-      [cardId]: !prev[cardId]
-    }));
+  // Load reviews and goals from database
+  const loadData = useCallback(async () => {
+    try {
+      // Fetch both reviews and goals in parallel
+      const [reviews, goals, myReviewRecognitions, myGoalRecognitions] = await Promise.all([
+        getAllReviews(),
+        getAllGoals(),
+        getUserSentReviewRecognitions(),
+        getUserSentGoalRecognitions()
+      ]);
+
+      // Create a map of recognized review/goal IDs
+      const recognizedReviewIds = myReviewRecognitions.map((r: any) => r.review_id);
+      const recognizedGoalIds = myGoalRecognitions.map((r: any) => r.goal_id);
+
+      setMyRecognitions({
+        reviews: recognizedReviewIds,
+        goals: recognizedGoalIds
+      });
+
+      // Transform reviews to card format (badge: "인정")
+      const reviewCards = reviews.map((review: any) => ({
+        id: `review-${review.id}`,
+        originalId: review.id,
+        user_id: review.user_id,
+        period: `10월 5주차 리뷰 · ${review.profiles?.full_name || '크루'}`,
+        title: review.activity,
+        description: review.review_text,
+        stars: review.rating,
+        badge: "인정",
+        badgeType: "recognize",
+        created_at: review.created_at,
+      }));
+
+      // Transform goals to card format (badge: "응원")
+      const goalCards = goals.map((goal: any) => ({
+        id: `goal-${goal.id}`,
+        originalId: goal.id,
+        user_id: goal.user_id,
+        period: `10월 5주차 목표 · ${goal.profiles?.full_name || '크루'}`,
+        title: goal.activity,
+        description: goal.goal_text,
+        stars: goal.rating,
+        badge: "응원",
+        badgeType: "support",
+        created_at: goal.created_at,
+      }));
+
+      // Combine and sort by created_at (most recent first)
+      const allCards = [...reviewCards, ...goalCards].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      // Set initial clicked state for already recognized items
+      const initialClickedState: Record<string, boolean> = {};
+      recognizedReviewIds.forEach((id: string) => {
+        initialClickedState[`review-${id}`] = true;
+      });
+      recognizedGoalIds.forEach((id: string) => {
+        initialClickedState[`goal-${id}`] = true;
+      });
+      setClickedButtons(initialClickedState);
+
+      // Use real data if available, otherwise use default data
+      setRecognitionCards(allCards.length > 0 ? allCards : recognitionCardsDefault);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      // Fallback to default data on error
+      setRecognitionCards(recognitionCardsDefault);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Auto-refresh every 30 seconds to get new reviews/goals
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      loadData();
+      console.log('Auto-refreshing recognition cards data...');
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [loadData]);
+
+  const handleButtonClick = async (card: any) => {
+    if (!user) {
+      setAlertMessage('로그인이 필요합니다.');
+      setIsAlertOpen(true);
+      return;
+    }
+
+    // 본인의 카드인지 확인
+    if (card.user_id === user.id) {
+      setAlertMessage('본인의 것에는 인정/응원을 남길 수 없어요!');
+      setIsAlertOpen(true);
+      return;
+    }
+
+    const isReview = card.id.startsWith('review-');
+    const isCurrentlyClicked = clickedButtons[card.id] || false;
+
+    // 취소가 아니라 새로 보내는 경우, 5개 제한 체크
+    if (!isCurrentlyClicked) {
+      // 현재 클릭된 버튼들 중에서 같은 타입(리뷰 또는 목표)만 카운트
+      const clickedOfSameType = Object.keys(clickedButtons).filter(key => {
+        const isSameType = isReview ? key.startsWith('review-') : key.startsWith('goal-');
+        return isSameType && clickedButtons[key];
+      });
+
+      if (clickedOfSameType.length >= 5) {
+        setAlertMessage(isReview ? '이미 5명에게 인정을 날렸네요!' : '이미 5명에게 응원을 날렸네요!');
+        setIsAlertOpen(true);
+        return;
+      }
+    }
+
+    try {
+      if (isCurrentlyClicked) {
+        // 취소하기
+        if (isReview) {
+          await cancelRecognitionOnReview(card.originalId);
+        } else {
+          await cancelRecognitionOnGoal(card.originalId);
+        }
+
+        // 상태 업데이트
+        setClickedButtons((prev) => ({
+          ...prev,
+          [card.id]: false
+        }));
+
+        // myRecognitions 업데이트
+        if (isReview) {
+          setMyRecognitions(prev => ({
+            ...prev,
+            reviews: prev.reviews.filter(id => id !== card.originalId)
+          }));
+        } else {
+          setMyRecognitions(prev => ({
+            ...prev,
+            goals: prev.goals.filter(id => id !== card.originalId)
+          }));
+        }
+      } else {
+        // 보내기
+        if (isReview) {
+          await sendRecognitionToReview(card.originalId, card.user_id);
+        } else {
+          await sendRecognitionToGoal(card.originalId, card.user_id);
+        }
+
+        // 상태 업데이트
+        setClickedButtons((prev) => ({
+          ...prev,
+          [card.id]: true
+        }));
+
+        // myRecognitions 업데이트
+        if (isReview) {
+          setMyRecognitions(prev => ({
+            ...prev,
+            reviews: [...prev.reviews, card.originalId]
+          }));
+        } else {
+          setMyRecognitions(prev => ({
+            ...prev,
+            goals: [...prev.goals, card.originalId]
+          }));
+        }
+      }
+    } catch (error: any) {
+      // 에러 메시지 표시
+      console.error('Recognition error details:', {
+        error,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorDetails: error?.details,
+        cardId: card.id,
+        userId: user?.id,
+        cardUserId: card.user_id
+      });
+      setAlertMessage(error?.message || '오류가 발생했습니다.');
+      setIsAlertOpen(true);
+    }
   };
 
   const navigateCards = useCallback((direction: 'next' | 'prev') => {
+    console.log('Navigate cards:', direction, 'Current index:', currentCardIndex);
     setCurrentCardIndex((prevIndex) => {
       const step = isMobile ? 1 : isTablet ? 3 : 5;
-      if (direction === 'next') {
-        const maxIndex = recognitionCards.length - step;
-        const nextIndex = prevIndex + step;
-        // If we reach the end, go back to the beginning
-        return nextIndex > maxIndex ? 0 : nextIndex;
-      } else {
-        return Math.max(prevIndex - step, 0);
-      }
+      const newIndex = direction === 'next'
+        ? (prevIndex + step >= recognitionCards.length ? 0 : prevIndex + step)
+        : Math.max(prevIndex - step, 0);
+      console.log('Moving from index', prevIndex, 'to', newIndex, 'Step:', step, 'Total cards:', recognitionCards.length);
+      return newIndex;
     });
-  }, [isMobile, isTablet]);
+  }, [isMobile, isTablet, recognitionCards.length, currentCardIndex]);
 
   // Auto-slide every 5 seconds
   useEffect(() => {
@@ -293,7 +490,7 @@ export const RecognitionSection = (): JSX.Element => {
       <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} w-full max-w-[1680px] mx-auto relative z-10 ${isMobile ? 'gap-6 px-5 mb-6' : isTablet ? 'gap-[40px] px-10 mb-[13px]' : 'gap-[50px] px-[120px] mb-[48px]'}`}>
         <header className={`flex flex-col ${isMobile ? 'items-start w-full' : 'items-center'} ${isMobile ? 'gap-3' : 'gap-[15px]'}`}>
           {isMobile ? (
-            <h2 className="font-bold text-white text-[20px] text-left font-ria-sans">
+            <h2 className="[font-family:'Ria'] font-bold text-white text-[20px] text-left font-ria-sans">
               인정과 응원 보내기
             </h2>
           ) : (
@@ -303,7 +500,7 @@ export const RecognitionSection = (): JSX.Element => {
                 alt="Logo"
                 src="https://c.animaapp.com/O1XpzcZm/img/logo-1.svg"
               />
-              <h2 className="font-bold text-white tracking-[0] leading-[normal] font-ria-sans text-[32px]">
+              <h2 className="[font-family:'Ria'] font-bold text-white tracking-[0] leading-[normal] text-[32px] font-ria-sans">
                 인정과 응원 보내기
               </h2>
               <img
@@ -336,7 +533,7 @@ export const RecognitionSection = (): JSX.Element => {
             style={isMobile ? { paddingTop: '20px' } : undefined}
           >
             <div
-              className={`inline-flex flex-row transition-transform duration-500 ease-in-out ${isMobile ? 'gap-6' : 'gap-[55px]'}`}
+              className={`inline-flex flex-row transition-transform duration-4000 ease-in-out ${isMobile ? 'gap-6' : 'gap-[55px]'}`}
               style={{
                 transform: translateXValue,
                 paddingLeft: isMobile ? 'calc((100vw - 170px) / 2)' : undefined
@@ -435,8 +632,8 @@ export const RecognitionSection = (): JSX.Element => {
                             {card.period.split('·')[1]?.trim() || ''}
                           </p>
                           <button
-                            onClick={() => handleButtonClick(card.id)}
-                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-500 ease-in-out active:scale-95 font-ria-sans cursor-pointer w-[40px] h-[40px] text-[11px] ${
+                            onClick={() => handleButtonClick(card)}
+                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out active:scale-95 font-ria-sans cursor-pointer w-[40px] h-[40px] text-[11px] ${
                               clickedButtons[card.id]
                                 ? 'bg-[#FFF802] text-[#040B11] scale-105'
                                 : 'bg-[#040B11] text-white border border-white/30 scale-100'
@@ -445,10 +642,10 @@ export const RecognitionSection = (): JSX.Element => {
                               clickedButtons[card.id]
                                 ? {
                                     boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
-                                    transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
                                   }
                                 : {
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
                                   }
                             }
                           >
@@ -468,8 +665,8 @@ export const RecognitionSection = (): JSX.Element => {
                             ))}
                           </div>
                           <button
-                            onClick={() => handleButtonClick(card.id)}
-                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-500 ease-in-out hover:scale-[1.08] hover:brightness-110 active:scale-95 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
+                            onClick={() => handleButtonClick(card)}
+                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out hover:scale-[1.08] hover:brightness-110 active:scale-95 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
                               clickedButtons[card.id]
                                 ? 'bg-[#FFF802] text-[#040B11] scale-105'
                                 : 'bg-[#040B11] text-white border-2 border-white border-opacity-30 scale-100'
@@ -478,10 +675,10 @@ export const RecognitionSection = (): JSX.Element => {
                               clickedButtons[card.id]
                                 ? {
                                     boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
-                                    transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
                                   }
                                 : {
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
                                   }
                             }
                           >
@@ -500,27 +697,40 @@ export const RecognitionSection = (): JSX.Element => {
       {/* Navigation buttons */}
       <div className="w-full max-w-[1680px] mx-auto relative z-20">
         <div className="flex items-center justify-center mt-8">
-          <div className={`relative cursor-pointer ${isMobile ? 'scale-[0.8]' : ''}`}>
+          <div className={`relative ${isMobile ? 'scale-[0.8]' : ''}`}>
             <img
-              className="w-auto h-auto"
+              className="w-auto h-auto pointer-events-none"
               alt="Pagination"
               src={paginationImage.src}
             />
             <button
-              onClick={() => navigateCards('prev')}
+              onClick={() => {
+                console.log('Prev button clicked!');
+                navigateCards('prev');
+              }}
               disabled={currentCardIndex === 0}
-              className="absolute left-0 top-0 w-[48px] h-[48px] opacity-0 hover:opacity-10 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+              className="absolute left-0 top-0 w-[48px] h-[48px] transition-all disabled:cursor-not-allowed disabled:opacity-30 z-10"
               aria-label="Previous cards"
             />
             <button
-              onClick={() => navigateCards('next')}
+              onClick={() => {
+                console.log('Next button clicked!');
+                navigateCards('next');
+              }}
               disabled={currentCardIndex >= recognitionCards.length - (isMobile ? 1 : isTablet ? 3 : 5)}
-              className="absolute right-0 top-0 w-[48px] h-[48px] opacity-0 hover:opacity-10 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+              className="absolute right-0 top-0 w-[48px] h-[48px] transition-all disabled:cursor-not-allowed disabled:opacity-30 z-10"
               aria-label="Next cards"
             />
           </div>
         </div>
       </div>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        message={alertMessage}
+      />
     </section>
   );
 };

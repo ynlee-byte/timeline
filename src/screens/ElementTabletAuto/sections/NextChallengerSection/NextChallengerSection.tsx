@@ -6,10 +6,14 @@ import decoImage from "../../../../assets/deco.png";
 import paginationImage from "../../../../assets/pagenation.png";
 import buttonApplause from "../../../../icons/buttonApplause.png";
 import buttonApplauseChecked from "../../../../icons/buttonApplauseChecked.png";
+import { AlertModal } from "../../../../components/AlertModal";
+import { sendApplause, cancelApplause, getUserSentApplause } from "../../../../lib/services/applauseService";
+import { getNextChallengerCards, NextChallengerCard } from "../../../../lib/services/nextChallengerService";
 
 const challengerCards = [
   {
     id: 1,
+    userId: "00000000-0000-0000-0000-000000000001", // 더미 UUID
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
     title: "위즈덤 활동 피드백 제공하기",
     crewName: "강나래 크루",
@@ -21,6 +25,7 @@ const challengerCards = [
   },
   {
     id: 2,
+    userId: "00000000-0000-0000-0000-000000000002",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-19@2x.png",
     title: "콘텐츠 리서치 결과 정리",
     crewName: "이예린 크루",
@@ -32,6 +37,7 @@ const challengerCards = [
   },
   {
     id: 3,
+    userId: "00000000-0000-0000-0000-000000000003",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-21@2x.png",
     title: "에세이 마감 제출",
     crewName: "김도연 크루",
@@ -43,6 +49,7 @@ const challengerCards = [
   },
   {
     id: 4,
+    userId: "00000000-0000-0000-0000-000000000004",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
     title: "코딩테스트 문제 풀이 제출",
     crewName: "박서준 크루",
@@ -54,6 +61,7 @@ const challengerCards = [
   },
   {
     id: 5,
+    userId: "00000000-0000-0000-0000-000000000005",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-19@2x.png",
     title: "영어 공부 2시간 목표",
     crewName: "최유진 크루",
@@ -65,6 +73,7 @@ const challengerCards = [
   },
   {
     id: 6,
+    userId: "00000000-0000-0000-0000-000000000006",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-21@2x.png",
     title: "운동 3회 이상 하기",
     crewName: "정하늘 크루",
@@ -76,6 +85,7 @@ const challengerCards = [
   },
   {
     id: 7,
+    userId: "00000000-0000-0000-0000-000000000007",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
     title: "독서 목표 미달성",
     crewName: "김서현 크루",
@@ -87,6 +97,7 @@ const challengerCards = [
   },
   {
     id: 8,
+    userId: "00000000-0000-0000-0000-000000000008",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-19@2x.png",
     title: "블로그 포스팅",
     crewName: "박지우 크루",
@@ -98,6 +109,7 @@ const challengerCards = [
   },
   {
     id: 9,
+    userId: "00000000-0000-0000-0000-000000000009",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-21@2x.png",
     title: "사이드 프로젝트 진행",
     crewName: "이준호 크루",
@@ -109,6 +121,7 @@ const challengerCards = [
   },
   {
     id: 10,
+    userId: "00000000-0000-0000-0000-000000000010",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
     title: "영어 회화 연습",
     crewName: "최민서 크루",
@@ -120,6 +133,7 @@ const challengerCards = [
   },
   {
     id: 11,
+    userId: "00000000-0000-0000-0000-000000000011",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-19@2x.png",
     title: "포트폴리오 업데이트",
     crewName: "강다은 크루",
@@ -131,6 +145,7 @@ const challengerCards = [
   },
   {
     id: 12,
+    userId: "00000000-0000-0000-0000-000000000012",
     profileImage: "https://c.animaapp.com/O1XpzcZm/img/image-21@2x.png",
     title: "네트워킹 이벤트 참석",
     crewName: "윤태준 크루",
@@ -190,6 +205,13 @@ export const NextChallengerSection = (): JSX.Element => {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [applauseClicks, setApplauseClicks] = useState<Record<number, number>>({});
   const [isPaused, setIsPaused] = useState(false);
+  const [alertModal, setAlertModal] = useState<{ isOpen: boolean; message: string }>({
+    isOpen: false,
+    message: '',
+  });
+  const [challengerCards, setChallengerCards] = useState<NextChallengerCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const cardsPerPage = isMobile ? 4 : isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(challengerCards.length / cardsPerPage));
 
@@ -198,12 +220,72 @@ export const NextChallengerSection = (): JSX.Element => {
     (currentPage + 1) * cardsPerPage
   );
 
-  const handleApplauseClick = (cardId: number) => {
-    setApplauseClicks((prev) => {
-      const currentClicks = prev[cardId] || 0;
-      // Toggle: if already clicked, reset to 0, otherwise set to 1
-      return { ...prev, [cardId]: currentClicks > 0 ? 0 : 1 };
-    });
+  // Load Next Challenger cards and user's sent applause on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        // DB에서 실제 데이터 로드
+        const cards = await getNextChallengerCards();
+        setChallengerCards(cards);
+
+        // 박수 데이터 로드
+        const sentApplause = await getUserSentApplause();
+        const clicks: Record<number, number> = {};
+        sentApplause.forEach((applause: any) => {
+          clicks[applause.challenger_id] = 1;
+        });
+        setApplauseClicks(clicks);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+
+    // 판정 업데이트 이벤트 리스너
+    const handleJudgmentUpdate = () => {
+      console.log('Judgment updated! Refreshing next challenger cards...');
+      loadData();
+    };
+
+    window.addEventListener('judgmentUpdated', handleJudgmentUpdate);
+    return () => {
+      window.removeEventListener('judgmentUpdated', handleJudgmentUpdate);
+    };
+  }, []);
+
+  const handleApplauseClick = async (cardId: number) => {
+    const isCurrentlyClicked = (applauseClicks[cardId] || 0) > 0;
+
+    // Find the card to get its userId
+    const card = challengerCards.find(c => c.id === cardId);
+    if (!card) return;
+
+    try {
+      if (isCurrentlyClicked) {
+        // Cancel applause
+        await cancelApplause(cardId);
+        setApplauseClicks((prev) => ({ ...prev, [cardId]: 0 }));
+      } else {
+        // Send applause
+        await sendApplause(cardId, card.userId);
+        setApplauseClicks((prev) => ({ ...prev, [cardId]: 1 }));
+
+        // Show success modal
+        setAlertModal({
+          isOpen: true,
+          message: '당신의 목표는 달성되지 못했지만, 시도와 도전에 충분히 박수드리고 싶습니다! 다음 기회를 또 노려보자구요!',
+        });
+      }
+    } catch (error: any) {
+      // Show error modal
+      setAlertModal({
+        isOpen: true,
+        message: error.message || '오류가 발생했습니다.',
+      });
+    }
   };
 
   const handlePrevPage = () => {
@@ -247,12 +329,12 @@ export const NextChallengerSection = (): JSX.Element => {
   }, [handleNextPage, isPaused]);
 
   return (
-    <section className={`flex flex-col items-start ${isMobile ? 'py-10' : isTablet ? 'px-10 py-16' : 'px-[120px] py-[150px]'} w-full bg-[#040b11]`}>
+    <section className={`flex flex-col items-start ${isMobile ? 'py-10 min-h-[600px]' : isTablet ? 'px-10 py-16 min-h-[900px]' : 'px-[120px] py-[150px] min-h-[1100px]'} w-full bg-[#040b11]`}>
       <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} py-0 w-full bg-[#040b11] max-w-[1680px] mx-auto ${isMobile ? 'mb-4' : 'mb-[33px]'} ${isTablet ? 'relative z-10' : ''}`}>
         <header className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} gap-2.5 w-full relative`}>
           {/* 좌측 장식 이미지 */}
           {!isMobile && (
-            <div className="absolute left-0 top-1/2 -translate-y-[calc(50%+50px)] opacity-60">
+            <div className="absolute left-0 top-1/2 -translate-y-[calc(50%+50px)] opacity-60 z-20">
               <img
                 className="w-auto h-auto"
                 alt="Decoration"
@@ -263,7 +345,7 @@ export const NextChallengerSection = (): JSX.Element => {
 
           {/* 우측 장식 이미지 */}
           {!isMobile && (
-            <div className="absolute right-0 top-1/2 -translate-y-[calc(50%+50px)] opacity-60">
+            <div className="absolute right-0 top-1/2 -translate-y-[calc(50%+50px)] opacity-60 z-20">
               <img
                 className="w-auto h-auto"
                 alt="Decoration"
@@ -274,7 +356,7 @@ export const NextChallengerSection = (): JSX.Element => {
 
           {isMobile ? (
             <div className="relative z-10 flex flex-col items-start py-4" style={{ paddingLeft: '20px', gap: '10px' }}>
-              <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
+              <h2 className="[font-family:'Ria'] font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
                 Next Challenger
               </h2>
               <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left tracking-[-0.60px]" style={{ fontSize: 'clamp(12px, 3vw, 16px)', lineHeight: 'clamp(18px, 4.5vw, 24px)' }}>
@@ -293,7 +375,7 @@ export const NextChallengerSection = (): JSX.Element => {
                   alt="Logo"
                   src="https://c.animaapp.com/O1XpzcZm/img/logo-3.svg"
                 />
-                <h2 className="font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans whitespace-nowrap text-[32px] leading-[44px]">
+                <h2 className="[font-family:'Ria']  font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans whitespace-nowrap text-[32px] leading-[44px]">
                   Next Challenger
                 </h2>
                 <img
@@ -495,6 +577,14 @@ export const NextChallengerSection = (): JSX.Element => {
           </div>
         </div>
       </div>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ isOpen: false, message: '' })}
+        message={alertModal.message}
+        type="applause"
+      />
     </section>
   );
 };
