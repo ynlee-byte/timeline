@@ -270,8 +270,8 @@ export const NextChallengerSection = (): JSX.Element => {
         await cancelApplause(numericId);
         setApplauseClicks((prev) => ({ ...prev, [numericId]: 0 }));
       } else {
-        // Send applause
-        await sendApplause(card.userId || card.user_id || "", numericId);
+        // Send applause - FIXED: correct parameter order (challengerId, toUserId)
+        await sendApplause(numericId, card.userId || card.user_id || "");
         setApplauseClicks((prev) => ({ ...prev, [numericId]: 1 }));
 
         // Show success modal
