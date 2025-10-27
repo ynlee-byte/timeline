@@ -115,6 +115,22 @@ export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClos
   };
 
   const handleSubmit = async () => {
+    // 유효성 검사
+    if (!selectedActivity) {
+      alert('활동을 선택해주세요.');
+      return;
+    }
+
+    if (!reviewText.trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
+
+    if (rating < 1 || rating > 5) {
+      alert('별점을 선택해주세요. (1-5점)');
+      return;
+    }
+
     try {
       // Supabase에 리뷰 저장
       await createReview({
