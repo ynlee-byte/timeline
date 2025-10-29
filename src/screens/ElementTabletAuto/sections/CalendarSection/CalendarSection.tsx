@@ -1,46 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "../../../../components/ui/button";
 import { useWindowWidth } from "../../../../breakpoints";
 import { ConfirmedBadge } from "../../../../components/ConfirmedBadge";
 import { PendingBadge } from "../../../../components/PendingBadge";
 import { useAuth } from "../../../../contexts/AuthContext";
-import { AlertModal } from "../../../../components/AlertModal";
-import { LoginModal } from "../../../../components/LoginModal";
-import {
-  confirmCalendar,
-  hasConfirmedCalendarThisWeek,
-  saveCalendarExpectations,
-  getExpectationCounts,
-  getUserExpectations
-} from "../../../../lib/services/calendarService";
-import { canWriteReview, getCurrentDayOfWeek } from "../../../../lib/utils/dateUtils";
+import { confirmCalendar, hasConfirmedCalendarThisWeek } from "../../../../lib/services/calendarService";
+import { canWriteReview } from "../../../../lib/utils/dateUtils";
 
 // 전체 이벤트 리스트 (여러 날에 걸친 이벤트)
 // 이전 달(9월) 날짜는 음수로 표시
 const events = [
-  { id: 1, text: "엥크레 에세이", startDate: -29, endDate: 1, color: "bg-[#555555]", textColor: "text-[#aaaaaa]" },
-  { id: 2, text: "중앙 시작 브리핑", startDate: -29, endDate: -29, color: "bg-[#555555]", textColor: "text-[#aaaaaa]" },
-  { id: 3, text: "엥크레 Wisdom", startDate: 1, endDate: 2, color: "bg-[#555555]", textColor: "text-[#aaaaaa]" },
-  { id: 4, text: "중앙 중간 브리핑", startDate: 1, endDate: 1, color: "-29일 bg-[#555555]", textColor: "text-[#aaaaaa]" },
-  { id: 5, text: "주차 결과물 제출", startDate: 2, endDate: 2, color: "bg-[#555555]", textColor: "text-[#aaaaaa]" },
-  { id: 6, text: "중앙 마감 브리핑", startDate: 4, endDate: 4, color: "bg-[#555555]", textColor: "text-[#aaaaaa]" },
-  { id: 7, text: "크루 상호 피드백", startDate: 6, endDate: 8, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]" },
-  { id: 8, text: "중앙 시작 브리핑", startDate: 6, endDate: 6, color: "bg-[#fdece7]", textColor: "text-[#b54800]" },
-  { id: 9, text: "앵크레 Wisdom", startDate: 8, endDate: 9, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" },
-  { id: 10, text: "중앙 중간 브리핑", startDate: 8, endDate: 8, color: "bg-[#fdece7]", textColor: "text-[#b54800]" },
-  { id: 11, text: "엥크레 인포데스크", startDate: 9, endDate:11, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" },
-  { id: 12, text: "중앙 마감 브리핑", startDate: 11, endDate: 11, color: "bg-[#fdece7]", textColor: "text-[#b54800]" },
-  { id: 13, text: "앵고라 주제 공모", startDate: 13, endDate: 15, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" },
-  { id: 14, text: "콘텐츠 초안 제출", startDate: 13, endDate: 13, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]" },
-  { id: 15, text: "클럽 캘린더 공표", startDate: 15, endDate: 15, color: "bg-[#fdece7]", textColor: "text-[#b54800]" },
-  { id: 16, text: "엥고라 주제 공표", startDate: 16, endDate: 16, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" },
-  { id: 17, text: "커리어 일정 공표", startDate: 16, endDate: 16, color: "bg-[#fdece7]", textColor: "text-[#b54800]" },
-  { id: 18, text: "주차 결과물 제출", startDate: 16, endDate: 16, color: "bg-[#e6feee]", textColor: "text-[#04ae3e]" },
-  { id: 19, text: "앵고라 진행", startDate: 17, endDate: 17, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" },
-  { id: 20, text: "콘텐츠 최종 제출", startDate: 17, endDate: 17, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]" },
-  { id: 21, text: "엥무새 발표", startDate: 18, endDate: 18, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]" },
+  { id: 1, text: "엥크레 에세이", startDate: -29, endDate: 1, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📓" },
+  { id: 2, text: "중앙 시작 브리핑", startDate: -29, endDate: -29, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📢" },
+  { id: 3, text: "엥크레 Wisdom", startDate: 1, endDate: 2, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "▼" },
+  { id: 4, text: "중앙 중간 브리핑", startDate: 1, endDate: 1, color: "-29일 bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📢" },
+  { id: 5, text: "주차 결과물 제출", startDate: 2, endDate: 2, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "🗓️" },
+  { id: 6, text: "중앙 마감 브리핑", startDate: 4, endDate: 4, color: "bg-[#555555]", textColor: "text-[#aaaaaa]", icon: "📢" },
+  { id: 7, text: "크루 상호 피드백", startDate: 6, endDate: 8, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]", icon: "📝" },
+  { id: 8, text: "중앙 시작 브리핑", startDate: 6, endDate: 6, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📢" },
+  { id: 9, text: "앵크레 Wisdom", startDate: 8, endDate: 9, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 10, text: "중앙 중간 브리핑", startDate: 8, endDate: 8, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📢" },
+  { id: 11, text: "엥크레 인포데스크", startDate: 9, endDate:11, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "💬" },
+  { id: 12, text: "중앙 마감 브리핑", startDate: 11, endDate: 11, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📢" },
+  { id: 13, text: "앵고라 주제 공모", startDate: 13, endDate: 15, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 14, text: "콘텐츠 초안 제출", startDate: 13, endDate: 13, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]", icon: "📝" },
+  { id: 15, text: "클럽 캘린더 공표", startDate: 15, endDate: 15, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📅" },
+  { id: 16, text: "엥고라 주제 공표", startDate: 16, endDate: 16, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 17, text: "커리어 일정 공표", startDate: 16, endDate: 16, color: "bg-[#fdece7]", textColor: "text-[#b54800]", icon: "📄" },
+  { id: 18, text: "주차 결과물 제출", startDate: 16, endDate: 16, color: "bg-[#e6feee]", textColor: "text-[#04ae3e]", icon: "🗓️" },
+  { id: 19, text: "앵고라 진행", startDate: 17, endDate: 17, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
+  { id: 20, text: "콘텐츠 최종 제출", startDate: 17, endDate: 17, color: "bg-[#eae8fd]", textColor: "text-[#2e17e7]", icon: "📝" },
+  { id: 21, text: "엥무새 발표", startDate: 18, endDate: 18, color: "bg-[#fde8f9]", textColor: "text-[#ea31cc]", icon: "▼" },
 ];
 
 /**
@@ -112,20 +103,11 @@ export const CalendarSection = (): JSX.Element => {
   const [currentMonth, setCurrentMonth] = useState(now.getMonth()); // 0-11
 
   const [selectedEvents, setSelectedEvents] = useState<Set<number>>(new Set());
-  const [eventSelectionCount, setEventSelectionCount] = useState<Record<number, number>>({});
-  const [eventDirection, setEventDirection] = useState<Record<number, 'up' | 'down'>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showMaxAlert, setShowMaxAlert] = useState(false);
   const [canShowFooter, setCanShowFooter] = useState(true); // 초기값 true로 hydration 에러 방지
-  const [eventExpectations, setEventExpectations] = useState<Record<number, number>>({});
-  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
-  const [isUITestMode, setIsUITestMode] = useState(false); // 디버그 패널의 UI 확인 모드
-  const [showLoginAlert, setShowLoginAlert] = useState(false); // 로그인 필요 알림
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); // 로그인 모달
-  const [showCancelToast, setShowCancelToast] = useState(false); // 취소 완료 토스트
-  const [hoveredEvent, setHoveredEvent] = useState<number | null>(null); // 호버된 이벤트 ID
 
   // 동적으로 캘린더 데이터 생성
   const calendarData = generateCalendarData(currentYear, currentMonth);
@@ -153,91 +135,35 @@ export const CalendarSection = (): JSX.Element => {
   // 년.월 형식으로 표시
   const displayDate = `${currentYear}. ${String(currentMonth + 1).padStart(2, '0')}`;
 
-  // 클라이언트에서만 요일 체크 - 주기적으로 업데이트
+  // 클라이언트에서만 요일 체크
   useEffect(() => {
-    const updateFooterState = () => {
-      const canWrite = canWriteReview();
-      setCanShowFooter(canWrite);
-    };
-
-    // 초기 설정
-    updateFooterState();
-
-    // 500ms마다 체크 (DevDebugPanel의 변경사항 즉시 반영)
-    const interval = setInterval(updateFooterState, 500);
-
-    return () => clearInterval(interval);
+    setCanShowFooter(canWriteReview());
   }, []);
 
   // DevDebugPanel의 요일 변경 이벤트 감지
   useEffect(() => {
     const handleDayChanged = () => {
-      const canWrite = canWriteReview();
-      setCanShowFooter(canWrite);
+      setCanShowFooter(canWriteReview());
     };
 
     window.addEventListener('dayChanged', handleDayChanged);
     return () => window.removeEventListener('dayChanged', handleDayChanged);
   }, []);
 
-  // DevDebugPanel의 캘린더 모드 변경 이벤트 감지
+  // Supabase에서 일정 확인 상태 불러오기
   useEffect(() => {
-    const handleModeChanged = (e: CustomEvent) => {
-      setIsUITestMode(e.detail.uiMode);
-    };
-
-    window.addEventListener('calendarModeChanged', handleModeChanged as EventListener);
-    return () => window.removeEventListener('calendarModeChanged', handleModeChanged as EventListener);
-  }, []);
-
-  // DevDebugPanel의 일정 확인 상태 변경 이벤트 감지
-  useEffect(() => {
-    const handleCalendarConfirmedChanged = (e: CustomEvent) => {
-      setIsConfirmed(e.detail.isConfirmed);
-    };
-
-    window.addEventListener('calendarConfirmedChanged', handleCalendarConfirmedChanged as EventListener);
-    return () => window.removeEventListener('calendarConfirmedChanged', handleCalendarConfirmedChanged as EventListener);
-  }, []);
-
-  // 일정 확인 상태는 기본적으로 false (확인 전)
-  // 버튼 클릭 시 true로 변경되어 footer 숨김
-  // 실제 프로덕션에서는 Supabase에서 확인 상태를 로드할 수 있음
-
-  // 기대표현 개수 및 사용자가 선택한 일정 로드
-  useEffect(() => {
-    const loadExpectations = async () => {
-      // 모든 일정별 기대표현 개수 로드
-      const counts = await getExpectationCounts();
-
-      // 임시 데이터: 실제 데이터와 병합 (테스트용)
-      const tempData = {
-        7: 12,   // 크루 상호 피드백
-        9: 8,    // 앵크레 Wisdom
-        11: 5,   // 엥크레 인포데스크
-        14: 3,   // 콘텐츠 초안 제출
-        20: 7,   // 콘텐츠 최종 제출
-      };
-
-      setEventExpectations({ ...tempData, ...counts }); // 실제 데이터가 있으면 우선
-
-      // 로그인한 경우, 사용자가 이번 주에 선택한 일정 로드
+    const checkConfirmation = async () => {
       if (user) {
-        const userSelectedEvents = await getUserExpectations();
-        setSelectedEvents(new Set(userSelectedEvents));
-        // TODO: 주차별 선택 횟수도 불러와서 setEventSelectionCount 설정
+        const confirmed = await hasConfirmedCalendarThisWeek();
+        setIsConfirmed(confirmed);
+      } else {
+        setIsConfirmed(false);
       }
     };
-    loadExpectations();
+    checkConfirmation();
   }, [user]);
 
   const handleEventClick = (eventId: number) => {
-    // 로그인하지 않은 경우 클릭 불가
-    if (!user) {
-      setShowLoginAlert(true);
-      return;
-    }
-
     // 해당 이벤트 찾기
     const event = events.find(e => e.id === eventId);
 
@@ -246,106 +172,39 @@ export const CalendarSection = (): JSX.Element => {
       return;
     }
 
-    // UI 테스트 모드: 0 → 1 → 2 → 3 → 2 → 1 → 0 순환
-    if (isUITestMode) {
-      const currentCount = eventSelectionCount[eventId] || 0;
-      const direction = eventDirection[eventId] || 'up';
-
-      if (currentCount === 0) {
-        // 0 → 1
-        setSelectedEvents(prev => new Set(prev).add(eventId));
-        setEventSelectionCount(prev => ({ ...prev, [eventId]: 1 }));
-        setEventDirection(prev => ({ ...prev, [eventId]: 'up' }));
-      } else if (direction === 'up') {
-        // 증가 방향
-        if (currentCount < 3) {
-          setEventSelectionCount(prev => ({ ...prev, [eventId]: currentCount + 1 }));
-          if (currentCount + 1 === 3) {
-            setEventDirection(prev => ({ ...prev, [eventId]: 'down' }));
-          }
-        }
+    setSelectedEvents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        // 이미 선택된 경우 선택 해제
+        newSet.delete(eventId);
       } else {
-        // 감소 방향
-        if (currentCount > 1) {
-          setEventSelectionCount(prev => ({ ...prev, [eventId]: currentCount - 1 }));
+        // 선택되지 않은 경우
+        if (newSet.size < 3) {
+          // 3개 미만이면 추가
+          newSet.add(eventId);
         } else {
-          // 1 → 0: 완전 제거
-          const newCounts = { ...eventSelectionCount };
-          const newDirections = { ...eventDirection };
-          delete newCounts[eventId];
-          delete newDirections[eventId];
-          setEventSelectionCount(newCounts);
-          setEventDirection(newDirections);
-          setSelectedEvents(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(eventId);
-            return newSet;
-          });
-        }
-
-        // 감소 방향일 때 매번 토스트 표시
-        setShowCancelToast(false); // 먼저 초기화
-        setTimeout(() => {
-          setShowCancelToast(true);
+          // 3개 이상이면 커스텀 alert 표시
+          setShowMaxAlert(true);
           setTimeout(() => {
-            setShowCancelToast(false);
-          }, 3000);
-        }, 0);
+            setShowMaxAlert(false);
+          }, 2500);
+        }
       }
-    } else {
-      // 로직 모드: 선택/해제만 (확정 버튼 필요)
-      setSelectedEvents(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(eventId)) {
-          // 이미 선택된 경우 선택 해제
-          newSet.delete(eventId);
-
-          // 선택 해제 시 취소 토스트 표시
-          setShowCancelToast(false);
-          setTimeout(() => {
-            setShowCancelToast(true);
-            setTimeout(() => {
-              setShowCancelToast(false);
-            }, 3000);
-          }, 0);
-        } else {
-          // 선택되지 않은 경우
-          if (newSet.size < 3) {
-            // 3개 미만이면 추가
-            newSet.add(eventId);
-          } else {
-            // 3개 이상이면 커스텀 alert 표시
-            setShowMaxAlert(true);
-            setTimeout(() => {
-              setShowMaxAlert(false);
-            }, 2500);
-          }
-        }
-        return newSet;
-      });
-    }
+      return newSet;
+    });
   };
 
   const handleConfirm = async () => {
     // 로그인 체크
     if (!user) {
-      setShowLoginAlert(true);
+      alert('로그인이 필요합니다. 로그인 후 이용해주세요.');
+      router.push('/'); // 메인 페이지로 이동하여 로그인 유도
       return;
     }
 
     try {
-      // 1. 일정 확인 저장
+      // Supabase에 저장
       await confirmCalendar();
-
-      // 2. 선택한 일정(기대표현) 저장
-      const selectedEventIds = Array.from(selectedEvents);
-      if (selectedEventIds.length > 0) {
-        await saveCalendarExpectations(selectedEventIds);
-      }
-
-      // 3. 기대표현 개수 다시 로드
-      const counts = await getExpectationCounts();
-      setEventExpectations(counts);
 
       setIsModalOpen(false);
       setIsConfirmed(true);
@@ -355,26 +214,17 @@ export const CalendarSection = (): JSX.Element => {
       }, 4000);
     } catch (error: any) {
       console.error('Error confirming calendar:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        stack: error.stack
-      });
-
       // 에러 메시지 확인
       if (error.message === '로그인이 필요합니다.') {
         alert('로그인이 필요합니다. 로그인 후 이용해주세요.');
         router.push('/'); // 메인 페이지로 이동하여 로그인 유도
       } else {
-        alert(`일정 확인 저장 중 오류가 발생했습니다.\n에러: ${error.message || '알 수 없는 오류'}\n다시 시도해주세요.`);
+        alert('일정 확인 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
       }
     }
   };
 
   return (
-    <>
     <section className={`flex flex-col items-center ${isMobile ? 'px-3 pt-[90px] pb-5' : isTablet ? 'px-10 py-20' : 'px-[120px] py-20'} w-full bg-[#040b11] relative`}>
       <div className="w-full max-w-[1680px] mx-auto relative">
         {/* 상단 왼쪽 빛나는 곡선 border */}
@@ -515,7 +365,7 @@ export const CalendarSection = (): JSX.Element => {
                             : "bg-[#222222]"
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-1 px-0.5">
+                        <div className="flex items-center justify-center mb-1">
                           <span
                             className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-xs ${
                               day.isToday
@@ -527,15 +377,6 @@ export const CalendarSection = (): JSX.Element => {
                           >
                             {Math.abs(day.date)}
                           </span>
-                          {/* 이 날짜에 기대표현이 있는 일정 개수 표시 (작은 점) */}
-                          {(() => {
-                            const dayEvents = events?.filter(e =>
-                              e.startDate <= day.date && e.endDate >= day.date && eventExpectations[e.id] > 0
-                            ) || [];
-                            return dayEvents.length > 0 && (
-                              <div className="w-1 h-1 rounded-full bg-[#21e786]"></div>
-                            );
-                          })()}
                         </div>
                       </div>
                     ))}
@@ -747,7 +588,7 @@ export const CalendarSection = (): JSX.Element => {
                                 return (
                                   <div
                                     key={event.id}
-                                    className={`group px-2 py-1 rounded transition-all duration-300 absolute flex items-center justify-between overflow-hidden ${isDisabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer pointer-events-auto'} ${isSelected ? 'ring-1 ring-[#21e786] ring-opacity-60' : ''}`}
+                                    className={`px-2 py-1 rounded transition-all duration-300 absolute flex items-center justify-between overflow-hidden ${isDisabled ? 'cursor-not-allowed pointer-events-none' : 'cursor-pointer pointer-events-auto'} ${isSelected ? 'ring-1 ring-[#21e786] ring-opacity-60' : ''}`}
                                     style={{
                                       width: `${eventWidth}px`,
                                       height: `${eventHeight}px`,
@@ -770,23 +611,11 @@ export const CalendarSection = (): JSX.Element => {
                                         e.currentTarget.style.boxShadow = `0 6px 16px ${textColor}40`;
                                         e.currentTarget.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
 
-                                        // 모든 span 요소 색상 반전
-                                        const allSpans = e.currentTarget.querySelectorAll('span');
-                                        allSpans.forEach((span) => {
-                                          span.style.color = bgColor;
-                                          if (span.classList.contains('font-medium')) {
-                                            span.style.fontWeight = '600';
-                                          }
-                                        });
-                                      }
-                                    }}
-                                    onMouseMove={(e) => {
-                                      if (!isDisabled) {
-                                        setTooltip({
-                                          text: event.text,
-                                          x: e.clientX,
-                                          y: e.clientY
-                                        });
+                                        const textSpan = e.currentTarget.querySelector('span');
+                                        if (textSpan) {
+                                          textSpan.style.color = bgColor;
+                                          textSpan.style.fontWeight = '600';
+                                        }
                                       }
                                     }}
                                     onMouseLeave={(e) => {
@@ -797,59 +626,24 @@ export const CalendarSection = (): JSX.Element => {
                                         e.currentTarget.style.transform = isSelected ? 'scale(1.01)' : 'scale(1)';
                                         e.currentTarget.style.boxShadow = isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none';
 
-                                        // 모든 span 요소 원래 색상으로 복구
-                                        const allSpans = e.currentTarget.querySelectorAll('span');
-                                        allSpans.forEach((span) => {
-                                          span.style.color = textColor;
-                                          if (span.classList.contains('font-medium')) {
-                                            span.style.fontWeight = '500';
-                                          }
-                                        });
+                                        const textSpan = e.currentTarget.querySelector('span');
+                                        if (textSpan) {
+                                          textSpan.style.color = textColor;
+                                          textSpan.style.fontWeight = '500';
+                                        }
                                       }
-                                      setTooltip(null);
                                     }}
                                   >
                                     <span className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-[10px] leading-tight ${isSelected ? 'whitespace-nowrap overflow-hidden text-ellipsis' : 'truncate'}`}>
-                                      {event.text}
+                                      {event.icon} {event.text}
                                     </span>
-                                    <div className="flex items-center gap-1 ml-auto flex-shrink-0">
-                                      {/* 선택 아이콘 - 선택 횟수만큼 표시 */}
-                                      {isSelected && (
-                                        <div
-                                          className="relative flex items-center gap-0.5 group"
-                                          onMouseEnter={() => setHoveredEvent(event.id)}
-                                          onMouseLeave={() => setHoveredEvent(null)}
-                                        >
-                                          {Array.from({ length: eventSelectionCount[event.id] || 1 }).map((_, index) => (
-                                            <img
-                                              key={index}
-                                              src="/icons/iconFireCalendar.png"
-                                              alt="Selected"
-                                              className="w-3 h-3 flex-shrink-0"
-                                            />
-                                          ))}
-                                          {hoveredEvent === event.id && (
-                                            <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-[#1a1a1a] border-2 border-[#21e786] rounded-lg shadow-[0_0_20px_rgba(33,231,134,0.3)] whitespace-nowrap z-[100]">
-                                              <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-[9px]">
-                                                앞으로 2주 내 기대되는 활동입니다!
-                                              </p>
-                                              <div className="absolute top-full right-2 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-[#21e786]"></div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                      {/* 기대표현 개수 */}
-                                      {eventExpectations[event.id] > 0 && (
-                                        <span
-                                          className="text-[9px] font-bold [font-family:'Pretendard-Bold',Helvetica]"
-                                          style={{
-                                            color: textColor
-                                          }}
-                                        >
-                                          {eventExpectations[event.id]}
-                                        </span>
-                                      )}
-                                    </div>
+                                    {isSelected && (
+                                      <img
+                                        src="/icons/iconFireCalendar.png"
+                                        alt="Selected"
+                                        className="w-3 h-3 ml-1 flex-shrink-0"
+                                      />
+                                    )}
                                   </div>
                                 );
                               })}
@@ -1066,23 +860,11 @@ export const CalendarSection = (): JSX.Element => {
                                       e.currentTarget.style.boxShadow = `0 6px 16px ${textColor}40`;
                                       e.currentTarget.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
 
-                                      // 모든 span 요소 색상 반전
-                                      const allSpans = e.currentTarget.querySelectorAll('span');
-                                      allSpans.forEach((span) => {
-                                        span.style.color = bgColor;
-                                        if (span.classList.contains('font-medium')) {
-                                          span.style.fontWeight = '600';
-                                        }
-                                      });
-                                    }
-                                  }}
-                                  onMouseMove={(e) => {
-                                    if (!isDisabled) {
-                                      setTooltip({
-                                        text: event.text,
-                                        x: e.clientX,
-                                        y: e.clientY
-                                      });
+                                      const textSpan = e.currentTarget.querySelector('span');
+                                      if (textSpan) {
+                                        textSpan.style.color = bgColor;
+                                        textSpan.style.fontWeight = '600';
+                                      }
                                     }
                                   }}
                                   onMouseLeave={(e) => {
@@ -1093,59 +875,24 @@ export const CalendarSection = (): JSX.Element => {
                                       e.currentTarget.style.transform = isSelected ? 'scale(1.01)' : 'scale(1)';
                                       e.currentTarget.style.boxShadow = isSelected ? '0 2px 6px rgba(33, 231, 134, 0.25)' : 'none';
 
-                                      // 모든 span 요소 원래 색상으로 복구
-                                      const allSpans = e.currentTarget.querySelectorAll('span');
-                                      allSpans.forEach((span) => {
-                                        span.style.color = textColor;
-                                        if (span.classList.contains('font-medium')) {
-                                          span.style.fontWeight = '500';
-                                        }
-                                      });
+                                      const textSpan = e.currentTarget.querySelector('span');
+                                      if (textSpan) {
+                                        textSpan.style.color = textColor;
+                                        textSpan.style.fontWeight = '500';
+                                      }
                                     }
-                                    setTooltip(null);
                                   }}
                                 >
-                                  <span className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-[14px] leading-tight ${isSelected ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}>
-                                    {event.text}
+                                  <span className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-base leading-tight ${isSelected ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}>
+                                    {event.icon} {event.text}
                                   </span>
-                                  <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
-                                    {/* 선택 아이콘 - 선택 횟수만큼 표시 */}
-                                    {isSelected && (
-                                      <div
-                                        className="relative flex items-center gap-0.5 group"
-                                        onMouseEnter={() => setHoveredEvent(event.id)}
-                                        onMouseLeave={() => setHoveredEvent(null)}
-                                      >
-                                        {Array.from({ length: eventSelectionCount[event.id] || 1 }).map((_, index) => (
-                                          <img
-                                            key={index}
-                                            src="/icons/iconFireCalendar.png"
-                                            alt="Selected"
-                                            className="w-5 h-5 flex-shrink-0"
-                                          />
-                                        ))}
-                                        {hoveredEvent === event.id && (
-                                          <div className="absolute bottom-full right-0 mb-2 px-3 py-1.5 bg-[#1a1a1a] border-2 border-[#21e786] rounded-lg shadow-[0_0_20px_rgba(33,231,134,0.3)] whitespace-nowrap z-[100]">
-                                            <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-xs">
-                                              앞으로 2주 내 기대되는 활동입니다!
-                                            </p>
-                                            <div className="absolute top-full right-3 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-[#21e786]"></div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                    {/* 기대표현 개수 */}
-                                    {eventExpectations[event.id] > 0 && (
-                                      <span
-                                        className="text-xs font-bold [font-family:'Pretendard-Bold',Helvetica]"
-                                        style={{
-                                          color: textColor
-                                        }}
-                                      >
-                                        {eventExpectations[event.id]}
-                                      </span>
-                                    )}
-                                  </div>
+                                  {isSelected && (
+                                    <img
+                                      src="/icons/iconFireCalendar.png"
+                                      alt="Selected"
+                                      className="w-5 h-5 mr-3 flex-shrink-0"
+                                    />
+                                  )}
                                 </div>
                               );
                             })}
@@ -1178,15 +925,8 @@ export const CalendarSection = (): JSX.Element => {
           )}
         </div>
 
-        {/* Footer - 항상 표시 (상태에 따라 내용 변경) */}
-        {/*
-          Footer 표시 로직:
-          - 일정 확인 전 (isConfirmed=false):
-            ㄴ 월-수 (canShowFooter=true): 초록 활성화 버튼 "일정 확인하고 기대 표현 보내기"
-            ㄴ 목-토 (canShowFooter=false): 회색 비활성화 버튼 "일정 확인 기간이 지났습니다"
-          - 일정 확인 후 (isConfirmed=true): 완료 메시지 표시 (버튼 없음)
-        */}
-        {(
+        {/* Footer - 월,화,수이고 일정 확인 전에만 표시 */}
+        {canShowFooter && !isConfirmed && (
           <div className={`mt-0 flex flex-col items-center bg-[#141b22] relative overflow-hidden ${
             isMobile
               ? 'py-6 px-4 gap-6 rounded-b-lg'
@@ -1196,95 +936,50 @@ export const CalendarSection = (): JSX.Element => {
               {isMobile ? (
                 <>
                   <div className="text-center">
-                    <div className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">
-                      {isConfirmed
-                        ? '일정 확인 완료!'
-                        : canShowFooter ? '클럽 일정' : '일정 확인 기간 종료'}
-                    </div>
+                    <div className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-xl">클럽 일정</div>
                     <p className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-xs mt-1 mb-1">
-                      {isConfirmed
-                        ? '이번 주도 기대 표현 보내기 완료!'
-                        : canShowFooter
-                        ? '을 확인하고 3개의 기대 표현을 보내주세요!'
-                        : '다음 주 월요일부터 다시 확인하실 수 있어요'}
+                      을 확인하고 3개의 기대 표현을 보내주세요!ㅇㅇㅇㄴ
                     </p>
-                    {!isConfirmed && canShowFooter && (
-                      <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
-                        클럽 전체 일정은 캘린더를 통해 확인해주세요
-                      </p>
-                    )}
+                    <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-xs">
+                      클럽 전체 일정은 캘린더를 통해 확인해주세요
+                    </p>
                   </div>
                 </>
               ) : (
                 <>
-                  {isConfirmed ? (
-                    <>
-                      <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-2xl">
-                        <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-[32px]">일정 확인이 완료되었습니다!</span>
-                      </h3>
-                      <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-sm">
-                        이번 주도 기대 표현 보내기 완료!
-                      </p>
-                    </>
-                  ) : canShowFooter ? (
-                    <>
-                      <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-2xl">
-                        <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-[32px]">클럽 일정</span>을 확인하고 3개의 기대 표현을 보내주세요!
-                      </h3>
-                      <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-sm">
-                        활동 일정 클릭 시 자동 선택됩니다.
-                      </p>
-                      <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
-                        '기대'는 앞으로 2주 내의 클럽 활동 중 두근두근 기대가 되는 활동을 표시하는 나의 '찜콩'입니다. (테스트2)
-                        <br />
-                        클럽의 중요한 활동을 놓치는 일 없이 다 후루룹짭짭..해서, 성장의 근수저가 되보자구요!
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-2xl">
-                        <span className="font-ria-sans font-bold bg-gradient-to-r from-[#888888] to-[#AAAAAA] bg-clip-text text-transparent text-[32px]">일정 확인 기간이 지났습니다</span>
-                      </h3>
-                      <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-sm">
-                        다음 주 월요일부터 다시 확인하실 수 있어요
-                      </p>
-                    </>
-                  )}
+                  <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center text-2xl">
+                    <span className="font-ria-sans font-bold bg-gradient-to-r from-[#21E786] to-[#FFFFFF] bg-clip-text text-transparent text-[32px]">클럽 일정</span>을 확인하고 3개의 기대 표현을 보내주세요!
+                  </h3>
+                  <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-center text-sm">
+                    활동 일정 클릭 시 자동 선택됩니다.
+                  </p>
+                  <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-sm text-center">
+                    '기대'는 앞으로 2주 내의 클럽 활동 중 두근두근 기대가 되는 활동을 표시하는 나의 '찜콩'입니다. (테스트2)
+                    <br />
+                    클럽의 중요한 활동을 놓치는 일 없이 다 후루룹짭짭..해서, 성장의 근수저가 되보자구요!
+                  </p>
                 </>
               )}
             </div>
 
-            {!isConfirmed && (
             <Button
-              className={`inline-flex items-center justify-center gap-2 h-auto ${canShowFooter ? 'bg-[#21e786] hover:bg-[#1bc970]' : 'bg-[#555555] cursor-not-allowed'} ${isMobile ? 'px-4 py-2 w-[204px]' : 'px-8 py-3'}`}
+              className={`inline-flex items-center justify-center gap-2 h-auto bg-[#21e786] hover:bg-[#1bc970] ${isMobile ? 'px-4 py-2 w-[204px]' : 'px-8 py-3'}`}
               onClick={() => {
-                // 목-토는 클릭 불가
-                if (!canShowFooter) return;
-
-                // 로그인 체크
-                if (!user) {
-                  setShowLoginAlert(true);
-                  return;
-                }
-
-                // 버튼 클릭 시 즉시 확인 상태로 변경 (footer 숨김)
-                setIsConfirmed(true);
-
                 if (isMobile) {
                   router.push('/calendar-events');
                 } else {
                   setIsModalOpen(true);
                 }
               }}
-              disabled={!canShowFooter}
             >
-              <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold ${canShowFooter ? 'text-[#040b11]' : 'text-[#aaaaaa]'} ${isMobile ? 'text-sm' : 'text-base'}`}>
-                {canShowFooter ? '일정 확인하고 기대 표현 보내기' : '일정 확인 기간이 지났습니다'}
+              <span className={`[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#040b11] ${isMobile ? 'text-sm' : 'text-base'}`}>
+                일정 확인하고 기대 표현 보내기
               </span>
             </Button>
-            )}
           </div>
         )}
+        </div>
+      </div>
 
       {/* Modal */}
       {isModalOpen && (
@@ -1321,77 +1016,29 @@ export const CalendarSection = (): JSX.Element => {
         </div>
       )}
 
-      {/* 툴팁 */}
-      {tooltip && (
-        <div
-          style={{
-            position: 'fixed',
-            left: `${tooltip.x + 15}px`,
-            top: `${tooltip.y + 15}px`,
-            zIndex: 10000,
-            pointerEvents: 'none'
-          }}
-        >
-          <div className="bg-[#1a1a1a] text-white px-3 py-2 rounded-lg shadow-lg border border-[#333333]">
-            <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-sm whitespace-nowrap">
-              {tooltip.text}
-            </span>
-          </div>
+      {/* Toast 알림 */}
+      {showToast && (
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-[#21e786] text-[#040b11] px-8 py-4 rounded-full shadow-lg">
+          <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-lg">
+            ✓ 일정이 저장되었습니다
+          </span>
         </div>
       )}
 
-      {/* 로그인 필요 알림 */}
-      <AlertModal
-        isOpen={showLoginAlert}
-        onClose={() => {
-          setShowLoginAlert(false);
-          setIsLoginModalOpen(true);
-        }}
-        message="로그인이 필요합니다."
-        type="info"
-      />
+      {/* 최대 찜콩 수 초과 알림 */}
+        {showMaxAlert && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+                <div className="pointer-events-auto bg-gradient-to-r from-[#ff6b6b] to-[#ee5a52] text-white px-10 py-5 rounded-2xl shadow-2xl border-2 border-[#ff8787]">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">⚠️</span>
+                        <span className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-lg">
+          최대 찜콩 수를 초과했습니다
+        </span>
+                    </div>
+                </div>
+            </div>
+        )}
 
-      {/* 로그인 모달 */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-      />
     </section>
-
-    {/* Toast 알림 - Portal로 body에 렌더링 */}
-    {typeof window !== 'undefined' && showToast && createPortal(
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-[#21e786] text-[#040b11] px-8 py-4 rounded-full shadow-lg">
-        <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-lg">
-          일정이 저장되었습니다
-        </span>
-      </div>,
-      document.body
-    )}
-
-    {/* 취소 완료 토스트 - Portal로 body에 렌더링 */}
-    {typeof window !== 'undefined' && showCancelToast && createPortal(
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-[#21e786] text-[#040b11] rounded-full shadow-lg animate-toast" style={{ padding: 'clamp(12px, 3vw, 16px) clamp(24px, 6vw, 32px)' }}>
-        <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold whitespace-nowrap" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
-          표현 취소가 완료되었습니다
-        </span>
-      </div>,
-      document.body
-    )}
-
-    {/* 최대 찜콩 수 초과 알림 - Portal로 body에 렌더링 */}
-    {typeof window !== 'undefined' && showMaxAlert && createPortal(
-      <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
-        <div className="pointer-events-auto bg-gradient-to-r from-[#ff6b6b] to-[#ee5a52] text-white px-10 py-5 rounded-2xl shadow-2xl border-2 border-[#ff8787]">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">!</span>
-            <span className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-lg">
-              최대 찜콩 수를 초과했습니다
-            </span>
-          </div>
-        </div>
-      </div>,
-      document.body
-    )}
-    </>
   );
 };
