@@ -9,7 +9,12 @@ import paginationImage from "../../../../assets/pagenation.png";
 import buttonInspire from "../../../../icons/buttonInspire.png";
 import buttonInspireCheck from "../../../../icons/buttonInspireCheck.png";
 import iconMedal from "../../../../icons/iconMedal.png";
+import iconMedal1 from "../../../../icons/iconMedal1.png";
 import iconMedal2 from "../../../../icons/iconMedal2.png";
+import newBgImage from "../../../../assets/new -bg.png";
+import newBtnImage from "../../../../assets/new -btn -ss -d.png";
+import iconWrapper from "../../../../icons/iconWrapper.png";
+import iconWrapperActive from "../../../../icons/icon.png";
 import { getWinnerCards, NextChallengerCard } from "../../../../lib/services/nextChallengerService";
 import { AlertModal } from "../../../../components/AlertModal";
 import { LoginModal } from "../../../../components/LoginModal";
@@ -23,7 +28,7 @@ const winnerDataDummy = [
     title: "프로토타입 테스트 진행하기",
     name: "김도윤 크루",
     description:
-      "테스트 유저 3명의 피드백을 반영해 인터랙션을 개선했어요 끝내고 나니 뿌듯하네요 ㅎㅎ 생각보다 많이 어렵지는 않았고요 ~",
+      "테스트 유저 3명의 피드백을 반영해 인터랙션을 개선했어요 끝내고 나니 뿌듯하네요 ㅎㅎ 생각보다 많이 어렵지는 않았고요 이번 프로젝트를 통해서 정말 많은 것을 배웠습니다 특히 사용자 경험을 개선하는 방법에 대해 깊이 있게 고민할 수 있었던 시간이었어요",
     bgImage: "https://c.animaapp.com/O1XpzcZm/img/bg-2.svg",
     badgeImage: "https://c.animaapp.com/O1XpzcZm/img/rectangle-34625310.svg",
   },
@@ -159,6 +164,9 @@ export const WinnerListSection = (): JSX.Element => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [showCancelToast, setShowCancelToast] = useState(false);
   const [hoveredWinner, setHoveredWinner] = useState<string | null>(null);
+  const [showFifthConfirm, setShowFifthConfirm] = useState(false);
+  const [isRecognitionLocked, setIsRecognitionLocked] = useState(false);
+  const [pendingRecognition, setPendingRecognition] = useState<{ judgmentId: string; toUserId: string } | null>(null);
 
   const cardsPerPage = isMobile || isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(winnerData.length / cardsPerPage));
@@ -204,7 +212,7 @@ export const WinnerListSection = (): JSX.Element => {
     };
   }, []);
 
-  const handleInspireClick = async (judgmentId: string, toUserId: string) => {
+  const handleInspireClick = async (judgmentId: string, toUserId: string, currentCount: number) => {
     // 로그인 체크
     if (!user) {
       setAlertModal({
@@ -214,13 +222,45 @@ export const WinnerListSection = (): JSX.Element => {
       return;
     }
 
+    // 5개 이상이면 클릭 불가
+    if (currentCount >= 5) {
+      setAlertModal({
+        isOpen: true,
+        message: '이미 최대 5개의 표현을 받았습니다.',
+      });
+      return;
+    }
+
     const isCurrentlyClicked = (inspireClicks[judgmentId] || 0) > 0;
+
+    // Count how many recognitions the user has sent
+    const userSentCount = Object.values(inspireClicks).filter(v => v > 0).length;
+
+    // If locked and trying to send a new recognition, prevent it
+    if (isRecognitionLocked && !isCurrentlyClicked) {
+      setAlertModal({
+        isOpen: true,
+        message: '더이상 표현을 보낼 수 없습니다.',
+      });
+      return;
+    }
+
+    // If about to send 5th recognition, show confirmation
+    if (userSentCount === 4 && !isCurrentlyClicked) {
+      setPendingRecognition({ judgmentId, toUserId });
+      setShowFifthConfirm(true);
+      return;
+    }
 
     try {
       if (isCurrentlyClicked) {
         // Cancel recognition
         await cancelRecognitionToJudgment(judgmentId);
         setInspireClicks((prev) => ({ ...prev, [judgmentId]: 0 }));
+
+        // Reload data to update count
+        const cards = await getWinnerCards();
+        setWinnerData(cards);
 
         // Show cancel toast
         setShowCancelToast(true);
@@ -231,6 +271,15 @@ export const WinnerListSection = (): JSX.Element => {
         // Send recognition
         await sendRecognitionToJudgment(judgmentId, toUserId);
         setInspireClicks((prev) => ({ ...prev, [judgmentId]: 1 }));
+
+        // Update local count immediately
+        setWinnerData((prevData) =>
+          prevData.map((winner) =>
+            winner.judgment_id === judgmentId
+              ? { ...winner, receivedRecognitionsCount: (winner.receivedRecognitionsCount || 0) + 1 }
+              : winner
+          )
+        );
       }
     } catch (error: any) {
       // Show error modal
@@ -238,6 +287,37 @@ export const WinnerListSection = (): JSX.Element => {
         isOpen: true,
         message: error.message || '오류가 발생했습니다.',
       });
+    }
+  };
+
+  const handleConfirmFifthRecognition = async () => {
+    if (!pendingRecognition) return;
+
+    try {
+      // Send the 5th recognition
+      await sendRecognitionToJudgment(pendingRecognition.judgmentId, pendingRecognition.toUserId);
+      setInspireClicks((prev) => ({ ...prev, [pendingRecognition.judgmentId]: 1 }));
+
+      // Update local count immediately
+      setWinnerData((prevData) =>
+        prevData.map((winner) =>
+          winner.judgment_id === pendingRecognition.judgmentId
+            ? { ...winner, receivedRecognitionsCount: (winner.receivedRecognitionsCount || 0) + 1 }
+            : winner
+        )
+      );
+
+      // Lock further recognitions
+      setIsRecognitionLocked(true);
+      setShowFifthConfirm(false);
+      setPendingRecognition(null);
+    } catch (error: any) {
+      setAlertModal({
+        isOpen: true,
+        message: error.message || '오류가 발생했습니다.',
+      });
+      setShowFifthConfirm(false);
+      setPendingRecognition(null);
     }
   };
 
@@ -399,7 +479,7 @@ export const WinnerListSection = (): JSX.Element => {
           )}
 
           <div
-            className={`grid ${isMobile || isTablet ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'w-full items-center justify-items-center' : 'gap-[30px]'} ${isTablet ? 'w-[480px] mx-auto mt-[250px]' : !isMobile ? 'w-[980px] ml-auto' : ''} relative z-10 transition-all duration-500 ease-out ${
+            className={`grid ${isMobile || isTablet ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'w-full items-center justify-items-center' : 'gap-[30px]'} ${isTablet ? 'w-[480px] mx-auto mt-[250px]' : !isMobile ? 'w-[994px] ml-auto' : ''} relative z-10 transition-all duration-500 ease-out ${
             isTransitioning
               ? slideDirection === 'left'
                 ? 'opacity-0 -translate-x-20'
@@ -431,33 +511,69 @@ export const WinnerListSection = (): JSX.Element => {
 
                       {/* Badge icon on right - positioned at bottom-right with click effect */}
                       <div
-                        className="absolute group"
+                        className="absolute"
                         style={{
-                          bottom: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '2px' : '10px',
-                          right: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '0px' : '8px'
+                          bottom: '10px',
+                          right: '8px'
                         }}
-                        onMouseEnter={() => setHoveredWinner(winner.judgment_id || '')}
-                        onMouseLeave={() => setHoveredWinner(null)}
                       >
-                        <img
-                          className="object-contain cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
+                        {/* Count display above badge - fixed position */}
+                        <div
+                          className="absolute translate-y-[-120%] translate-x-[10%]"
                           style={{
-                            width: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '50.4px' : '36px',
-                            height: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '50.4px' : '36px',
+                            top: '0px',
+                            right: '0px',
+                            marginRight: '5px'
                           }}
-                          alt="Badge"
-                          src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : "/badgeIcon.png"}
-                          onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
-                        />
-                        {/* Hover Tooltip */}
-                        {hoveredWinner === winner.judgment_id && (
-                          <div className="absolute bottom-full right-0 mb-2 px-4 py-2 bg-[#1a1a1a] border-2 border-[#21e786] rounded-lg shadow-[0_0_20px_rgba(33,231,134,0.3)] whitespace-nowrap z-50">
-                            <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-sm">
-                              당신의 목표 달성이 저에게 귀감이 되었습니다!
-                            </p>
-                            <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[#21e786]"></div>
-                          </div>
-                        )}
+                        >
+                          <span className="font-ria-sans font-bold whitespace-nowrap" style={{
+                            fontSize: 'clamp(10px, 2.5vw, 12px)',
+                            color: '#FFFFFF'
+                          }}>
+                            <span style={{ color: '#FFFFFF' }}>{winner.receivedRecognitionsCount || 0}</span>
+                            <span style={{ color: '#AAAAAA' }}>/5</span>
+                          </span>
+                        </div>
+
+                        <div
+                          className={`relative flex items-center justify-center ${(winner.receivedRecognitionsCount || 0) >= 5 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'}`}
+                          onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId, winner.receivedRecognitionsCount || 0)}
+                        >
+                          <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 42 42"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="1"
+                              y="1"
+                              width="40"
+                              height="40"
+                              rx="20"
+                              fill={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "#795D40" : "#040B11"}
+                            />
+                            <rect
+                              x="1"
+                              y="1"
+                              width="40"
+                              height="40"
+                              rx="20"
+                              stroke={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "#FF9E42" : "#D9D9D9"}
+                              strokeOpacity={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "1" : "0.5"}
+                              strokeWidth="1"
+                            />
+                            <image
+                              href="/inspire-icon.png"
+                              x="12.2"
+                              y="12.2"
+                              width="17.6"
+                              height="17.6"
+                              opacity={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "1" : "0.5"}
+                            />
+                          </svg>
+                        </div>
                       </div>
                     </div>
 
@@ -473,76 +589,87 @@ export const WinnerListSection = (): JSX.Element => {
                       </span>
                     </div>
                   </div>
+
                 </div>
               ) : (
-                <Card
-                  className={`relative w-full h-[235px] bg-transparent border-0 shadow-none outline-none`}
-                >
-                  <CardContent className="p-0 h-[235px] border-0 shadow-none outline-none">
-                    <div className="flex flex-col w-full h-[215px] items-start gap-2.5 pt-[37px] pb-[30px] px-[30px] absolute top-5 left-0">
-                      <img
-                        className="absolute w-[100.00%] h-full top-0 left-0"
-                        alt="Background"
-                        src={winner.bgImage}
-                      />
+                <div className={`relative w-[482px] h-[240px] ${hoveredWinner === winner.judgment_id ? 'z-[10000]' : 'z-0'}`}>
+                  {/* Background image as card */}
+                  <img
+                    className="absolute top-[25px] left-0 w-[482px] h-[215px] object-fill"
+                    alt="Card background"
+                    src={newBgImage.src}
+                  />
 
-                      <div className="flex flex-col w-full max-w-[422px] h-[148px] items-start gap-6 relative">
-                        <div className="flex h-[52px] items-end gap-[13px] w-full">
-                          <img
-                            className="w-[51px] h-[51px] mb-[-0.50px] ml-[-0.50px] aspect-[1] object-cover"
-                            alt="Profile"
-                            src={winner.profileImage}
-                          />
+                  {/* Card content */}
+                  <div className="relative pt-[55px] pb-[30px] px-[30px] h-full flex flex-col z-10">
+                      {/* Top section: Profile + Title/Name */}
+                      <div className="flex items-start gap-3 pr-[95px]">
+                        {/* Profile image on left */}
+                        <img
+                          className="w-[55px] h-[55px] rounded-full object-cover flex-shrink-0"
+                          alt="Profile"
+                          src={winner.profileImage}
+                        />
 
-                          <div className="inline-flex items-center justify-end gap-[38px]">
-                            <div className="flex flex-col w-full max-w-[359px] h-[52px] items-start gap-[3.3px] pt-0 pb-px px-0 relative">
-                              <h3 className="flex items-center justify-center self-stretch mt-[-1.00px] [font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-surface-main text-[22px] tracking-[-0.66px] leading-[26.4px]">
-                                {winner.title}
-                              </h3>
-
-                              <p className="flex items-center justify-center w-fit [font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-base tracking-[-0.48px] leading-[19.2px] whitespace-nowrap">
-                                {winner.crewName}
-                              </p>
-
-                              {/* Crown Icon */}
-                              <img
-                                className="absolute -top-0.5 left-[285px] w-[74px] h-[74px] object-contain"
-                                alt="Crown decoration"
-                                src={crownIcon.src}
-                              />
-                            </div>
-                          </div>
+                        {/* Title and crew name */}
+                        <div className="flex flex-col gap-1 flex-1">
+                          <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-[20px] tracking-[-0.6px] leading-[24px]">
+                            {winner.title}
+                          </h3>
+                          <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#999999] text-[14px] tracking-[-0.42px] leading-[16.8px]">
+                            {winner.crewName}
+                          </p>
                         </div>
+                      </div>
 
-                        <p className="w-[334px] h-[72px] [font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base tracking-[-0.48px] leading-6 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical]">
+                      {/* Bottom section: Description */}
+                      <div className="mt-4 pr-[95px]">
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white/90 text-[14px] tracking-[-0.42px] leading-[21px] overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical]">
                           {winner.description}
                         </p>
                       </div>
 
+                      {/* Crown Icon on right */}
+                      <img
+                        className="absolute top-[55px] right-[25px] w-[65px] h-[65px] object-contain opacity-50"
+                        alt="Crown decoration"
+                        src={crownIcon.src}
+                      />
+
+                      {/* Recognition badge with new button design - inside card on right bottom */}
                       <div
                         className="absolute group"
                         style={{
-                          bottom: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '0px' : '10px',
-                          right: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '-10px' : '0px'
+                          bottom: '10px',
+                          right: '5px'
                         }}
                         onMouseEnter={() => setHoveredWinner(winner.judgment_id || '')}
                         onMouseLeave={() => setHoveredWinner(null)}
                       >
-                        <img
-                          className="cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
-                          alt="Inspire button"
-                          src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : buttonInspire.src}
-                          onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
+                        <div
+                          className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-150 ease-in-out ${(winner.receivedRecognitionsCount || 0) >= 5 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:scale-105 hover:brightness-125 active:scale-95'}`}
+                          onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId, winner.receivedRecognitionsCount || 0)}
                           style={{
-                            width: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '70px' : '50px',
-                            height: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '70px' : '50px',
-                            objectFit: 'contain',
+                            width: '100px',
+                            height: '47px',
+                            backgroundColor: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '#795D40' : '#1a1a1a',
+                            border: `1px solid ${(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '#FF9E42' : 'rgba(208, 208, 208, 0.5)'}`,
                           }}
-                        />
+                        >
+                          <span className="font-ria-sans font-bold text-[16px]">
+                            <span className="text-white">{winner.receivedRecognitionsCount || 0}</span>
+                            <span className="text-[#AAAAAA]">/5</span>
+                          </span>
+                          <img
+                            className="w-[24px] h-[24px] object-contain"
+                            alt="Badge icon"
+                            src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? iconWrapperActive.src : iconWrapper.src}
+                          />
+                        </div>
                         {/* Hover Tooltip */}
                         {hoveredWinner === winner.judgment_id && (
                           <div
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#21e786]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(33,231,134,0.7),0_0_80px_rgba(33,231,134,0.3)] z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#21e786]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(33,231,134,0.7),0_0_80px_rgba(33,231,134,0.3)] z-[9999] pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
                             style={{ marginBottom: '10px', minWidth: '350px' }}
                           >
                             <p className="font-ria-sans font-medium text-[#1a1a1a] text-sm text-center">
@@ -554,16 +681,36 @@ export const WinnerListSection = (): JSX.Element => {
                       </div>
                     </div>
 
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
-                      <div className="inline-flex items-center justify-center gap-2 bg-[#0a1a12] rounded-full border border-[#21e786] shadow-[0px_0px_20px_#21e78666]" style={{ padding: '9px 18px' }}>
-                        <img src={iconMedal2.src} alt="Medal" className="w-[18px] h-[18px]" style={{ transform: 'scale(5.2) translateY(1px)' }} />
-                        <span className="font-bold text-[#21e786] leading-[normal] whitespace-nowrap font-ria-sans" style={{ fontSize: '15px' }}>
-                          목표 달성!
-                        </span>
+                  {/* 목표 달성 badge at top center */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
+                    <div className="inline-flex items-center justify-center gap-2 rounded-full border border-[#21e786] shadow-[0px_0px_15px_rgba(33,231,134,0.4)]" style={{ width: '163px', height: '43px', background: '#040B11' }}>
+                      <div style={{
+                        width: '17px',
+                        height: '23px',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#040B11',
+                        flexShrink: 0
+                      }}>
+                        <img
+                          src={iconMedal1.src}
+                          alt="Medal"
+                          style={{
+                            width: '600px',
+                            height: '600px',
+                            objectFit: 'contain',
+                            transform: 'scale(1) translateY(0px)'
+                          }}
+                        />
                       </div>
+                      <span className="text-[#76FFBC] leading-[normal] whitespace-nowrap font-ria-sans text-[16px]" style={{ fontWeight: 500, textShadow: '0 0 40px #B1FFD9' }}>
+                        목표 달성!
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
             </article>
           ))}
@@ -571,7 +718,7 @@ export const WinnerListSection = (): JSX.Element => {
         </div>
 
         {/* Pagination */}
-        <div className={`${!isMobile && !isTablet ? 'w-[980px] ml-auto flex justify-center mt-[64px]' : 'flex justify-center w-full'} ${isMobile ? '-mt-[25px]' : isTablet ? 'mt-8' : ''}`}>
+        <div className={`${!isMobile && !isTablet ? 'w-[994px] ml-auto flex justify-center mt-[64px]' : 'flex justify-center w-full'} ${isMobile ? '-mt-[25px]' : isTablet ? 'mt-8' : ''}`}>
           <div className={`relative cursor-pointer ${isMobile ? 'scale-[0.8]' : ''}`}>
             <img
               className="w-auto h-auto"
@@ -612,6 +759,53 @@ export const WinnerListSection = (): JSX.Element => {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
       />
+
+      {/* 5th Recognition Confirmation Modal */}
+      {showFifthConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
+          onClick={() => {
+            setShowFifthConfirm(false);
+            setPendingRecognition(null);
+          }}
+        >
+          <div
+            className="relative bg-[#1a1a1a] border-2 border-[#21e786] shadow-[0_0_30px_rgba(33,231,134,0.3)] rounded-2xl w-full mx-4"
+            style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 448px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowFifthConfirm(false);
+                setPendingRecognition(null);
+              }}
+              className="absolute top-4 right-4 text-white hover:text-[#21e786] transition-colors text-2xl"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+
+            {/* Message */}
+            <div className="flex flex-col items-center mt-2" style={{ gap: 'clamp(16px, 4vw, 24px)' }}>
+              <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
+                5번째 '귀감'이 전송됩니다!<br />
+                확인을 누르시면 더이상 수정할 수 없습니다.<br />
+                제출할까요?
+              </p>
+
+              {/* Confirm Button */}
+              <button
+                onClick={handleConfirmFifthRecognition}
+                className="w-full font-semibold rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-all bg-[#21e786] hover:bg-[#1bc876] text-black"
+                style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
 
     {/* 취소 완료 토스트 - Portal로 body에 렌더링 */}
