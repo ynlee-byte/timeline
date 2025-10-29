@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Card, CardContent } from "../../../../components/ui/card";
 import { useWindowWidth } from "../../../../breakpoints";
 import badgeImage from "../../../../assets/body.png";
@@ -7,6 +8,7 @@ import paginationImage from "../../../../assets/pagenation.png";
 import buttonApplause from "../../../../icons/buttonApplause.png";
 import buttonApplauseChecked from "../../../../icons/buttonApplauseChecked.png";
 import { AlertModal } from "../../../../components/AlertModal";
+import { LoginModal } from "../../../../components/LoginModal";
 import { sendApplause, cancelApplause, getUserSentApplause } from "../../../../lib/services/applauseService";
 import { getNextChallengerCards, NextChallengerCard } from "../../../../lib/services/nextChallengerService";
 
@@ -209,8 +211,11 @@ export const NextChallengerSection = (): JSX.Element => {
     isOpen: false,
     message: '',
   });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [showCancelToast, setShowCancelToast] = useState(false);
   const [challengerCards, setChallengerCards] = useState<NextChallengerCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hoveredCard, setHoveredCard] = useState<string | number | null>(null);
 
   const cardsPerPage = isMobile ? 4 : isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(challengerCards.length / cardsPerPage));
@@ -269,16 +274,16 @@ export const NextChallengerSection = (): JSX.Element => {
         // Cancel applause
         await cancelApplause(numericId);
         setApplauseClicks((prev) => ({ ...prev, [numericId]: 0 }));
+
+        // Show cancel toast
+        setShowCancelToast(true);
+        setTimeout(() => {
+          setShowCancelToast(false);
+        }, 3000);
       } else {
         // Send applause - FIXED: correct parameter order (challengerId, toUserId)
         await sendApplause(numericId, card.userId);
         setApplauseClicks((prev) => ({ ...prev, [numericId]: 1 }));
-
-        // Show success modal
-        setAlertModal({
-          isOpen: true,
-          message: '당신의 목표는 달성되지 못했지만, 시도와 도전에 충분히 박수드리고 싶습니다! 다음 기회를 또 노려보자구요!',
-        });
       }
     } catch (error: any) {
       // Show error modal
@@ -330,6 +335,7 @@ export const NextChallengerSection = (): JSX.Element => {
   }, [handleNextPage, isPaused]);
 
   return (
+    <>
     <section className={`flex flex-col items-start ${isMobile ? 'py-10 min-h-[600px]' : isTablet ? 'px-10 py-16 min-h-[900px]' : 'px-[120px] py-[150px] min-h-[1100px]'} w-full bg-[#040b11]`}>
       <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} py-0 w-full bg-[#040b11] max-w-[1680px] mx-auto ${isMobile ? 'mb-4' : 'mb-[33px]'} ${isTablet ? 'relative z-10' : ''}`}>
         <header className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} gap-2.5 w-full relative`}>
@@ -434,9 +440,9 @@ export const NextChallengerSection = (): JSX.Element => {
           {currentCards.map((card) => (
             <article key={card.id} className={`relative w-full ${isMobile ? 'mb-[30px] flex justify-center' : ''}`}>
               {isMobile ? (
-                <div className="relative p-[1px] rounded-md bg-gradient-to-r from-[#6D24C8] to-[#E52B50]" style={{ width: 'calc(100vw - 40px)', maxWidth: '380px', height: 'clamp(87px, 23vw, 120px)' }}>
-                  <Card className="relative w-full h-full bg-gradient-to-r from-[#3d1a2d] to-[#2d1a1f] border-0 rounded-md overflow-hidden">
-                    <CardContent className="p-0 relative w-full h-full">
+                <div className="relative p-[1px] rounded-md bg-gradient-to-r from-[#6D24C8] to-[#E52B50]" style={{ width: '100%', maxWidth: '380px', height: 'clamp(87px, 23vw, 120px)' }}>
+                  <Card className="relative w-full h-full bg-gradient-to-r from-[#3d1a2d] to-[#2d1a1f] border-0 rounded-md overflow-visible">
+                    <CardContent className="p-0 relative w-full h-full overflow-hidden">
                     <div className="flex items-center justify-between relative h-full" style={{ padding: 'clamp(12px, 3vw, 20px)', paddingTop: 'clamp(18px, 4.5vw, 26px)', paddingBottom: 'clamp(12px, 3vw, 16px)', paddingRight: 'clamp(54px, 14vw, 70px)' }}>
                       {/* Left content */}
                       <div className="flex flex-col items-start justify-center flex-1 max-w-full">
@@ -452,18 +458,34 @@ export const NextChallengerSection = (): JSX.Element => {
                       </div>
 
                       {/* Badge icon on right - positioned at bottom-right with click effect */}
-                      <img
-                        className="absolute object-contain cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
+                      <div
+                        className="absolute group"
                         style={{
-                          width: (applauseClicks[card.id] || 0) > 0 ? 'clamp(132.3px, 33.075vw, 176.4px)' : 'clamp(126px, 31.5vw, 168px)',
-                          height: (applauseClicks[card.id] || 0) > 0 ? 'clamp(132.3px, 33.075vw, 176.4px)' : 'clamp(126px, 31.5vw, 168px)',
                           bottom: (applauseClicks[card.id] || 0) > 0 ? '-41px' : '-38px',
                           right: (applauseClicks[card.id] || 0) > 0 ? '-41px' : '-38px'
                         }}
-                        alt="Badge"
-                        src={(applauseClicks[card.id] || 0) > 0 ? buttonApplauseChecked.src : "/buttonApplause.png"}
-                        onClick={() => handleApplauseClick(card.id)}
-                      />
+                        onMouseEnter={() => setHoveredCard(card.id)}
+                        onMouseLeave={() => setHoveredCard(null)}
+                      >
+                        <img
+                          className="object-contain cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
+                          style={{
+                            width: (applauseClicks[card.id] || 0) > 0 ? 'clamp(132.3px, 33.075vw, 176.4px)' : 'clamp(126px, 31.5vw, 168px)',
+                            height: (applauseClicks[card.id] || 0) > 0 ? 'clamp(132.3px, 33.075vw, 176.4px)' : 'clamp(126px, 31.5vw, 168px)',
+                          }}
+                          alt="Badge"
+                          src={(applauseClicks[card.id] || 0) > 0 ? buttonApplauseChecked.src : "/buttonApplause.png"}
+                          onClick={() => handleApplauseClick(card.id)}
+                        />
+                        {hoveredCard === card.id && (
+                          <div className="absolute bottom-full right-0 mb-2 px-4 py-2 bg-[#1a1a1a] border-2 border-[#E52B50] rounded-lg shadow-[0_0_20px_rgba(229,43,80,0.3)] whitespace-nowrap z-50">
+                            <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-sm">
+                              박수 : 당신의 목표는 달성되지 못했지만, 시도와 도전에 충분히 박수드리고 싶습니다! 다음 기회를 또 노려보자구요!
+                            </p>
+                            <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[#E52B50]"></div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                   </CardContent>
@@ -530,20 +552,52 @@ export const NextChallengerSection = (): JSX.Element => {
                       </p>
                     </div>
 
-                    <img
-                      className="absolute top-[89px] left-[362px] w-[190px] h-48 cursor-pointer mix-blend-multiply transition-all duration-300 ease-out hover:scale-105 hover:brightness-125"
-                      alt="Applause button"
-                      src={(applauseClicks[card.id] || 0) > 0 ? buttonApplauseChecked.src : buttonApplause.src}
-                      onClick={() => handleApplauseClick(card.id)}
-                    />
+                    <div className="absolute top-[89px] left-[362px] w-[190px] h-48 flex items-center justify-center">
+                      <div className="relative">
+                        <img
+                          className="w-[200px] h-[200px] mix-blend-multiply transition-all duration-300 ease-out pointer-events-none"
+                          alt="Applause button"
+                          src={(applauseClicks[card.id] || 0) > 0 ? buttonApplauseChecked.src : buttonApplause.src}
+                          style={{ objectFit: 'contain' }}
+                        />
+                        <div
+                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60px] h-[60px] rounded-full cursor-pointer transition-all duration-300"
+                          onClick={() => handleApplauseClick(card.id)}
+                          onMouseEnter={() => setHoveredCard(card.id)}
+                          onMouseLeave={() => setHoveredCard(null)}
+                        />
+                        {hoveredCard === card.id && (
+                          <div
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#E52B50]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(229,43,80,0.7),0_0_80px_rgba(229,43,80,0.3)] z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
+                            style={{ marginBottom: '-55px', minWidth: '350px' }}
+                          >
+                            <p className="font-ria-sans font-medium text-[#1a1a1a] text-sm text-center">
+                              박수 : 당신의 목표는 달성되지 못했지만,<br />
+                              시도와 도전에 충분히 박수드리고 싶습니다!<br />
+                              다음 기회를 또 노려보자구요!
+                            </p>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-[#E52B50]"></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="absolute top-[-16px] left-1/2 -translate-x-1/2">
-                    <img
-                      className="w-[162px] h-auto object-contain scale-[1.144]"
-                      alt="다음 기회에 배지"
-                      src={badgeImage.src}
-                    />
+                  {/* 다음 기회에... badge at top center - skewed rectangle */}
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[-1px] z-50">
+                    <div className="inline-flex items-center justify-center bg-[#2d1a1f] border border-[#E52B50] shadow-[0px_0px_20px_#E52B5066] rounded-md" style={{
+                      padding: '7px 14px',
+                      transform: 'skewX(-10deg)'
+                    }}>
+                      <span className="font-bold leading-[normal] whitespace-nowrap font-ria-sans" style={{
+                        fontSize: '15px',
+                        transform: 'skewX(10deg)',
+                        display: 'inline-block',
+                        color: '#E52B50'
+                      }}>
+                        다음 기회에...
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
                 </Card>
@@ -582,10 +636,32 @@ export const NextChallengerSection = (): JSX.Element => {
       {/* Alert Modal */}
       <AlertModal
         isOpen={alertModal.isOpen}
-        onClose={() => setAlertModal({ isOpen: false, message: '' })}
+        onClose={() => {
+          setAlertModal({ isOpen: false, message: '' });
+          if (alertModal.message === '로그인이 필요합니다.') {
+            setIsLoginModalOpen(true);
+          }
+        }}
         message={alertModal.message}
-        type="applause"
+        type="info"
+      />
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
       />
     </section>
+
+    {/* 취소 완료 토스트 - Portal로 body에 렌더링 */}
+    {typeof window !== 'undefined' && showCancelToast && createPortal(
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-[#21e786] text-[#040b11] rounded-full shadow-lg animate-toast" style={{ padding: 'clamp(12px, 3vw, 16px) clamp(24px, 6vw, 32px)' }}>
+        <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold whitespace-nowrap" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
+          ✓ 표현 취소가 완료되었습니다
+        </span>
+      </div>,
+      document.body
+    )}
+    </>
   );
 };

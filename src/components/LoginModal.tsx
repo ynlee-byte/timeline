@@ -72,7 +72,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       onClick={handleClose}
     >
       <div
-        className="relative bg-[#1a1a1a] border-2 border-[#21e786] rounded-2xl p-8 w-full max-w-md shadow-[0_0_30px_rgba(33,231,134,0.3)]"
+        className="relative bg-[#1a1a1a] border-2 border-[#21e786] rounded-2xl w-full mx-4 shadow-[0_0_30px_rgba(33,231,134,0.3)]"
+        style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 448px)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -85,11 +86,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         </button>
 
         {/* Title */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white text-center mb-2 font-ria-sans">
+        <div style={{ marginBottom: 'clamp(16px, 4vw, 24px)' }}>
+          <h2 className="font-bold text-white text-center font-ria-sans" style={{ fontSize: 'clamp(20px, 5vw, 24px)', marginBottom: 'clamp(6px, 1.5vw, 8px)' }}>
             {isSignUp ? '회원가입' : '로그인'}
           </h2>
-          <p className="text-center text-gray-400 [font-family:'Pretendard-Regular',Helvetica] text-sm">
+          <p className="text-center text-gray-400 [font-family:'Pretendard-Regular',Helvetica]" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>
             {isSignUp
               ? '새 계정을 만들어 시작하세요'
               : '계정에 로그인하여 계속하세요'}
@@ -97,10 +98,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(12px, 3vw, 16px)' }}>
           {isSignUp && (
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-white mb-2 [font-family:'Pretendard-Medium',Helvetica]">
+              <label htmlFor="name" className="block font-medium text-white [font-family:'Pretendard-Medium',Helvetica]" style={{ fontSize: 'clamp(12px, 3vw, 14px)', marginBottom: 'clamp(6px, 1.5vw, 8px)' }}>
                 이름
               </label>
               <input
@@ -109,14 +110,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#4a4a4a] rounded-lg text-white placeholder:text-[#666666] focus:outline-none focus:border-[#21e786] transition-colors [font-family:'Pretendard-Regular',Helvetica]"
+                className="w-full bg-[#2a2a2a] border border-[#4a4a4a] rounded-lg text-white placeholder:text-[#666666] focus:outline-none focus:border-[#21e786] transition-colors [font-family:'Pretendard-Regular',Helvetica]"
+                style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 16px)', fontSize: 'clamp(13px, 3.25vw, 15px)' }}
                 placeholder="홍길동"
               />
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-white mb-2 [font-family:'Pretendard-Medium',Helvetica]">
+            <label htmlFor="email" className="block font-medium text-white [font-family:'Pretendard-Medium',Helvetica]" style={{ fontSize: 'clamp(12px, 3vw, 14px)', marginBottom: 'clamp(6px, 1.5vw, 8px)' }}>
               이메일
             </label>
             <input
@@ -125,13 +127,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#4a4a4a] rounded-lg text-white placeholder:text-[#666666] focus:outline-none focus:border-[#21e786] transition-colors [font-family:'Pretendard-Regular',Helvetica]"
+              className="w-full bg-[#2a2a2a] border border-[#4a4a4a] rounded-lg text-white placeholder:text-[#666666] focus:outline-none focus:border-[#21e786] transition-colors [font-family:'Pretendard-Regular',Helvetica]"
+              style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 16px)', fontSize: 'clamp(13px, 3.25vw, 15px)' }}
               placeholder="your@email.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-white mb-2 [font-family:'Pretendard-Medium',Helvetica]">
+            <label htmlFor="password" className="block font-medium text-white [font-family:'Pretendard-Medium',Helvetica]" style={{ fontSize: 'clamp(12px, 3vw, 14px)', marginBottom: 'clamp(6px, 1.5vw, 8px)' }}>
               비밀번호
             </label>
             <input
@@ -140,21 +143,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-[#2a2a2a] border border-[#4a4a4a] rounded-lg text-white placeholder:text-[#666666] focus:outline-none focus:border-[#21e786] transition-colors [font-family:'Pretendard-Regular',Helvetica]"
+              className="w-full bg-[#2a2a2a] border border-[#4a4a4a] rounded-lg text-white placeholder:text-[#666666] focus:outline-none focus:border-[#21e786] transition-colors [font-family:'Pretendard-Regular',Helvetica]"
+              style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 16px)', fontSize: 'clamp(13px, 3.25vw, 15px)' }}
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500 rounded-lg">
-              <p className="text-sm text-red-500 [font-family:'Pretendard-Regular',Helvetica]">{error}</p>
+            <div className="bg-red-500/10 border border-red-500 rounded-lg" style={{ padding: 'clamp(10px, 2.5vw, 12px)' }}>
+              <p className="text-red-500 [font-family:'Pretendard-Regular',Helvetica]" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>{error}</p>
             </div>
           )}
 
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#21e786] hover:bg-[#1bc876] text-black font-semibold py-3 rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-colors"
+            className="w-full bg-[#21e786] hover:bg-[#1bc876] text-black font-semibold rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-colors"
+            style={{ padding: 'clamp(10px, 2.5vw, 12px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
           >
             {loading ? '처리중...' : isSignUp ? '회원가입' : '로그인'}
           </Button>
@@ -170,7 +175,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 setPassword('');
                 setName('');
               }}
-              className="text-sm text-[#21e786] hover:text-[#1bc876] transition-colors [font-family:'Pretendard-Regular',Helvetica]"
+              className="text-[#21e786] hover:text-[#1bc876] transition-colors [font-family:'Pretendard-Regular',Helvetica]"
+              style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}
             >
               {isSignUp
                 ? '이미 계정이 있으신가요? 로그인'

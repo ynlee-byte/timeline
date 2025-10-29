@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useWindowWidth } from "../../../../breakpoints";
 import lineImage from "../../../../assets/line.png";
 import paginationImage from "../../../../assets/pagenation.png";
@@ -18,6 +19,7 @@ import {
 } from "../../../../lib/services/recognitionService";
 import { useAuth } from "../../../../contexts/AuthContext";
 import { AlertModal } from "../../../../components/AlertModal";
+import { LoginModal } from "../../../../components/LoginModal";
 
 const recognitionCardsDefault = [
   {
@@ -214,6 +216,14 @@ export const RecognitionSection = (): JSX.Element => {
   const [myRecognitions, setMyRecognitions] = useState<{reviews: string[], goals: string[]}>({ reviews: [], goals: [] });
   const [alertMessage, setAlertMessage] = useState<string>('');
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [showCancelToast, setShowCancelToast] = useState(false);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [isRecognitionInfoHovered, setIsRecognitionInfoHovered] = useState(false);
+  const [isSupportInfoHovered, setIsSupportInfoHovered] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<any | null>(null);
+  const [isRecognitionInfoModalOpen, setIsRecognitionInfoModalOpen] = useState(false);
+  const [isSupportInfoModalOpen, setIsSupportInfoModalOpen] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
   const cardWidth = 300; // Fixed width of card
   const cardGap = 55; // Gap between cards
@@ -365,6 +375,12 @@ export const RecognitionSection = (): JSX.Element => {
             goals: prev.goals.filter(id => id !== card.originalId)
           }));
         }
+
+        // Show cancel toast
+        setShowCancelToast(true);
+        setTimeout(() => {
+          setShowCancelToast(false);
+        }, 3000);
       } else {
         // 보내기
         if (isReview) {
@@ -429,6 +445,7 @@ export const RecognitionSection = (): JSX.Element => {
     return () => clearInterval(interval);
   }, [navigateCards]);
 
+
   // Mobile: card width = 170px, gap = 24px
   // Total movement per card = 170px + 24px = 194px
   const translateXValue = isMobile
@@ -436,9 +453,10 @@ export const RecognitionSection = (): JSX.Element => {
     : `translateX(-${currentCardIndex * cardWidthWithGap}px)`;
 
   return (
+    <>
     <section className={`flex flex-col items-center w-full bg-[#040b11] relative overflow-hidden ${isMobile ? 'pt-[88px] pb-20' : 'pt-[88px] pb-20'}`}>
       {/* Background image */}
-      <div className="absolute z-0 overflow-hidden" style={{
+      <div className="absolute z-0 overflow-hidden pointer-events-none" style={{
         top: '-30px',
         left: 0,
         right: 0,
@@ -447,7 +465,7 @@ export const RecognitionSection = (): JSX.Element => {
         height: 'calc(100% + 30px)'
       }}>
         <img
-          className="absolute top-0 left-0 w-full h-full object-cover"
+          className="absolute top-0 left-0 w-full h-full object-cover pointer-events-none"
           alt="Background"
           src={bgImage.src}
           style={isTablet ? {
@@ -466,9 +484,9 @@ export const RecognitionSection = (): JSX.Element => {
 
       {/* Timeline line image - full width */}
       {!isMobile && (
-        <div className={`absolute left-0 right-0 w-full h-[5px] z-10 ${isTablet ? 'top-[300px]' : 'top-[333px]'}`}>
+        <div className={`absolute left-0 right-0 w-full h-[5px] z-10 pointer-events-none ${isTablet ? 'top-[350px]' : 'top-[348px]'}`}>
           <img
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover pointer-events-none"
             alt="Timeline"
             src={lineImage.src}
           />
@@ -477,9 +495,9 @@ export const RecognitionSection = (): JSX.Element => {
 
       {/* Timeline line - horizontal line for mobile */}
       {isMobile && (
-        <div className="absolute left-0 right-0 w-full h-[2px] z-0" style={{ top: '211px' }}>
+        <div className="absolute left-0 right-0 w-full h-[2px] z-0 pointer-events-none" style={{ top: '241px' }}>
           <img
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover pointer-events-none"
             alt="Timeline"
             src={lineImage.src}
           />
@@ -487,8 +505,8 @@ export const RecognitionSection = (): JSX.Element => {
       )}
 
       {/* Header section with max-width */}
-      <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} w-full max-w-[1680px] mx-auto relative z-10 ${isMobile ? 'gap-6 px-5 mb-6' : isTablet ? 'gap-[40px] px-10 mb-[13px]' : 'gap-[50px] px-[120px] mb-[48px]'}`}>
-        <header className={`flex flex-col ${isMobile ? 'items-start w-full' : 'items-center'} ${isMobile ? 'gap-3' : 'gap-[15px]'}`}>
+      <div className={`flex flex-col ${isMobile ? 'items-start' : 'items-center'} w-full max-w-[1680px] mx-auto relative z-10 ${isMobile ? 'px-5 mb-6' : isTablet ? 'gap-[60px] px-10 mb-[40px]' : 'gap-[50px] px-[120px] mb-[48px]'}`} style={{ pointerEvents: 'auto', gap: isMobile ? '39px' : undefined }}>
+        <header className={`flex flex-col ${isMobile ? 'items-start w-full' : 'items-center'}`} style={{ pointerEvents: 'auto', gap: isMobile ? '18px' : isTablet ? '25px' : '15px' }}>
           {isMobile ? (
             <h2 className="[font-family:'Ria'] font-bold text-white text-[20px] text-left font-ria-sans">
               인정과 응원 보내기
@@ -522,15 +540,82 @@ export const RecognitionSection = (): JSX.Element => {
             )}
           </div>
         </header>
+
+        {/* Info Boxes */}
+        <div className={`relative z-[100] flex items-center justify-center gap-6 ${isMobile ? '-mt-1' : isTablet ? '-mt-[15px]' : '-mt-[9px]'}`} style={{ pointerEvents: 'auto' }}>
+          {/* 인정이 뭔가요? */}
+          <div
+            className={`relative inline-flex items-center gap-2 ${isMobile || isTablet ? '' : 'px-4 pt-2 pb-8 cursor-help'}`}
+            onMouseEnter={() => !isMobile && !isTablet && setIsRecognitionInfoHovered(true)}
+            onMouseLeave={() => !isMobile && !isTablet && setIsRecognitionInfoHovered(false)}
+            style={{ pointerEvents: 'auto', zIndex: 1000, position: 'relative' }}
+          >
+            <button
+              type="button"
+              className={`font-ria-sans font-medium text-[#767676] text-sm ${isMobile || isTablet ? 'cursor-pointer px-3 py-2 bg-transparent hover:text-white active:text-white' : ''}`}
+              onClick={() => (isMobile || isTablet) && setIsRecognitionInfoModalOpen(true)}
+              style={isMobile || isTablet ? { touchAction: 'manipulation', pointerEvents: 'auto', zIndex: 1001 } : undefined}
+            >
+              인정이 뭔가요?
+            </button>
+
+            {isRecognitionInfoHovered && !isMobile && !isTablet && (
+              <div
+                className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#FFED00]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(255,237,0,0.7),0_0_80px_rgba(255,237,0,0.3)] z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
+                style={{ marginBottom: '10px', minWidth: '400px', maxWidth: '500px' }}
+              >
+                <p className="font-ria-sans font-medium text-[#1a1a1a] text-sm text-center leading-relaxed">
+                  인정은, 내가 인정할만한 아쉬움과 뿌듯함을 통해<br />
+                  치열하게 성장하는 분께 드리는, 나의 '박수' 입니다.<br />
+                  타인의 도전 과정을 확인하며<br />
+                  나의 자양분으로 삼을 수 있는 토양을 만들어봐요!
+                </p>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-[#FFED00]"></div>
+              </div>
+            )}
+          </div>
+
+          {/* 응원이 뭔가요? */}
+          <div
+            className={`relative inline-flex items-center gap-2 ${isMobile || isTablet ? '' : 'px-4 pt-2 pb-8 cursor-help'}`}
+            onMouseEnter={() => !isMobile && !isTablet && setIsSupportInfoHovered(true)}
+            onMouseLeave={() => !isMobile && !isTablet && setIsSupportInfoHovered(false)}
+            style={{ pointerEvents: 'auto', zIndex: 1000, position: 'relative' }}
+          >
+            <button
+              type="button"
+              className={`font-ria-sans font-medium text-[#767676] text-sm ${isMobile || isTablet ? 'cursor-pointer px-3 py-2 bg-transparent hover:text-white active:text-white' : ''}`}
+              onClick={() => (isMobile || isTablet) && setIsSupportInfoModalOpen(true)}
+              style={isMobile || isTablet ? { touchAction: 'manipulation', pointerEvents: 'auto', zIndex: 1001 } : undefined}
+            >
+              응원이 뭔가요?
+            </button>
+
+            {isSupportInfoHovered && !isMobile && !isTablet && (
+              <div
+                className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#FFED00]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(255,237,0,0.7),0_0_80px_rgba(255,237,0,0.3)] z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
+                style={{ marginBottom: '10px', minWidth: '400px', maxWidth: '500px' }}
+              >
+                <p className="font-ria-sans font-medium text-[#1a1a1a] text-sm text-center leading-relaxed">
+                  응원은, 나와 함께 같이 성장하는<br />
+                  우리 선배/후배/동료 크루분들의 '목표'에 보내는,<br />
+                  나의 '사랑'입니다. 모두의 목표들을 확인하며 그 안에서<br />
+                  나도 같이 커갈 수 있는 긍정적인 자극으로 활용하자구요!
+                </p>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-[#FFED00]"></div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Timeline with cards - full width without padding */}
-      <div className="relative w-full z-10 overflow-hidden">
+      <div className={`relative w-full z-10 overflow-hidden ${isTablet ? '-mt-[77px]' : '-mt-[88px]'}`}>
           {/* Cards container with horizontal scroll */}
           <div
             ref={sliderRef}
             className={`relative ${isMobile ? 'w-full overflow-x-hidden overflow-y-visible px-0' : isTablet ? 'w-[1010px] overflow-visible mx-auto' : 'w-[1720px] overflow-hidden mx-auto'}`}
-            style={isMobile ? { paddingTop: '20px' } : undefined}
+            style={isMobile ? { paddingTop: '130px' } : undefined}
           >
             <div
               className={`inline-flex flex-row transition-transform duration-4000 ease-in-out ${isMobile ? 'gap-6' : 'gap-[55px]'}`}
@@ -600,12 +685,18 @@ export const RecognitionSection = (): JSX.Element => {
 
                       {/* Description */}
                       {isMobile ? (
-                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left text-[12px] leading-[16px] mb-1.5 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
+                        <p
+                          className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left text-[12px] leading-[16px] mb-1.5 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] cursor-pointer transition-all duration-200 hover:text-[#21e786] hover:scale-[1.02]"
+                          onClick={() => setSelectedCard(card)}
+                        >
                           {card.description}
                         </p>
                       ) : (
                         <div className="flex items-start justify-start min-h-[60px]">
-                          <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white tracking-[-0.42px] text-left overflow-hidden text-ellipsis text-[16px] leading-[21px]">
+                          <p
+                            className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white tracking-[-0.42px] text-left overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] text-[16px] leading-[21px] cursor-pointer transition-all duration-200 hover:text-[#21e786] hover:scale-[1.02]"
+                            onClick={() => setSelectedCard(card)}
+                          >
                             {card.description}
                           </p>
                         </div>
@@ -631,26 +722,28 @@ export const RecognitionSection = (): JSX.Element => {
                           <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#888888] text-[10px] overflow-hidden text-ellipsis whitespace-nowrap max-w-[80px]">
                             {card.period.split('·')[1]?.trim() || ''}
                           </p>
-                          <button
-                            onClick={() => handleButtonClick(card)}
-                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out active:scale-95 font-ria-sans cursor-pointer w-[40px] h-[40px] text-[11px] ${
-                              clickedButtons[card.id]
-                                ? 'bg-[#FFF802] text-[#040B11] scale-105'
-                                : 'bg-[#040B11] text-white border border-white/30 scale-100'
-                            }`}
-                            style={
-                              clickedButtons[card.id]
-                                ? {
-                                    boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
-                                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
-                                  }
-                                : {
-                                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
-                                  }
-                            }
-                          >
-                            {card.badge}
-                          </button>
+                          <div className="relative group">
+                            <button
+                              onClick={() => handleButtonClick(card)}
+                              className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out active:scale-95 font-ria-sans cursor-pointer w-[40px] h-[40px] text-[11px] ${
+                                clickedButtons[card.id]
+                                  ? 'bg-[#FFF802] text-[#040B11] scale-105'
+                                  : 'bg-[#040B11] text-white border border-white/30 scale-100'
+                              }`}
+                              style={
+                                clickedButtons[card.id]
+                                  ? {
+                                      boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
+                                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    }
+                                  : {
+                                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    }
+                              }
+                            >
+                              {card.badge}
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between -mt-2">
@@ -664,26 +757,28 @@ export const RecognitionSection = (): JSX.Element => {
                               </span>
                             ))}
                           </div>
-                          <button
-                            onClick={() => handleButtonClick(card)}
-                            className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out hover:scale-[1.08] hover:brightness-110 active:scale-95 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
-                              clickedButtons[card.id]
-                                ? 'bg-[#FFF802] text-[#040B11] scale-105'
-                                : 'bg-[#040B11] text-white border-2 border-white border-opacity-30 scale-100'
-                            }`}
-                            style={
-                              clickedButtons[card.id]
-                                ? {
-                                    boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
-                                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
-                                  }
-                                : {
-                                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
-                                  }
-                            }
-                          >
-                            {card.badge}
-                          </button>
+                          <div className="relative group">
+                            <button
+                              onClick={() => handleButtonClick(card)}
+                              className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out hover:scale-[1.08] hover:brightness-110 active:scale-95 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
+                                clickedButtons[card.id]
+                                  ? 'bg-[#FFF802] text-[#040B11] scale-105'
+                                  : 'bg-[#040B11] text-white border-2 border-white border-opacity-30 scale-100'
+                              }`}
+                              style={
+                                clickedButtons[card.id]
+                                  ? {
+                                      boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
+                                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    }
+                                  : {
+                                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                                    }
+                              }
+                            >
+                              {card.badge}
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -728,9 +823,157 @@ export const RecognitionSection = (): JSX.Element => {
       {/* Alert Modal */}
       <AlertModal
         isOpen={isAlertOpen}
-        onClose={() => setIsAlertOpen(false)}
+        onClose={() => {
+          setIsAlertOpen(false);
+          if (alertMessage === '로그인이 필요합니다.') {
+            setIsLoginModalOpen(true);
+          }
+        }}
         message={alertMessage}
+        type={alertMessage === '로그인이 필요합니다.' ? 'info' : 'recognition'}
       />
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
+
+      {/* Card Detail Modal */}
+      {selectedCard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
+          onClick={() => setSelectedCard(null)}
+        >
+          <div
+            className="relative bg-[#1a1a1a] border-2 border-[#21e786] rounded-2xl w-full mx-4 shadow-[0_0_30px_rgba(33,231,134,0.3)]"
+            style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 600px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedCard(null)}
+              className="absolute top-4 right-4 text-white hover:text-[#21e786] transition-colors text-2xl"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+
+            {/* Content */}
+            <div className="flex flex-col gap-4">
+              {/* Period */}
+              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#cccccc] text-left" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>
+                {selectedCard.period}
+              </p>
+
+              {/* Title with icon */}
+              <div className="flex items-start justify-start gap-2">
+                <img
+                  className="mt-0.5 flex-shrink-0 w-6 h-6"
+                  alt="Logo"
+                  src="https://c.animaapp.com/O1XpzcZm/img/logo-1.svg"
+                />
+                <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-left" style={{ fontSize: 'clamp(20px, 5vw, 24px)', lineHeight: '1.2' }}>
+                  {selectedCard.title}
+                </h3>
+              </div>
+
+              {/* Description - Full text */}
+              <div className="bg-[#2a2a2a] border border-[#4a4a4a] rounded-lg" style={{ padding: 'clamp(16px, 4vw, 20px)' }}>
+                <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left whitespace-pre-wrap" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)', lineHeight: '1.6' }}>
+                  {selectedCard.description}
+                </p>
+              </div>
+
+              {/* Stars */}
+              <div className="flex items-center justify-start gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <span
+                    key={i}
+                    className={`${i < selectedCard.stars ? 'text-white' : 'text-[#666666]'}`}
+                    style={{ fontSize: 'clamp(20px, 5vw, 24px)' }}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
+
+    {/* 인정이 뭔가요? 모달 */}
+    {isRecognitionInfoModalOpen && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
+        onClick={() => setIsRecognitionInfoModalOpen(false)}
+      >
+        <div
+          className="relative bg-[#FFED00]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(255,237,0,0.7),0_0_80px_rgba(255,237,0,0.3)] w-full mx-4"
+          style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 500px)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setIsRecognitionInfoModalOpen(false)}
+            className="absolute top-4 right-4 text-[#1a1a1a] hover:text-[#040b11] transition-colors text-2xl"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
+
+          {/* Content */}
+          <p className="font-ria-sans font-medium text-[#1a1a1a] text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>
+            인정은, 내가 인정할만한 아쉬움과 뿌듯함을 통해<br />
+            치열하게 성장하는 분께 드리는, 나의 '박수' 입니다.<br />
+            타인의 도전 과정을 확인하며<br />
+            나의 자양분으로 삼을 수 있는 토양을 만들어봐요!
+          </p>
+        </div>
+      </div>
+    )}
+
+    {/* 응원이 뭔가요? 모달 */}
+    {isSupportInfoModalOpen && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
+        onClick={() => setIsSupportInfoModalOpen(false)}
+      >
+        <div
+          className="relative bg-[#FFED00]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(255,237,0,0.7),0_0_80px_rgba(255,237,0,0.3)] w-full mx-4"
+          style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 500px)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setIsSupportInfoModalOpen(false)}
+            className="absolute top-4 right-4 text-[#1a1a1a] hover:text-[#040b11] transition-colors text-2xl"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
+
+          {/* Content */}
+          <p className="font-ria-sans font-medium text-[#1a1a1a] text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>
+            응원은, 나와 함께 같이 성장하는<br />
+            우리 선배/후배/동료 크루분들의 '목표'에 보내는,<br />
+            나의 '사랑'입니다. 모두의 목표들을 확인하며 그 안에서<br />
+            나도 같이 커갈 수 있는 긍정적인 자극으로 활용하자구요!
+          </p>
+        </div>
+      </div>
+    )}
+
+    {/* 취소 완료 토스트 - Portal로 body에 렌더링 */}
+    {typeof window !== 'undefined' && showCancelToast && createPortal(
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-[#21e786] text-[#040b11] rounded-full shadow-lg animate-toast" style={{ padding: 'clamp(12px, 3vw, 16px) clamp(24px, 6vw, 32px)' }}>
+        <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold whitespace-nowrap" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
+          ✓ 표현 취소가 완료되었습니다
+        </span>
+      </div>,
+      document.body
+    )}
+    </>
   );
 };

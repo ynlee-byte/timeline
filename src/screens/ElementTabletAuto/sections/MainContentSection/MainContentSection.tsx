@@ -5,6 +5,7 @@ import { Card, CardContent } from "../../../../components/ui/card";
 import { useWindowWidth } from "../../../../breakpoints";
 import { ReviewCardModal, GoalCardModal, JudgmentCardModal } from "./components";
 import { LoginModal } from "../../../../components/LoginModal";
+import { AlertModal } from "../../../../components/AlertModal";
 import { useState, useEffect, useCallback } from "react";
 import { canWriteReview, canWriteGoal, canWriteJudgment, getCurrentWeekMonday, getCurrentWeekSunday, formatDateWithDay } from "../../../../lib/utils/dateUtils";
 import { hasWrittenReviewThisWeek, getLatestReview, Review } from "../../../../lib/services/reviewService";
@@ -43,6 +44,8 @@ export const MainContentSection = (): JSX.Element => {
   const [isReviewCardExpanded, setIsReviewCardExpanded] = useState(false);
   const [isJudgmentCardExpanded, setIsJudgmentCardExpanded] = useState(false);
   const [isGoalCardExpanded, setIsGoalCardExpanded] = useState(false);
+  const [showLoginAlert, setShowLoginAlert] = useState(false);
+  const [showPeriodAlert, setShowPeriodAlert] = useState(false);
   const [isScheduleChecked, setIsScheduleChecked] = useState(false);
   const [reviewBadgeText, setReviewBadgeText] = useState("월, 화, 수");
   const [latestReview, setLatestReview] = useState<Review | null>(null);
@@ -159,7 +162,7 @@ export const MainContentSection = (): JSX.Element => {
       if (isReviewCompleted) {
         setReviewBadgeText("작성 완료 ✓");
       } else {
-        setReviewBadgeText("작성 기간이 아닙니다");
+        setReviewBadgeText("월, 화, 수");
       }
     }
   }, [currentPeriod, isReviewCompleted]);
@@ -244,8 +247,7 @@ export const MainContentSection = (): JSX.Element => {
   const openReviewModal = () => {
     // 로그인 체크
     if (!user) {
-      alert('로그인 후 이용해주세요!');
-      setIsLoginModalOpen(true);
+      setShowLoginAlert(true);
       return;
     }
     // 날짜 체크는 ReviewCardModal 내부에서 처리됨
@@ -256,12 +258,11 @@ export const MainContentSection = (): JSX.Element => {
   const openGoalModal = () => {
     // 로그인 체크
     if (!user) {
-      alert('로그인 후 이용해주세요!');
-      setIsLoginModalOpen(true);
+      setShowLoginAlert(true);
       return;
     }
     if (currentPeriod === 'not-period') {
-      alert('기간이 아닙니다.');
+      setShowPeriodAlert(true);
       return;
     }
     setIsGoalModalOpen(true);
@@ -271,8 +272,7 @@ export const MainContentSection = (): JSX.Element => {
   const openJudgmentModal = () => {
     // 로그인 체크
     if (!user) {
-      alert('로그인 후 이용해주세요!');
-      setIsLoginModalOpen(true);
+      setShowLoginAlert(true);
       return;
     }
     setIsJudgmentModalOpen(true);
@@ -921,9 +921,9 @@ export const MainContentSection = (): JSX.Element => {
                         <div className="flex flex-col items-center pt-[6px] pb-4" style={{ transform: 'translateY(-5px)' }}>
                           <div className="flex flex-col items-center gap-0">
                             {/* Heart Icon */}
-                            <div className="relative" style={{ width: 'clamp(90px, 27vw, 126px)', height: 'clamp(83px, 25vw, 117px)', transform: 'translateX(-3px)' }}>
+                            <div className="relative" style={{ width: 'clamp(50px, 15vw, 70px)', height: 'clamp(46px, 14vw, 65px)' }}>
                               <img
-                                className="w-full h-full object-contain scale-[1.444]"
+                                className="w-full h-full object-contain"
                                 alt="Heart icon"
                                 src="/iconHeart.png"
                               />
@@ -957,9 +957,9 @@ export const MainContentSection = (): JSX.Element => {
                         <div className="flex flex-col items-center pt-[6px] pb-4" style={{ transform: 'translateY(-5px)' }}>
                           <div className="flex flex-col items-center gap-0">
                             {/* Heart Icon */}
-                            <div className="relative" style={{ width: 'clamp(90px, 27vw, 126px)', height: 'clamp(83px, 25vw, 117px)', transform: 'translateX(-3px)' }}>
+                            <div className="relative" style={{ width: 'clamp(50px, 15vw, 70px)', height: 'clamp(46px, 14vw, 65px)' }}>
                               <img
-                                className="w-full h-full object-contain scale-[1.444]"
+                                className="w-full h-full object-contain"
                                 alt="Heart icon"
                                 src="/iconHeart.png"
                               />
@@ -1637,7 +1637,7 @@ export const MainContentSection = (): JSX.Element => {
                             {/* Heart Icon */}
                             <div className="relative w-[80px] h-[74px]">
                               <img
-                                className="w-full h-full object-cover scale-[2.5]"
+                                className="w-full h-full object-contain"
                                 alt="Heart icon"
                                 src="/iconHeart.png"
                               />
@@ -1724,6 +1724,23 @@ export const MainContentSection = (): JSX.Element => {
       <GoalCardModal isOpen={isGoalModalOpen} onClose={closeGoalModal} onComplete={handleGoalComplete} />
       <JudgmentCardModal isOpen={isJudgmentModalOpen} onClose={closeJudgmentModal} onComplete={handleJudgmentComplete} type={judgmentModalType} />
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+
+      {/* Alert Modals */}
+      <AlertModal
+        isOpen={showLoginAlert}
+        onClose={() => {
+          setShowLoginAlert(false);
+          setIsLoginModalOpen(true);
+        }}
+        message="로그인이 필요합니다."
+        type="info"
+      />
+      <AlertModal
+        isOpen={showPeriodAlert}
+        onClose={() => setShowPeriodAlert(false)}
+        message="기간이 아닙니다."
+        type="info"
+      />
 
       {/* 성공/실패 팝업 - JudgmentCardModal 내부에서 처리됨 */}
 

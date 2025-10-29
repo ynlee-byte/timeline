@@ -58,9 +58,35 @@
   animation: var(--animate-spin);
 }
 
+.animate-toast {
+  animation: toast-fade-in-out 3s ease-in-out forwards;
+}
+
 @keyframes spin {
   to {
     transform: rotate(1turn);
+  }
+}
+
+@keyframes toast-fade-in-out {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  90% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
   }
 }
 

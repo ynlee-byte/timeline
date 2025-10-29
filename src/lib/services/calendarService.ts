@@ -140,3 +140,123 @@ export async function getUserCalendarConfirmations() {
 
   return confirmations as CalendarConfirmation[];
 }
+
+// ==================== 기대표현 관련 함수 ====================
+
+export interface CalendarExpectation {
+  id: string;
+  user_id: string;
+  event_id: number;
+  week_start: string;
+  created_at: string;
+}
+
+/**
+ * 기대표현 저장 (최대 3개)
+ * @param eventIds - 선택한 일정 ID 배열 (최대 3개)
+ */
+export async function saveCalendarExpectations(eventIds: number[]) {
+  const supabase = createClient();
+
+  // 현재 로그인한 사용자 확인
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error('로그인이 필요합니다.');
+  }
+
+  // 최대 3개 검증
+  if (eventIds.length > 3) {
+    throw new Error('최대 3개의 일정만 선택할 수 있습니다.');
+  }
+
+  // 이번 주 월요일 날짜
+  const weekStart = getThisWeekMonday();
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+
+  // 기존 기대표현 삭제 (이번 주)
+  await supabase
+    .from('calendar_expectations')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('week_start', weekStartStr);
+
+  // 새로운 기대표현 저장
+  const expectations = eventIds.map(eventId => ({
+    user_id: user.id,
+    event_id: eventId,
+    week_start: weekStartStr,
+  }));
+
+  const { data, error } = await supabase
+    .from('calendar_expectations')
+    .insert(expectations)
+    .select();
+
+  if (error) {
+    console.error('Error saving calendar expectations:', error);
+    throw error;
+  }
+
+  return data as CalendarExpectation[];
+}
+
+/**
+ * 각 일정별 기대표현 개수 조회
+ * @returns eventId를 key로 하는 개수 맵
+ */
+export async function getExpectationCounts(): Promise<Record<number, number>> {
+  const supabase = createClient();
+
+  // 이번 주 월요일 날짜
+  const weekStart = getThisWeekMonday();
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('calendar_expectations')
+    .select('event_id')
+    .eq('week_start', weekStartStr);
+
+  if (error) {
+    console.error('Error fetching expectation counts:', error);
+    return {};
+  }
+
+  // event_id별로 카운트
+  const counts: Record<number, number> = {};
+  data?.forEach((item: any) => {
+    counts[item.event_id] = (counts[item.event_id] || 0) + 1;
+  });
+
+  return counts;
+}
+
+/**
+ * 현재 사용자가 이번 주에 선택한 일정 조회
+ */
+export async function getUserExpectations(): Promise<number[]> {
+  const supabase = createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return [];
+  }
+
+  // 이번 주 월요일 날짜
+  const weekStart = getThisWeekMonday();
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('calendar_expectations')
+    .select('event_id')
+    .eq('user_id', user.id)
+    .eq('week_start', weekStartStr);
+
+  if (error) {
+    console.error('Error fetching user expectations:', error);
+    return [];
+  }
+
+  return data?.map((item: any) => item.event_id) || [];
+}

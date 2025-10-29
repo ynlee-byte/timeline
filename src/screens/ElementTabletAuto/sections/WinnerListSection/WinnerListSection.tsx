@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Badge } from "../../../../components/ui/badge";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent } from "../../../../components/ui/card";
@@ -11,6 +12,8 @@ import iconMedal from "../../../../icons/iconMedal.png";
 import iconMedal2 from "../../../../icons/iconMedal2.png";
 import { getWinnerCards, NextChallengerCard } from "../../../../lib/services/nextChallengerService";
 import { AlertModal } from "../../../../components/AlertModal";
+import { LoginModal } from "../../../../components/LoginModal";
+import { useAuth } from "../../../../contexts/AuthContext";
 import { sendRecognitionToJudgment, cancelRecognitionToJudgment, getUserSentRecognitionsToJudgments } from "../../../../lib/services/recognitionJudgmentService";
 
 const winnerDataDummy = [
@@ -140,6 +143,7 @@ export const WinnerListSection = (): JSX.Element => {
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
+  const { user } = useAuth();
 
   const [currentPage, setCurrentPage] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -152,6 +156,9 @@ export const WinnerListSection = (): JSX.Element => {
     isOpen: false,
     message: '',
   });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [showCancelToast, setShowCancelToast] = useState(false);
+  const [hoveredWinner, setHoveredWinner] = useState<string | null>(null);
 
   const cardsPerPage = isMobile || isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(winnerData.length / cardsPerPage));
@@ -198,6 +205,15 @@ export const WinnerListSection = (): JSX.Element => {
   }, []);
 
   const handleInspireClick = async (judgmentId: string, toUserId: string) => {
+    // 로그인 체크
+    if (!user) {
+      setAlertModal({
+        isOpen: true,
+        message: '로그인이 필요합니다.',
+      });
+      return;
+    }
+
     const isCurrentlyClicked = (inspireClicks[judgmentId] || 0) > 0;
 
     try {
@@ -205,16 +221,16 @@ export const WinnerListSection = (): JSX.Element => {
         // Cancel recognition
         await cancelRecognitionToJudgment(judgmentId);
         setInspireClicks((prev) => ({ ...prev, [judgmentId]: 0 }));
+
+        // Show cancel toast
+        setShowCancelToast(true);
+        setTimeout(() => {
+          setShowCancelToast(false);
+        }, 3000);
       } else {
         // Send recognition
         await sendRecognitionToJudgment(judgmentId, toUserId);
         setInspireClicks((prev) => ({ ...prev, [judgmentId]: 1 }));
-
-        // Show success modal
-        setAlertModal({
-          isOpen: true,
-          message: '당신의 목표 달성이 저에게 귀감이 되었습니다!😍',
-        });
       }
     } catch (error: any) {
       // Show error modal
@@ -266,6 +282,7 @@ export const WinnerListSection = (): JSX.Element => {
   }, [handleNextPage, isPaused]);
 
   return (
+    <>
     <section className={`flex flex-col items-start ${isMobile ? 'py-10 min-h-[600px]' : isTablet ? 'px-10 py-16 min-h-[900px]' : 'px-[120px] py-20 min-h-[1100px]'} w-full bg-[#040b11]`}>
       <div className={`flex flex-col ${isMobile ? 'items-start px-5' : 'items-center'} w-full max-w-[1680px] mx-auto ${isMobile ? 'gap-6' : 'gap-[50px]'} ${isTablet ? 'relative z-10' : ''}`}>
         <header className={`inline-flex flex-col ${isMobile ? 'items-start mb-6' : 'items-center mb-[50px]'} gap-2.5 relative z-10`}>
@@ -395,7 +412,7 @@ export const WinnerListSection = (): JSX.Element => {
           {currentCards.map((winner) => (
             <article key={winner.id} className={`relative w-full ${isMobile ? 'mb-[30px] flex justify-center' : ''}`}>
               {isMobile ? (
-                <div className="relative p-[1px] rounded-md bg-gradient-to-r from-[#FFDC4A] to-[#21E786]" style={{ width: 'calc(100vw - 40px)', maxWidth: '380px', height: 'clamp(87px, 23vw, 120px)' }}>
+                <div className="relative p-[1px] rounded-md bg-gradient-to-r from-[#FFDC4A] to-[#21E786]" style={{ width: '100%', maxWidth: '380px', height: 'clamp(87px, 23vw, 120px)' }}>
                   <Card className="relative w-full h-full bg-gradient-to-r from-[#28482A] to-[#0D1C16] border-0 rounded-md overflow-hidden">
                     <CardContent className="p-0 relative w-full h-full">
                     <div className="flex items-center justify-between relative h-full" style={{ padding: 'clamp(12px, 3vw, 20px)', paddingTop: 'clamp(18px, 4.5vw, 26px)', paddingBottom: 'clamp(12px, 3vw, 16px)', paddingRight: 'clamp(54px, 14vw, 70px)' }}>
@@ -413,18 +430,35 @@ export const WinnerListSection = (): JSX.Element => {
                       </div>
 
                       {/* Badge icon on right - positioned at bottom-right with click effect */}
-                      <img
-                        className="absolute object-contain cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
+                      <div
+                        className="absolute group"
                         style={{
-                          width: (inspireClicks[winner.id] || 0) > 0 ? 'clamp(48.3px, 12.075vw, 64.4px)' : 'clamp(36px, 9vw, 48px)',
-                          height: (inspireClicks[winner.id] || 0) > 0 ? 'clamp(48.3px, 12.075vw, 64.4px)' : 'clamp(36px, 9vw, 48px)',
-                          bottom: (inspireClicks[winner.id] || 0) > 0 ? '3.85px' : '10px',
-                          right: (inspireClicks[winner.id] || 0) > 0 ? '1.85px' : '8px'
+                          bottom: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '2px' : '10px',
+                          right: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '0px' : '8px'
                         }}
-                        alt="Badge"
-                        src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : "/badgeIcon.png"}
-                        onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
-                      />
+                        onMouseEnter={() => setHoveredWinner(winner.judgment_id || '')}
+                        onMouseLeave={() => setHoveredWinner(null)}
+                      >
+                        <img
+                          className="object-contain cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
+                          style={{
+                            width: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '50.4px' : '36px',
+                            height: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '50.4px' : '36px',
+                          }}
+                          alt="Badge"
+                          src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : "/badgeIcon.png"}
+                          onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
+                        />
+                        {/* Hover Tooltip */}
+                        {hoveredWinner === winner.judgment_id && (
+                          <div className="absolute bottom-full right-0 mb-2 px-4 py-2 bg-[#1a1a1a] border-2 border-[#21e786] rounded-lg shadow-[0_0_20px_rgba(33,231,134,0.3)] whitespace-nowrap z-50">
+                            <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-sm">
+                              당신의 목표 달성이 저에게 귀감이 되었습니다!
+                            </p>
+                            <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[#21e786]"></div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                   </CardContent>
@@ -485,25 +519,45 @@ export const WinnerListSection = (): JSX.Element => {
                         </p>
                       </div>
 
-                      <img
-                        className="absolute cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
-                        alt="Inspire button"
-                        src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : buttonInspire.src}
-                        onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
+                      <div
+                        className="absolute group"
                         style={{
-                          width: (inspireClicks[winner.id] || 0) > 0 ? '70px' : '50px',
-                          height: (inspireClicks[winner.id] || 0) > 0 ? '70px' : '50px',
-                          objectFit: 'cover',
-                          bottom: (inspireClicks[winner.id] || 0) > 0 ? '0px' : '10px',
-                          right: (inspireClicks[winner.id] || 0) > 0 ? '-10px' : '0px'
+                          bottom: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '0px' : '10px',
+                          right: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '-10px' : '0px'
                         }}
-                      />
+                        onMouseEnter={() => setHoveredWinner(winner.judgment_id || '')}
+                        onMouseLeave={() => setHoveredWinner(null)}
+                      >
+                        <img
+                          className="cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
+                          alt="Inspire button"
+                          src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? buttonInspireCheck.src : buttonInspire.src}
+                          onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId)}
+                          style={{
+                            width: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '70px' : '50px',
+                            height: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '70px' : '50px',
+                            objectFit: 'contain',
+                          }}
+                        />
+                        {/* Hover Tooltip */}
+                        {hoveredWinner === winner.judgment_id && (
+                          <div
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#21e786]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(33,231,134,0.7),0_0_80px_rgba(33,231,134,0.3)] z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
+                            style={{ marginBottom: '10px', minWidth: '350px' }}
+                          >
+                            <p className="font-ria-sans font-medium text-[#1a1a1a] text-sm text-center">
+                              당신의 목표 달성이 저에게 귀감이 되었습니다!
+                            </p>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-[#21e786]"></div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                      <div className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#0a1a12] rounded-full border border-[#21e786] shadow-[0px_0px_20px_#21e78666]">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
+                      <div className="inline-flex items-center justify-center gap-2 bg-[#0a1a12] rounded-full border border-[#21e786] shadow-[0px_0px_20px_#21e78666]" style={{ padding: '9px 18px' }}>
                         <img src={iconMedal2.src} alt="Medal" className="w-[18px] h-[18px]" style={{ transform: 'scale(5.2) translateY(1px)' }} />
-                        <span className="font-bold text-[#21e786] text-base leading-[normal] whitespace-nowrap font-ria-sans">
+                        <span className="font-bold text-[#21e786] leading-[normal] whitespace-nowrap font-ria-sans" style={{ fontSize: '15px' }}>
                           목표 달성!
                         </span>
                       </div>
@@ -543,9 +597,32 @@ export const WinnerListSection = (): JSX.Element => {
       {/* Alert Modal */}
       <AlertModal
         isOpen={alertModal.isOpen}
-        onClose={() => setAlertModal({ isOpen: false, message: '' })}
+        onClose={() => {
+          setAlertModal({ isOpen: false, message: '' });
+          if (alertModal.message === '로그인이 필요합니다.') {
+            setIsLoginModalOpen(true);
+          }
+        }}
         message={alertModal.message}
+        type={alertModal.message === '로그인이 필요합니다.' ? 'info' : 'recognition'}
+      />
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
       />
     </section>
+
+    {/* 취소 완료 토스트 - Portal로 body에 렌더링 */}
+    {typeof window !== 'undefined' && showCancelToast && createPortal(
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-[#21e786] text-[#040b11] rounded-full shadow-lg animate-toast" style={{ padding: 'clamp(12px, 3vw, 16px) clamp(24px, 6vw, 32px)' }}>
+        <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold whitespace-nowrap" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
+          ✓ 표현 취소가 완료되었습니다
+        </span>
+      </div>,
+      document.body
+    )}
+    </>
   );
 };

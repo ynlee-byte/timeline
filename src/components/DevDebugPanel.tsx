@@ -22,6 +22,7 @@ export const DevDebugPanel: React.FC = () => {
   const [mockDay, setMockDay] = useState<DayOfWeek | null>(null);
   const [hasWrittenReview, setHasWrittenReview] = useState(false);
   const [isCheckingReview, setIsCheckingReview] = useState(false);
+  const [isCalendarConfirmed, setIsCalendarConfirmed] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -68,6 +69,15 @@ export const DevDebugPanel: React.FC = () => {
     window.dispatchEvent(new Event('dayChanged'));
   };
 
+  const handleToggleCalendarConfirmed = () => {
+    const newValue = !isCalendarConfirmed;
+    setIsCalendarConfirmed(newValue);
+    // CalendarSection에 이벤트 전달
+    window.dispatchEvent(new CustomEvent('calendarConfirmedChanged', {
+      detail: { isConfirmed: newValue }
+    }));
+  };
+
   // 모든 환경에서 표시 (유저가 요일을 조정할 수 있도록)
   const days: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
   const realDay = new Date().getDay() as DayOfWeek;
@@ -111,6 +121,26 @@ export const DevDebugPanel: React.FC = () => {
             </div>
 
             <div className="space-y-2">
+              {/* 캘린더 확인 상태 (기대 표현) */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 text-xs">기대 표현</span>
+                  <button
+                    onClick={handleToggleCalendarConfirmed}
+                    className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                      isCalendarConfirmed
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-green-600 text-white'
+                    }`}
+                  >
+                    {isCalendarConfirmed ? '작성 완료' : '작성 전'}
+                  </button>
+                </div>
+                <span className={`px-2 py-1 rounded text-xs ${canWriteReview() ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                  {canWriteReview() ? '작성 가능 (월/화/수)' : '작성 기간이 아닙니다'}
+                </span>
+              </div>
+
               {/* 리뷰 상태 */}
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 text-xs">리뷰 카드</span>
@@ -119,7 +149,7 @@ export const DevDebugPanel: React.FC = () => {
                     <>
                       {hasWrittenReview ? (
                         <span className="px-2 py-1 rounded bg-purple-600 text-white text-xs">
-                          작성 완료 ✓
+                          작성 완료
                         </span>
                       ) : (
                         <span className="px-2 py-1 rounded bg-green-600 text-white text-xs">
@@ -135,19 +165,19 @@ export const DevDebugPanel: React.FC = () => {
                 </div>
               </div>
 
-              {/* 목표 상태 */}
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-xs">목표 카드</span>
-                <span className={`px-2 py-1 rounded text-xs ${canWriteGoal() ? 'bg-blue-600 text-white' : 'bg-red-600 text-white'}`}>
-                  {canWriteGoal() ? '작성 가능 (목/금/토/일)' : '작성 기간이 아닙니다'}
-                </span>
-              </div>
-
               {/* 판정 상태 */}
               <div className="flex items-center justify-between">
                 <span className="text-gray-400 text-xs">판정 카드</span>
                 <span className={`px-2 py-1 rounded text-xs ${canWriteJudgment() ? 'bg-yellow-600 text-white' : 'bg-red-600 text-white'}`}>
                   {canWriteJudgment() ? '작성 가능 (일요일)' : '작성 기간이 아닙니다'}
+                </span>
+              </div>
+
+              {/* 목표 상태 */}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 text-xs">목표 카드</span>
+                <span className={`px-2 py-1 rounded text-xs ${canWriteGoal() ? 'bg-blue-600 text-white' : 'bg-red-600 text-white'}`}>
+                  {canWriteGoal() ? '작성 가능 (목/금/토/일)' : '작성 기간이 아닙니다'}
                 </span>
               </div>
             </div>
@@ -188,9 +218,10 @@ export const DevDebugPanel: React.FC = () => {
             <div className="text-purple-300 text-xs">
               <div className="font-semibold mb-1">💡 사용법</div>
               <ul className="list-disc list-inside space-y-1">
+                <li>기대 표현: 월/화/수</li>
                 <li>리뷰 카드: 월/화/수</li>
-                <li>목표 카드: 월/화/수</li>
-                <li>판정 카드: 목/금/토/일</li>
+                <li>목표 카드: 목/금/토</li>
+                <li>판정 카드: 월/화/수</li>
               </ul>
             </div>
           </div>
