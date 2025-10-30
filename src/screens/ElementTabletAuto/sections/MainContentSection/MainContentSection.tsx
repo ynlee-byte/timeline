@@ -21,6 +21,7 @@ import noticeModalFail from "../../../../icons/noticeModal-fail.png";
 import borderSmall from "../../../../assets/border small.png";
 import bodyBadge from "../../../../assets/body.png";
 import cloudIcon from "../../../../icons/cloud.png";
+import group35Icon from "../../../../icons/Group 35.png";
 import ringIcon from "../../../../icons/ring.png";
 
 export const MainContentSection = (): JSX.Element => {
@@ -898,9 +899,9 @@ export const MainContentSection = (): JSX.Element => {
                             </p>
 
                             {/* Reaction count */}
-                            <div className="flex items-center gap-1.5 mt-2">
+                            <div className="flex items-center gap-2 mt-2">
                               <img
-                                src={isJudgmentCompleted === 'fail' ? cloudIcon.src : "/icon.png"}
+                                src={isJudgmentCompleted === 'fail' ? group35Icon.src : "/icon.png"}
                                 alt={isJudgmentCompleted === 'fail' ? "Cloud icon" : "Bread icon"}
                                 className="w-4 h-4"
                               />
@@ -1124,10 +1125,10 @@ export const MainContentSection = (): JSX.Element => {
                         </>
                       ) : currentPeriod === 'mon-wed' || currentPeriod === 'not-period' ? (
                         // 작성 기간이 아닙니다
-                        <div className="flex flex-col items-center pt-[6px] pb-4" style={{ transform: 'translateY(-5px)' }}>
+                        <div className="flex flex-col items-center pt-0 pb-2" style={{ transform: 'translateY(-20px)' }}>
                           <div className="flex flex-col items-center gap-0">
                             {/* Heart Icon */}
-                            <div className="relative" style={{ width: 'clamp(50px, 15vw, 70px)', height: 'clamp(46px, 14vw, 65px)' }}>
+                            <div className="relative" style={{ width: 'clamp(120px, 36vw, 168px)', height: 'clamp(110px, 33.6vw, 156px)' }}>
                               <img
                                 className="w-full h-full object-contain"
                                 alt="Heart icon"
@@ -1136,7 +1137,7 @@ export const MainContentSection = (): JSX.Element => {
                             </div>
 
                             {/* Badge and Title */}
-                            <div className="flex flex-col items-center gap-2 -mt-1">
+                            <div className="flex flex-col items-center gap-2 -mt-4">
                               <div className="inline-flex items-center justify-center gap-2.5 px-3 py-1 rounded-full border border-solid border-[#767676] bg-transparent">
                                 <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#767676] text-center whitespace-nowrap" style={{ fontSize: 'clamp(10px, 2.5vw, 12px)' }}>
                                   목, 금, 토
@@ -1160,10 +1161,10 @@ export const MainContentSection = (): JSX.Element => {
                         </div>
                       ) : (
                         // 작성 전 - 버튼 표시
-                        <div className="flex flex-col items-center pt-[6px] pb-4" style={{ transform: 'translateY(-5px)' }}>
+                        <div className="flex flex-col items-center pt-0 pb-2" style={{ transform: 'translateY(-20px)' }}>
                           <div className="flex flex-col items-center gap-0">
                             {/* Heart Icon */}
-                            <div className="relative" style={{ width: 'clamp(50px, 15vw, 70px)', height: 'clamp(46px, 14vw, 65px)' }}>
+                            <div className="relative" style={{ width: 'clamp(120px, 36vw, 168px)', height: 'clamp(110px, 33.6vw, 156px)' }}>
                               <img
                                 className="w-full h-full object-contain"
                                 alt="Heart icon"
@@ -1172,7 +1173,7 @@ export const MainContentSection = (): JSX.Element => {
                             </div>
 
                             {/* Badge and Title */}
-                            <div className="flex flex-col items-center gap-2 -mt-1">
+                            <div className="flex flex-col items-center gap-2 -mt-4">
                               <div className="inline-flex items-center justify-center gap-2.5 px-3 py-1 rounded-full border border-solid border-white bg-transparent">
                                 <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-center whitespace-nowrap" style={{ fontSize: 'clamp(10px, 2.5vw, 12px)' }}>
                                   목, 금, 토
