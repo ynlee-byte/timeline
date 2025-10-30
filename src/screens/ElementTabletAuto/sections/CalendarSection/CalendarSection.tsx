@@ -1056,8 +1056,8 @@ export const CalendarSection = (): JSX.Element => {
             })
           )}
 
-          {/* 우측 하단 빛나는 곡선 border */}
-          {!isMobile && (
+          {/* 우측 하단 빛나는 곡선 border - 태블릿에서는 기대 표현 완료 시 숨김 */}
+          {!isMobile && !(isTablet && isConfirmed) && (
             <div className="absolute -bottom-[10px] -right-[1px] w-[250px] h-[60px] pointer-events-none z-10">
               <svg width="250" height="60" viewBox="0 0 250 60" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>

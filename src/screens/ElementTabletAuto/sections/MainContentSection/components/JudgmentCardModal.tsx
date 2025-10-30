@@ -14,6 +14,10 @@ import noticeModalSuccess from "../../../../../assets/noticeModal-suscess.png";
 import noticeModalSuccessMobile from "../../../../../assets/noticeModal-m.png";
 import noticeModalFail from "../../../../../icons/noticeModal-fail.png";
 import noticeModalFailMobile from "../../../../../assets/noticeModal-m2.png";
+import group35Icon from "../../../../../icons/Group 35.png";
+import iconFireCalendar from "../../../../../icons/iconFireCalendar.png";
+import cloud00000 from "../../../../../icons/cloud00000.png";
+import cloudbig2 from "../../../../../icons/cloudbig2.png";
 import { useWindowWidth } from "../../../../../breakpoints";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { createJudgment } from "../../../../../lib/services/judgmentService";
@@ -326,7 +330,7 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
                         : 'bg-[#2a2a2a] text-gray-400 border-2 border-transparent hover:border-green-600'
                     } ${isMobile ? 'text-[12px]' : 'text-[14px]'} font-medium`}
                   >
-                    ✅ 달성했어요!
+                    <span className={isMobile ? 'text-[16px]' : ''}>✅</span> 달성했어요!
                   </button>
                   <button
                     onClick={() => setAchieved(false)}
@@ -336,7 +340,7 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
                         : 'bg-[#2a2a2a] text-gray-400 border-2 border-transparent hover:border-red-600'
                     } ${isMobile ? 'text-[12px]' : 'text-[14px]'} font-medium`}
                   >
-                    ❌ 다음 기회에...
+                    <span className={isMobile ? 'text-[16px]' : ''}>❌</span> 다음 기회에...
                   </button>
                 </div>
 

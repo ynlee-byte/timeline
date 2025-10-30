@@ -254,7 +254,7 @@ export const WinnerListSection = (): JSX.Element => {
     if (isRecognitionLocked && !isCurrentlyClicked) {
       setAlertModal({
         isOpen: true,
-        message: '더이상 표현을 보낼 수 없습니다.',
+        message: '이미 5개의 귀감 표현 보내기를 완료하였습니다!',
       });
       return;
     }
@@ -455,7 +455,7 @@ export const WinnerListSection = (): JSX.Element => {
             </div>
           )}
 
-          <div className={`inline-flex flex-col gap-[15px] ${isMobile ? 'items-start' : 'items-center'}`}>
+          <div className={`inline-flex flex-col ${isMobile ? 'gap-[15px] items-start' : 'gap-3 items-center'}`}>
             <p className={`w-fit mt-[-1.00px] [font-family:'Pretendard-Regular',Helvetica] font-normal text-on-surface tracking-[-0.60px] ${isMobile ? 'text-left' : 'text-xl leading-[30px] text-center'}`} style={isMobile ? { fontSize: 'clamp(12px, 3vw, 16px)', lineHeight: 'clamp(18px, 4.5vw, 24px)' } : {}}>
               이번주 목표를 달성한 크루들을 축하해주세요!
               {!isMobile && <br />}
@@ -463,6 +463,14 @@ export const WinnerListSection = (): JSX.Element => {
                 <>특히 인상 깊은 멘트를 남긴 크루 5명에게 &quot;귀감&quot;을 보내주세요!</>
               )}
             </p>
+
+            {/* 귀감 카운터 */}
+            <div className={`flex items-center ${isMobile ? 'gap-1.5' : 'gap-0'}`}>
+              <span className={`font-ria-sans font-semibold text-white text-center flex items-center ${isMobile ? 'text-sm gap-1.5' : 'text-sm'}`}>
+                {isMobile && <span className="inline-block w-1.5 h-1.5 bg-[#FFEA94] rotate-45"></span>}
+                <span>귀감 {Object.keys(inspireClicks).filter(key => inspireClicks[key] > 0).length}<span className="text-[#aaaaaa]">/5</span></span>
+              </span>
+            </div>
           </div>
         </header>
 

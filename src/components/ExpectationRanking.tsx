@@ -18,6 +18,8 @@ export const ExpectationRanking = () => {
   const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  const [showAllTablet, setShowAllTablet] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,14 +27,16 @@ export const ExpectationRanking = () => {
   }, []);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1280);
     };
 
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
 
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
   // 마우스 휠로 가로 스크롤 (카드 1개씩 이동)
@@ -193,23 +197,33 @@ export const ExpectationRanking = () => {
 
   const topFive = rankings.slice(0, 5);
   const topTen = rankings.slice(0, 10);
+  const topThree = rankings.slice(0, 3);
 
   return (
     <div className="w-full bg-[#1a1a1a]/50 py-6">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className={`max-w-7xl mx-auto ${isTablet ? 'px-16' : 'px-6'}`}>
         {/* 헤더 */}
         <div className={`flex items-center mb-8 relative ${isMobile ? 'justify-start' : 'justify-center'}`}>
           <h3 className="[font-family:'Ria'] font-ria-sans font-bold text-white text-lg flex items-center gap-2">
             <span>🏆</span>
             <span>이번 주 인기 활동</span>
           </h3>
-          {!isMobile && (
+          {!isMobile && !isTablet && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#21e786] hover:text-[#1bc876] text-xs transition-colors flex items-center gap-1 absolute right-0"
             >
               <span>{isExpanded ? '접기' : '더보기'}</span>
               <span>{isExpanded ? '▲' : '▼'}</span>
+            </button>
+          )}
+          {isTablet && rankings.length > 3 && (
+            <button
+              onClick={() => setShowAllTablet(!showAllTablet)}
+              className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#21e786] hover:text-[#1bc876] text-xs transition-colors flex items-center gap-1 absolute right-0"
+            >
+              <span>{showAllTablet ? '접기' : '더보기 (4-10위)'}</span>
+              <span>{showAllTablet ? '▲' : '▼'}</span>
             </button>
           )}
         </div>
@@ -224,18 +238,70 @@ export const ExpectationRanking = () => {
               {topTen.map((item, index) => (
                 <div
                   key={item.id}
-                  className={`flex-shrink-0 w-[280px] p-5 transition-all duration-200 border-2 cursor-pointer ${
+                  className={`relative flex-shrink-0 w-[280px] p-5 transition-all duration-200 cursor-pointer overflow-hidden ${
                     index === 0
-                      ? 'bg-[#2a2a2a] border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.4)]'
+                      ? 'shadow-[0_0_10px_rgba(234,179,8,0.25)]'
                       : index === 1
-                      ? 'bg-[#2a2a2a] border-gray-400 shadow-[0_0_15px_rgba(156,163,175,0.4)]'
+                      ? 'shadow-[0_0_10px_rgba(156,163,175,0.25)]'
                       : index === 2
-                      ? 'bg-[#2a2a2a] border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]'
-                      : 'bg-[#2a2a2a] border-[#21e786]/30'
+                      ? 'shadow-[0_0_10px_rgba(184,115,51,0.25)]'
+                      : 'bg-[#2a2a2a] border-2 border-[#21e786]/30'
                   }`}
+                  style={index <= 2 ? {
+                    background: index === 0
+                      ? 'linear-gradient(135deg, rgba(234,179,8,0.08) 0%, rgba(42,42,42,1) 50%, rgba(234,179,8,0.05) 100%)'
+                      : index === 1
+                      ? 'linear-gradient(135deg, rgba(156,163,175,0.08) 0%, rgba(42,42,42,1) 50%, rgba(156,163,175,0.05) 100%)'
+                      : 'linear-gradient(135deg, rgba(184,115,51,0.08) 0%, rgba(42,42,42,1) 50%, rgba(184,115,51,0.05) 100%)'
+                  } : {}}
                 >
+                  {/* 반짝이는 오버레이 효과 - 1~3위만 */}
+                  {index <= 2 && (
+                    <div
+                      className="absolute inset-0 opacity-20"
+                      style={{
+                        background: index === 0
+                          ? 'radial-gradient(circle at 20% 50%, rgba(234,179,8,0.2) 0%, transparent 50%)'
+                          : index === 1
+                          ? 'radial-gradient(circle at 20% 50%, rgba(156,163,175,0.2) 0%, transparent 50%)'
+                          : 'radial-gradient(circle at 20% 50%, rgba(184,115,51,0.2) 0%, transparent 50%)',
+                        animation: 'shimmer-move 3s ease-in-out infinite'
+                      }}
+                    />
+                  )}
+
+                  {/* 테두리 장식 - 1~3위만 */}
+                  {index <= 2 && (
+                    <>
+                      <img
+                        src={borderSmallImg.src}
+                        alt=""
+                        className="absolute top-0 left-0 w-auto h-auto"
+                        style={{
+                          filter: index === 0
+                            ? 'hue-rotate(-80deg) saturate(2) brightness(1.2)' // 금색
+                            : index === 1
+                            ? 'grayscale(1) brightness(1.3)' // 은색
+                            : 'sepia(1) hue-rotate(-30deg) saturate(3) brightness(0.7)' // 동색
+                        }}
+                      />
+                      <img
+                        src={borderSmallImg.src}
+                        alt=""
+                        className="absolute bottom-0 right-0 w-auto h-auto rotate-180"
+                        style={{
+                          filter: index === 0
+                            ? 'hue-rotate(-80deg) saturate(2) brightness(1.2)' // 금색
+                            : index === 1
+                            ? 'grayscale(1) brightness(1.3)' // 은색
+                            : 'sepia(1) hue-rotate(-30deg) saturate(3) brightness(0.7)' // 동색
+                        }}
+                      />
+                    </>
+                  )}
+
                   {/* 순위와 카운트 */}
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-4 relative z-10">
                     <div className="flex items-center gap-2">
                       {getMedalIcon(index) && (
                         <div className={`text-3xl ${index === 0 ? 'animate-pulse' : ''}`}>
@@ -254,13 +320,127 @@ export const ExpectationRanking = () => {
                     </div>
                   </div>
                   {/* 활동명 */}
-                  <h4 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-sm leading-tight line-clamp-3 min-h-[60px]">
+                  <h4 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-sm leading-tight line-clamp-3 min-h-[60px] relative z-10">
                     {item.summary}
                   </h4>
                 </div>
               ))}
             </div>
           </div>
+        ) : isTablet ? (
+          <>
+            {/* 태블릿: 1~3위만 표시, 더보기 버튼으로 4~10위 표시 */}
+            <div className="grid grid-cols-3 gap-4">
+              {topThree.map((item, index) => (
+                <div
+                  key={item.id}
+                  className={`relative p-5 transition-all duration-200 cursor-pointer hover:shadow-xl overflow-hidden ${
+                    index === 0
+                      ? 'shadow-[0_0_20px_rgba(234,179,8,0.5)] hover:shadow-[0_0_30px_rgba(234,179,8,0.7)]'
+                      : index === 1
+                      ? 'shadow-[0_0_20px_rgba(156,163,175,0.5)] hover:shadow-[0_0_30px_rgba(156,163,175,0.7)]'
+                      : 'shadow-[0_0_20px_rgba(184,115,51,0.5)] hover:shadow-[0_0_30px_rgba(184,115,51,0.7)]'
+                  }`}
+                  style={{
+                    background: index === 0
+                      ? 'linear-gradient(135deg, rgba(234,179,8,0.08) 0%, rgba(42,42,42,1) 50%, rgba(234,179,8,0.05) 100%)'
+                      : index === 1
+                      ? 'linear-gradient(135deg, rgba(156,163,175,0.08) 0%, rgba(42,42,42,1) 50%, rgba(156,163,175,0.05) 100%)'
+                      : 'linear-gradient(135deg, rgba(184,115,51,0.08) 0%, rgba(42,42,42,1) 50%, rgba(184,115,51,0.05) 100%)'
+                  }}
+                >
+                  {/* 반짝이는 오버레이 효과 */}
+                  <div
+                    className="absolute inset-0 opacity-20"
+                    style={{
+                      background: index === 0
+                        ? 'radial-gradient(circle at 20% 50%, rgba(234,179,8,0.2) 0%, transparent 50%)'
+                        : index === 1
+                        ? 'radial-gradient(circle at 20% 50%, rgba(156,163,175,0.2) 0%, transparent 50%)'
+                        : 'radial-gradient(circle at 20% 50%, rgba(184,115,51,0.2) 0%, transparent 50%)',
+                      animation: 'shimmer-move 3s ease-in-out infinite'
+                    }}
+                  />
+
+                  {/* 테두리 장식 - 좌상단 */}
+                  <img
+                    src={borderSmallImg.src}
+                    alt=""
+                    className="absolute top-0 left-0 w-auto h-auto"
+                    style={{
+                      filter: index === 0
+                        ? 'hue-rotate(-80deg) saturate(2) brightness(1.2)' // 금색
+                        : index === 1
+                        ? 'grayscale(1) brightness(1.3)' // 은색
+                        : 'sepia(1) hue-rotate(-30deg) saturate(3) brightness(0.7)' // 동색
+                    }}
+                  />
+
+                  {/* 테두리 장식 - 우하단 */}
+                  <img
+                    src={borderSmallImg.src}
+                    alt=""
+                    className="absolute bottom-0 right-0 w-auto h-auto rotate-180"
+                    style={{
+                      filter: index === 0
+                        ? 'hue-rotate(-80deg) saturate(2) brightness(1.2)' // 금색
+                        : index === 1
+                        ? 'grayscale(1) brightness(1.3)' // 은색
+                        : 'sepia(1) hue-rotate(-30deg) saturate(3) brightness(0.7)' // 동색
+                    }}
+                  />
+
+                  {/* 순위 */}
+                  <div className="flex items-center justify-between mb-[20px] relative z-10">
+                    <div className={`text-3xl relative ${
+                      index === 0 ? 'animate-bounce-slow' : ''
+                    }`}
+                      style={{
+                        animation: index === 0 ? 'sparkle 2s ease-in-out infinite' : 'none'
+                      }}
+                    >
+                      {getMedalIcon(index)}
+                    </div>
+                    <div className="flex items-center gap-2 bg-[#1a1a1a] px-3 py-1.5 rounded-full">
+                      <span className="text-base">🔥</span>
+                      <span className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-sm">{item.expectationCount}</span>
+                    </div>
+                  </div>
+                  {/* 활동명 */}
+                  <h4 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-base leading-tight line-clamp-2 min-h-[40px] relative z-10">
+                    {item.summary}
+                  </h4>
+                </div>
+              ))}
+            </div>
+
+            {/* 4~10위 펼치기 */}
+            {showAllTablet && rankings.length > 3 && (
+              <div className="mt-4 grid grid-cols-1 gap-3">
+                {rankings.slice(3, 10).map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between bg-[#2a2a2a] px-5 py-4 hover:bg-[#3a3a3a] transition-all duration-200 cursor-pointer border border-[#21e786]/20 hover:border-[#21e786]/50"
+                  >
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#21e786]/20 flex-shrink-0">
+                        <span className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-[#21e786] text-base">
+                          {index + 4}위
+                        </span>
+                      </div>
+                      <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-sm truncate">
+                        {item.summary}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 ml-4 flex-shrink-0 bg-[#1a1a1a] px-3 py-1.5 rounded-full">
+                      <span className="text-base">🔥</span>
+                      <span className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-sm">{item.expectationCount}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         ) : (
           <>
             {/* 데스크톱: Top 5 - 1~3위 강조, 4~5위 작게 */}

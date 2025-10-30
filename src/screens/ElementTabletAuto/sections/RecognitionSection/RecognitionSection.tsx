@@ -422,12 +422,12 @@ export const RecognitionSection = (): JSX.Element => {
 
       // 이미 잠겼는지 확인
       if (isReview && isRecognitionLocked) {
-        setAlertMessage('이미 5명에게 인정을 날렸네요!');
+        setAlertMessage('이미 인정 표현 보내기가 완료되었습니다!');
         setIsAlertOpen(true);
         return;
       }
       if (!isReview && isSupportLocked) {
-        setAlertMessage('이미 5명에게 응원을 날렸네요!');
+        setAlertMessage('이미 응원 표현 보내기가 완료되었습니다!');
         setIsAlertOpen(true);
         return;
       }
@@ -440,7 +440,7 @@ export const RecognitionSection = (): JSX.Element => {
       }
 
       if (clickedOfSameType.length >= 5) {
-        setAlertMessage(isReview ? '이미 5명에게 인정을 날렸네요!' : '이미 5명에게 응원을 날렸네요!');
+        setAlertMessage(isReview ? '이미 인정 표현 보내기가 완료되었습니다!' : '이미 응원 표현 보내기가 완료되었습니다!');
         setIsAlertOpen(true);
         return;
       }
@@ -605,7 +605,7 @@ export const RecognitionSection = (): JSX.Element => {
 
       {/* Timeline line image - full width */}
       {!isMobile && (
-        <div className={`absolute left-0 right-0 w-full h-[5px] z-0 pointer-events-none ${isTablet ? 'top-[350px]' : 'top-[348px]'}`}>
+        <div className={`absolute left-0 right-0 w-full h-[5px] z-0 pointer-events-none ${isTablet ? 'top-[362px]' : 'top-[360px]'}`}>
           <img
             className="w-full h-full object-cover pointer-events-none"
             alt="Timeline"
@@ -616,7 +616,7 @@ export const RecognitionSection = (): JSX.Element => {
 
       {/* Timeline line - horizontal line for mobile */}
       {isMobile && (
-        <div className="absolute left-0 right-0 w-full h-[2px] z-0 pointer-events-none" style={{ top: '261px' }}>
+        <div className="absolute left-0 right-0 w-full h-[2px] z-0 pointer-events-none" style={{ top: '273px' }}>
           <img
             className="w-full h-full object-cover pointer-events-none"
             alt="Timeline"
@@ -663,17 +663,21 @@ export const RecognitionSection = (): JSX.Element => {
         </header>
 
         {/* Info Boxes */}
-        <div className={`relative z-[9999] flex items-center justify-center gap-6 ${isMobile ? '-mt-[14px]' : isTablet ? '-mt-[15px]' : '-mt-[9px]'}`} style={{ pointerEvents: 'auto', isolation: 'isolate' }}>
-          {/* 인정이 뭔가요? */}
+        <div className={`relative z-[9999] flex ${isMobile ? 'flex-col' : 'flex-row'} items-center justify-center ${isMobile ? 'gap-[4px]' : 'gap-6'} ${isMobile ? '-mt-[19px]' : isTablet ? '-mt-[15px]' : '-mt-[9px]'}`} style={{ pointerEvents: 'auto', isolation: 'isolate' }}>
+          {/* 인정 그룹 */}
           <div
-            className={`relative inline-flex items-center gap-2 ${isMobile || isTablet ? '' : 'px-4 pt-2 pb-8 cursor-help'}`}
+            className={`relative inline-flex ${isMobile ? 'flex-row items-center gap-1' : 'flex-col items-center gap-0.5'} justify-center ${isMobile ? '' : isTablet ? '' : 'px-4 pt-2 pb-8 cursor-help'}`}
             onMouseEnter={() => !isMobile && !isTablet && setIsRecognitionInfoHovered(true)}
             onMouseLeave={() => !isMobile && !isTablet && setIsRecognitionInfoHovered(false)}
             style={{ pointerEvents: 'auto', zIndex: 2000, position: 'relative' }}
           >
+            <span className="font-ria-sans font-semibold text-white text-sm text-center flex items-center gap-1.5">
+              {isMobile && <span className="inline-block w-1.5 h-1.5 bg-[#21e786] rotate-45"></span>}
+              <span>인정 {Object.keys(clickedButtons).filter(key => key.startsWith('review-') && clickedButtons[key]).length}<span className="text-[#aaaaaa]">/5</span></span>
+            </span>
             <button
               type="button"
-              className={`font-ria-sans font-medium text-[#767676] text-sm ${isMobile || isTablet ? 'cursor-pointer px-3 py-2 bg-transparent hover:text-white active:text-white' : ''}`}
+              className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-[#767676] text-center ${isMobile || isTablet ? 'cursor-pointer px-3 py-2 bg-transparent hover:text-white active:text-white text-[12px]' : 'text-sm'}`}
               onClick={(e) => {
                 e.stopPropagation();
                 console.log('인정이 뭔가요? clicked, isMobile:', isMobile, 'isTablet:', isTablet);
@@ -707,16 +711,20 @@ export const RecognitionSection = (): JSX.Element => {
             )}
           </div>
 
-          {/* 응원이 뭔가요? */}
+          {/* 응원 그룹 */}
           <div
-            className={`relative inline-flex items-center gap-2 ${isMobile || isTablet ? '' : 'px-4 pt-2 pb-8 cursor-help'}`}
+            className={`relative inline-flex ${isMobile ? 'flex-row items-center gap-1' : 'flex-col items-center gap-0.5'} justify-center ${isMobile ? '' : isTablet ? '' : 'px-4 pt-2 pb-8 cursor-help'}`}
             onMouseEnter={() => !isMobile && !isTablet && setIsSupportInfoHovered(true)}
             onMouseLeave={() => !isMobile && !isTablet && setIsSupportInfoHovered(false)}
             style={{ pointerEvents: 'auto', zIndex: 2000, position: 'relative' }}
           >
+            <span className="font-ria-sans font-semibold text-white text-sm text-center flex items-center gap-1.5">
+              {isMobile && <span className="inline-block w-1.5 h-1.5 bg-[#21e786] rotate-45"></span>}
+              <span>응원 {Object.keys(clickedButtons).filter(key => key.startsWith('goal-') && clickedButtons[key]).length}<span className="text-[#aaaaaa]">/5</span></span>
+            </span>
             <button
               type="button"
-              className={`font-ria-sans font-medium text-[#767676] text-sm ${isMobile || isTablet ? 'cursor-pointer px-3 py-2 bg-transparent hover:text-white active:text-white' : ''}`}
+              className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-[#767676] text-center ${isMobile || isTablet ? 'cursor-pointer px-3 py-2 bg-transparent hover:text-white active:text-white text-[12px]' : 'text-sm'}`}
               onClick={(e) => {
                 e.stopPropagation();
                 console.log('응원이 뭔가요? clicked, isMobile:', isMobile, 'isTablet:', isTablet);
@@ -753,7 +761,7 @@ export const RecognitionSection = (): JSX.Element => {
       </div>
 
       {/* Timeline with cards - full width without padding */}
-      <div className={`relative w-full z-[1] overflow-hidden ${isMobile ? '-mt-[127px]' : isTablet ? '-mt-[68px]' : '-mt-[84px]'}`} style={{ pointerEvents: 'none' }}>
+      <div className={`relative w-full z-[1] overflow-hidden ${isMobile ? '-mt-[146px]' : isTablet ? '-mt-[78px]' : '-mt-[99px]'}`} style={{ pointerEvents: 'none' }}>
           {/* Cards container with horizontal scroll */}
           <div
             ref={sliderRef}

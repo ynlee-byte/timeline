@@ -323,7 +323,7 @@ export const NextChallengerSection = (): JSX.Element => {
     if (isApplauseLocked && !isCurrentlyClicked) {
       setAlertModal({
         isOpen: true,
-        message: '더이상 표현을 보낼 수 없습니다.',
+        message: '이미 5개의 박수 표현 보내기를 완료하였습니다!',
       });
       return;
     }
@@ -476,13 +476,23 @@ export const NextChallengerSection = (): JSX.Element => {
               <h2 className="[font-family:'Ria'] font-bold tracking-[-0.96px] bg-[linear-gradient(90deg,#6D24C8_0%,#E52B50_100%)] [-webkit-background-clip:text] bg-clip-text [-webkit-text-fill-color:transparent] [text-fill-color:transparent] font-ria-sans" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
                 Next Challenger
               </h2>
-              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left tracking-[-0.60px]" style={{ fontSize: 'clamp(12px, 3vw, 16px)', lineHeight: 'clamp(18px, 4.5vw, 24px)' }}>
-                아쉽지만 이번주에는 목표 달성에 실패한 크루들이에요.
-                <br />
-                실패는 성공의 어머니!
-                <br />
-                다음번엔 더 잘할 수 있도록 5명에게 박수를 보내주세요!
-              </p>
+              <div className="flex flex-col gap-2">
+                <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left tracking-[-0.60px]" style={{ fontSize: 'clamp(12px, 3vw, 16px)', lineHeight: 'clamp(18px, 4.5vw, 24px)' }}>
+                  아쉽지만 이번주에는 목표 달성에 실패한 크루들이에요.
+                  <br />
+                  실패는 성공의 어머니!
+                  <br />
+                  다음번엔 더 잘할 수 있도록 5명에게 박수를 보내주세요!
+                </p>
+
+                {/* 박수 카운터 - 모바일 */}
+                <div className="flex items-center gap-1.5">
+                  <span className="font-ria-sans font-semibold text-white text-sm flex items-center gap-1.5">
+                    <span className="inline-block w-1.5 h-1.5 bg-[#6D24C8] rotate-45"></span>
+                    <span>박수 {Object.keys(applauseClicks).filter(key => applauseClicks[key] > 0).length}<span className="text-[#aaaaaa]">/5</span></span>
+                  </span>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="relative z-10 flex flex-col items-center py-4" style={{ gap: '14px' }}>
@@ -502,11 +512,20 @@ export const NextChallengerSection = (): JSX.Element => {
                 />
               </div>
 
-              <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-center tracking-[-0.60px] max-w-3xl px-4 text-[20px] leading-[32px]">
-                  아쉽지만 이번주에는 목표 달성에 실패한 크루들이에요.
-                  <br />
-                  실패는 성공의 어머니! 다음번엔 더 잘할 수 있도록 5명에게 박수를 보내주세요!
-              </p>
+              <div className="flex flex-col gap-3 items-center">
+                <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-center tracking-[-0.60px] max-w-3xl px-4 text-[20px] leading-[32px]">
+                    아쉽지만 이번주에는 목표 달성에 실패한 크루들이에요.
+                    <br />
+                    실패는 성공의 어머니! 다음번엔 더 잘할 수 있도록 5명에게 박수를 보내주세요!
+                </p>
+
+                {/* 박수 카운터 */}
+                <div className="flex items-center">
+                  <span className="font-ria-sans font-semibold text-white text-center flex items-center text-sm">
+                    <span>박수 {Object.keys(applauseClicks).filter(key => applauseClicks[key] > 0).length}<span className="text-[#aaaaaa]">/5</span></span>
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </header>
@@ -517,7 +536,7 @@ export const NextChallengerSection = (): JSX.Element => {
         <div className={`${!isMobile && !isTablet ? 'max-w-[1680px] mx-auto w-full relative' : 'w-full relative'}`}>
           {/* Tablet center illustration - overlapping with cards */}
           {!isMobile && isTablet && (
-            <div className="absolute left-1/2 -translate-x-1/2 -top-[70px] z-0">
+            <div className="absolute left-1/2 -translate-x-1/2 -top-[50px] z-0">
               <img
                 className="w-auto h-auto max-w-[500px]"
                 alt="Next Challenger illustration"

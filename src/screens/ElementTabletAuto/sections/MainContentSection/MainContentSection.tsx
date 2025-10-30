@@ -822,7 +822,7 @@ export const MainContentSection = (): JSX.Element => {
 
                                 {/* 드롭다운 메뉴 */}
                                 {showJudgmentKebabMenu && (
-                                  <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-50 min-w-[120px]">
+                                  <div className="absolute right-0 top-8 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-[9999] min-w-[120px] pointer-events-auto">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -830,7 +830,7 @@ export const MainContentSection = (): JSX.Element => {
                                         setIsEditingJudgment(true);
                                         setIsJudgmentModalOpen(true);
                                       }}
-                                      className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                      className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium cursor-pointer"
                                     >
                                       수정하기
                                     </button>
@@ -840,7 +840,7 @@ export const MainContentSection = (): JSX.Element => {
                                         setShowJudgmentKebabMenu(false);
                                         setShowJudgmentDeleteConfirm(true);
                                       }}
-                                      className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                      className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium cursor-pointer"
                                     >
                                       삭제하기
                                     </button>
@@ -1006,7 +1006,7 @@ export const MainContentSection = (): JSX.Element => {
                               <img
                                 src="/iconHeart.png"
                                 alt="Heart icon"
-                                style={{ width: 'clamp(24px, 6vw, 32px)', height: 'clamp(22px, 5.5vw, 30px)', transform: 'scale(2.2)' }}
+                                style={{ width: 'clamp(24px, 6vw, 32px)', height: 'clamp(22px, 5.5vw, 30px)', transform: 'scale(3)' }}
                               />
                               <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
                                 다음주 목표
@@ -1541,7 +1541,7 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Header with icon, title and badge */}
-                          <div className="flex items-center justify-between mb-4 -mx-6 pl-[22px] pr-3" style={{ transform: 'translateY(14px)' }}>
+                          <div className="flex items-center justify-between mb-4 -mx-6 pl-[22px] pr-3 relative z-[200]" style={{ transform: 'translateY(14px)' }}>
                             <div className="flex items-center justify-center flex-1 min-w-0">
                               {/* Icon Scoop */}
                               <div className="w-[60px] h-[60px] flex items-center justify-center flex-shrink-0" style={{ transform: 'translateX(6px)' }}>
@@ -1567,7 +1567,7 @@ export const MainContentSection = (): JSX.Element => {
                             </div>
 
                             {/* 케밥 메뉴 버튼 */}
-                            <div className="relative z-[100] flex-shrink-0 ml-2">
+                            <div className="relative z-[300] flex-shrink-0 ml-2">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1584,7 +1584,7 @@ export const MainContentSection = (): JSX.Element => {
 
                               {/* 드롭다운 메뉴 */}
                               {showJudgmentKebabMenu && (
-                                <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-[70] min-w-[120px]">
+                                <div className="absolute right-0 top-8 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-[9999] min-w-[120px] pointer-events-auto">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1592,7 +1592,7 @@ export const MainContentSection = (): JSX.Element => {
                                       setIsEditingJudgment(true);
                                       setIsJudgmentModalOpen(true);
                                     }}
-                                    className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium cursor-pointer"
                                   >
                                     수정하기
                                   </button>
@@ -1602,7 +1602,7 @@ export const MainContentSection = (): JSX.Element => {
                                       setShowJudgmentKebabMenu(false);
                                       setShowJudgmentDeleteConfirm(true);
                                     }}
-                                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium cursor-pointer"
                                   >
                                     삭제하기
                                   </button>
@@ -1668,7 +1668,7 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Header with icon, title and badge */}
-                          <div className="flex items-center justify-between mb-4 -mx-6 pl-[22px] pr-3" style={{ transform: 'translateY(12px)' }}>
+                          <div className="flex items-center justify-between mb-4 -mx-6 pl-[22px] pr-3 relative z-[200]" style={{ transform: 'translateY(12px)' }}>
                             <div className="flex items-center justify-center flex-1 min-w-0">
                               {/* Icon Scoop */}
                               <div className="w-[60px] h-[60px] flex items-center justify-center flex-shrink-0">
@@ -1694,7 +1694,7 @@ export const MainContentSection = (): JSX.Element => {
                             </div>
 
                             {/* 케밥 메뉴 버튼 */}
-                            <div className="relative z-[100] flex-shrink-0 ml-2">
+                            <div className="relative z-[300] flex-shrink-0 ml-2">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1711,7 +1711,7 @@ export const MainContentSection = (): JSX.Element => {
 
                               {/* 드롭다운 메뉴 */}
                               {showJudgmentKebabMenu && (
-                                <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-[70] min-w-[120px]">
+                                <div className="absolute right-0 top-8 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-[9999] min-w-[120px] pointer-events-auto">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1719,7 +1719,7 @@ export const MainContentSection = (): JSX.Element => {
                                       setIsEditingJudgment(true);
                                       setIsJudgmentModalOpen(true);
                                     }}
-                                    className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium cursor-pointer"
                                   >
                                     수정하기
                                   </button>
@@ -1729,7 +1729,7 @@ export const MainContentSection = (): JSX.Element => {
                                       setShowJudgmentKebabMenu(false);
                                       setShowJudgmentDeleteConfirm(true);
                                     }}
-                                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium cursor-pointer"
                                   >
                                     삭제하기
                                   </button>
