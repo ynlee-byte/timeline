@@ -12,6 +12,7 @@ export interface NextChallengerCard {
   bgSubImage: string;
   badgeImage: string;
   created_at: string;
+  receivedRecognitionsCount?: number; // 받은 귀감 개수
 }
 
 /**
@@ -60,7 +61,7 @@ export async function getNextChallengerCards(): Promise<NextChallengerCard[]> {
     return [];
   }
 
-  // 각 판정에 대해 프로필 정보 가져오기
+  // 각 판정에 대해 프로필 정보 및 받은 박수 개수 가져오기
   const cardsWithProfiles = await Promise.all(
     judgments.map(async (judgment: any, index: number) => {
       // 프로필 정보 조회
@@ -69,6 +70,12 @@ export async function getNextChallengerCards(): Promise<NextChallengerCard[]> {
         .select('full_name, avatar_url')
         .eq('id', judgment.user_id)
         .single();
+
+      // 이 판정이 받은 박수 개수 조회
+      const { count: applauseCount } = await supabase
+        .from('applause')
+        .select('*', { count: 'exact', head: true })
+        .eq('judgment_id', judgment.id);
 
       // 배경 이미지 순환
       const bgImages = [
@@ -89,6 +96,7 @@ export async function getNextChallengerCards(): Promise<NextChallengerCard[]> {
       return {
         id: index + 1, // 순차적인 ID
         userId: judgment.user_id,
+        judgment_id: judgment.id, // UUID for applause system
         profileImage: profile?.avatar_url || "https://c.animaapp.com/O1XpzcZm/img/image-16@2x.png",
         title: activity, // 실제 목표 활동명
         crewName: profile?.full_name ? `${profile.full_name} 크루` : "익명 크루",
@@ -96,7 +104,8 @@ export async function getNextChallengerCards(): Promise<NextChallengerCard[]> {
         bgImage: bgImages[index % bgImages.length],
         bgSubImage: "https://c.animaapp.com/O1XpzcZm/img/bgsub-17@2x.png",
         badgeImage: badgeImages[index % badgeImages.length],
-        created_at: judgment.created_at
+        created_at: judgment.created_at,
+        receivedRecognitionsCount: applauseCount || 0 // 받은 박수 개수
       };
     })
   );
@@ -136,7 +145,7 @@ export async function getWinnerCards(): Promise<NextChallengerCard[]> {
     return [];
   }
 
-  // 각 판정에 대해 프로필 정보 가져오기
+  // 각 판정에 대해 프로필 정보 및 받은 귀감 개수 가져오기
   const cardsWithProfiles = await Promise.all(
     judgments.map(async (judgment: any, index: number) => {
       // 프로필 정보 조회
@@ -145,6 +154,12 @@ export async function getWinnerCards(): Promise<NextChallengerCard[]> {
         .select('full_name, avatar_url')
         .eq('id', judgment.user_id)
         .single();
+
+      // 이 판정이 받은 귀감 개수 조회
+      const { count: recognitionCount } = await supabase
+        .from('recognitions_judgment')
+        .select('*', { count: 'exact', head: true })
+        .eq('judgment_id', judgment.id);
 
       // 배경 이미지 순환 (성공 카드는 초록색 배경)
       const bgImages = [
@@ -173,7 +188,8 @@ export async function getWinnerCards(): Promise<NextChallengerCard[]> {
         bgImage: bgImages[index % bgImages.length],
         bgSubImage: "https://c.animaapp.com/O1XpzcZm/img/bgsub-17@2x.png",
         badgeImage: badgeImages[index % badgeImages.length],
-        created_at: judgment.created_at
+        created_at: judgment.created_at,
+        receivedRecognitionsCount: recognitionCount || 0 // 받은 귀감 개수
       };
     })
   );

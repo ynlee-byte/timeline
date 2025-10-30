@@ -224,6 +224,10 @@ export const RecognitionSection = (): JSX.Element => {
   const [selectedCard, setSelectedCard] = useState<any | null>(null);
   const [isRecognitionInfoModalOpen, setIsRecognitionInfoModalOpen] = useState(false);
   const [isSupportInfoModalOpen, setIsSupportInfoModalOpen] = useState(false);
+  const [showFifthConfirm, setShowFifthConfirm] = useState(false);
+  const [pendingRecognition, setPendingRecognition] = useState<{ card: any, type: 'review' | 'goal' } | null>(null);
+  const [isRecognitionLocked, setIsRecognitionLocked] = useState(false);
+  const [isSupportLocked, setIsSupportLocked] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
   const cardWidth = 300; // Fixed width of card
   const cardGap = 55; // Gap between cards
@@ -249,32 +253,52 @@ export const RecognitionSection = (): JSX.Element => {
         goals: recognizedGoalIds
       });
 
-      // Transform reviews to card format (badge: "인정")
-      const reviewCards = reviews.map((review: any) => ({
-        id: `review-${review.id}`,
-        originalId: review.id,
-        user_id: review.user_id,
-        period: `10월 5주차 리뷰 · ${review.profiles?.full_name || '크루'}`,
-        title: review.activity,
-        description: review.review_text,
-        stars: review.rating,
-        badge: "인정",
-        badgeType: "recognize",
-        created_at: review.created_at,
+      // Transform reviews to card format (badge: "인정") with received count
+      const reviewCards = await Promise.all(reviews.map(async (review: any) => {
+        const { createClient } = await import('../../../../lib/supabase/client');
+        const supabase = createClient();
+        const { count } = await supabase
+          .from('recognitions_review')
+          .select('*', { count: 'exact', head: true })
+          .eq('review_id', review.id);
+
+        return {
+          id: `review-${review.id}`,
+          originalId: review.id,
+          user_id: review.user_id,
+          period: `10월 5주차 리뷰 · ${review.profiles?.full_name || '크루'}`,
+          title: review.activity,
+          description: review.review_text,
+          stars: review.rating,
+          badge: "인정",
+          badgeType: "recognize",
+          created_at: review.created_at,
+          receivedCount: count || 0,
+        };
       }));
 
-      // Transform goals to card format (badge: "응원")
-      const goalCards = goals.map((goal: any) => ({
-        id: `goal-${goal.id}`,
-        originalId: goal.id,
-        user_id: goal.user_id,
-        period: `10월 5주차 목표 · ${goal.profiles?.full_name || '크루'}`,
-        title: goal.activity,
-        description: goal.goal_text,
-        stars: goal.rating,
-        badge: "응원",
-        badgeType: "support",
-        created_at: goal.created_at,
+      // Transform goals to card format (badge: "응원") with received count
+      const goalCards = await Promise.all(goals.map(async (goal: any) => {
+        const { createClient } = await import('../../../../lib/supabase/client');
+        const supabase = createClient();
+        const { count } = await supabase
+          .from('recognitions_goal')
+          .select('*', { count: 'exact', head: true })
+          .eq('goal_id', goal.id);
+
+        return {
+          id: `goal-${goal.id}`,
+          originalId: goal.id,
+          user_id: goal.user_id,
+          period: `10월 5주차 목표 · ${goal.profiles?.full_name || '크루'}`,
+          title: goal.activity,
+          description: goal.goal_text,
+          stars: goal.rating,
+          badge: "응원",
+          badgeType: "support",
+          created_at: goal.created_at,
+          receivedCount: count || 0,
+        };
       }));
 
       // Combine and sort by created_at (most recent first)
@@ -306,6 +330,23 @@ export const RecognitionSection = (): JSX.Element => {
     loadData();
   }, [loadData]);
 
+  // 테스트 모달 이벤트 리스너
+  useEffect(() => {
+    const handleTestModal = (e: CustomEvent) => {
+      const { type, section } = e.detail;
+      if (section !== 'recognition') return;
+
+      setPendingRecognition({
+        card: recognitionCards[0] || { originalId: 'test', user_id: 'test' },
+        type: type === 'review' ? 'review' : 'goal'
+      });
+      setShowFifthConfirm(true);
+    };
+
+    window.addEventListener('testFifthModal', handleTestModal as EventListener);
+    return () => window.removeEventListener('testFifthModal', handleTestModal as EventListener);
+  }, [recognitionCards]);
+
   // Auto-refresh every 30 seconds to get new reviews/goals
   useEffect(() => {
     const refreshInterval = setInterval(() => {
@@ -316,16 +357,54 @@ export const RecognitionSection = (): JSX.Element => {
     return () => clearInterval(refreshInterval);
   }, [loadData]);
 
+  const handleConfirmFifth = async () => {
+    if (!pendingRecognition) return;
+
+    const { card, type } = pendingRecognition;
+    const isReview = type === 'review';
+
+    try {
+      // 보내기
+      if (isReview) {
+        await sendRecognitionToReview(card.originalId, card.user_id);
+      } else {
+        await sendRecognitionToGoal(card.originalId, card.user_id);
+      }
+
+      // 상태 업데이트
+      setClickedButtons((prev) => ({
+        ...prev,
+        [card.id]: true
+      }));
+
+      // myRecognitions 업데이트
+      if (isReview) {
+        setMyRecognitions(prev => ({
+          ...prev,
+          reviews: [...prev.reviews, card.originalId]
+        }));
+        setIsRecognitionLocked(true);
+      } else {
+        setMyRecognitions(prev => ({
+          ...prev,
+          goals: [...prev.goals, card.originalId]
+        }));
+        setIsSupportLocked(true);
+      }
+
+      setShowFifthConfirm(false);
+      setPendingRecognition(null);
+    } catch (error: any) {
+      setAlertMessage(error?.message || '오류가 발생했습니다.');
+      setIsAlertOpen(true);
+      setShowFifthConfirm(false);
+      setPendingRecognition(null);
+    }
+  };
+
   const handleButtonClick = async (card: any) => {
     if (!user) {
       setAlertMessage('로그인이 필요합니다.');
-      setIsAlertOpen(true);
-      return;
-    }
-
-    // 본인의 카드인지 확인
-    if (card.user_id === user.id) {
-      setAlertMessage('본인의 것에는 인정/응원을 남길 수 없어요!');
       setIsAlertOpen(true);
       return;
     }
@@ -341,6 +420,25 @@ export const RecognitionSection = (): JSX.Element => {
         return isSameType && clickedButtons[key];
       });
 
+      // 이미 잠겼는지 확인
+      if (isReview && isRecognitionLocked) {
+        setAlertMessage('이미 5명에게 인정을 날렸네요!');
+        setIsAlertOpen(true);
+        return;
+      }
+      if (!isReview && isSupportLocked) {
+        setAlertMessage('이미 5명에게 응원을 날렸네요!');
+        setIsAlertOpen(true);
+        return;
+      }
+
+      // 5번째를 보내려고 할 때 확인 모달 표시
+      if (clickedOfSameType.length === 4) {
+        setPendingRecognition({ card, type: isReview ? 'review' : 'goal' });
+        setShowFifthConfirm(true);
+        return;
+      }
+
       if (clickedOfSameType.length >= 5) {
         setAlertMessage(isReview ? '이미 5명에게 인정을 날렸네요!' : '이미 5명에게 응원을 날렸네요!');
         setIsAlertOpen(true);
@@ -348,6 +446,46 @@ export const RecognitionSection = (): JSX.Element => {
       }
     }
 
+    // UI 즉시 업데이트 (낙관적 업데이트)
+    if (isCurrentlyClicked) {
+      // 취소 상태로 즉시 업데이트
+      setClickedButtons((prev) => ({
+        ...prev,
+        [card.id]: false
+      }));
+
+      if (isReview) {
+        setMyRecognitions(prev => ({
+          ...prev,
+          reviews: prev.reviews.filter(id => id !== card.originalId)
+        }));
+      } else {
+        setMyRecognitions(prev => ({
+          ...prev,
+          goals: prev.goals.filter(id => id !== card.originalId)
+        }));
+      }
+    } else {
+      // 클릭 상태로 즉시 업데이트
+      setClickedButtons((prev) => ({
+        ...prev,
+        [card.id]: true
+      }));
+
+      if (isReview) {
+        setMyRecognitions(prev => ({
+          ...prev,
+          reviews: [...prev.reviews, card.originalId]
+        }));
+      } else {
+        setMyRecognitions(prev => ({
+          ...prev,
+          goals: [...prev.goals, card.originalId]
+        }));
+      }
+    }
+
+    // 백그라운드에서 API 호출
     try {
       if (isCurrentlyClicked) {
         // 취소하기
@@ -355,25 +493,6 @@ export const RecognitionSection = (): JSX.Element => {
           await cancelRecognitionOnReview(card.originalId);
         } else {
           await cancelRecognitionOnGoal(card.originalId);
-        }
-
-        // 상태 업데이트
-        setClickedButtons((prev) => ({
-          ...prev,
-          [card.id]: false
-        }));
-
-        // myRecognitions 업데이트
-        if (isReview) {
-          setMyRecognitions(prev => ({
-            ...prev,
-            reviews: prev.reviews.filter(id => id !== card.originalId)
-          }));
-        } else {
-          setMyRecognitions(prev => ({
-            ...prev,
-            goals: prev.goals.filter(id => id !== card.originalId)
-          }));
         }
 
         // Show cancel toast
@@ -388,28 +507,30 @@ export const RecognitionSection = (): JSX.Element => {
         } else {
           await sendRecognitionToGoal(card.originalId, card.user_id);
         }
-
-        // 상태 업데이트
-        setClickedButtons((prev) => ({
-          ...prev,
-          [card.id]: true
-        }));
-
-        // myRecognitions 업데이트
-        if (isReview) {
-          setMyRecognitions(prev => ({
-            ...prev,
-            reviews: [...prev.reviews, card.originalId]
-          }));
-        } else {
-          setMyRecognitions(prev => ({
-            ...prev,
-            goals: [...prev.goals, card.originalId]
-          }));
-        }
       }
     } catch (error: any) {
-      // 에러 메시지 표시
+      // 에러 발생 시 상태 롤백
+      setClickedButtons((prev) => ({
+        ...prev,
+        [card.id]: isCurrentlyClicked
+      }));
+
+      if (isReview) {
+        setMyRecognitions(prev => ({
+          ...prev,
+          reviews: isCurrentlyClicked
+            ? [...prev.reviews, card.originalId]
+            : prev.reviews.filter(id => id !== card.originalId)
+        }));
+      } else {
+        setMyRecognitions(prev => ({
+          ...prev,
+          goals: isCurrentlyClicked
+            ? [...prev.goals, card.originalId]
+            : prev.goals.filter(id => id !== card.originalId)
+        }));
+      }
+
       console.error('Recognition error details:', {
         error,
         errorMessage: error?.message,
@@ -484,7 +605,7 @@ export const RecognitionSection = (): JSX.Element => {
 
       {/* Timeline line image - full width */}
       {!isMobile && (
-        <div className={`absolute left-0 right-0 w-full h-[5px] z-10 pointer-events-none ${isTablet ? 'top-[350px]' : 'top-[348px]'}`}>
+        <div className={`absolute left-0 right-0 w-full h-[5px] z-0 pointer-events-none ${isTablet ? 'top-[350px]' : 'top-[348px]'}`}>
           <img
             className="w-full h-full object-cover pointer-events-none"
             alt="Timeline"
@@ -495,7 +616,7 @@ export const RecognitionSection = (): JSX.Element => {
 
       {/* Timeline line - horizontal line for mobile */}
       {isMobile && (
-        <div className="absolute left-0 right-0 w-full h-[2px] z-0 pointer-events-none" style={{ top: '241px' }}>
+        <div className="absolute left-0 right-0 w-full h-[2px] z-0 pointer-events-none" style={{ top: '261px' }}>
           <img
             className="w-full h-full object-cover pointer-events-none"
             alt="Timeline"
@@ -542,19 +663,30 @@ export const RecognitionSection = (): JSX.Element => {
         </header>
 
         {/* Info Boxes */}
-        <div className={`relative z-[100] flex items-center justify-center gap-6 ${isMobile ? '-mt-1' : isTablet ? '-mt-[15px]' : '-mt-[9px]'}`} style={{ pointerEvents: 'auto' }}>
+        <div className={`relative z-[9999] flex items-center justify-center gap-6 ${isMobile ? '-mt-[14px]' : isTablet ? '-mt-[15px]' : '-mt-[9px]'}`} style={{ pointerEvents: 'auto', isolation: 'isolate' }}>
           {/* 인정이 뭔가요? */}
           <div
             className={`relative inline-flex items-center gap-2 ${isMobile || isTablet ? '' : 'px-4 pt-2 pb-8 cursor-help'}`}
             onMouseEnter={() => !isMobile && !isTablet && setIsRecognitionInfoHovered(true)}
             onMouseLeave={() => !isMobile && !isTablet && setIsRecognitionInfoHovered(false)}
-            style={{ pointerEvents: 'auto', zIndex: 1000, position: 'relative' }}
+            style={{ pointerEvents: 'auto', zIndex: 2000, position: 'relative' }}
           >
             <button
               type="button"
               className={`font-ria-sans font-medium text-[#767676] text-sm ${isMobile || isTablet ? 'cursor-pointer px-3 py-2 bg-transparent hover:text-white active:text-white' : ''}`}
-              onClick={() => (isMobile || isTablet) && setIsRecognitionInfoModalOpen(true)}
-              style={isMobile || isTablet ? { touchAction: 'manipulation', pointerEvents: 'auto', zIndex: 1001 } : undefined}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('인정이 뭔가요? clicked, isMobile:', isMobile, 'isTablet:', isTablet);
+                if (isMobile || isTablet) {
+                  setIsRecognitionInfoModalOpen(true);
+                }
+              }}
+              style={{
+                touchAction: 'manipulation',
+                pointerEvents: 'auto',
+                zIndex: 2001,
+                position: 'relative'
+              }}
             >
               인정이 뭔가요?
             </button>
@@ -580,13 +712,24 @@ export const RecognitionSection = (): JSX.Element => {
             className={`relative inline-flex items-center gap-2 ${isMobile || isTablet ? '' : 'px-4 pt-2 pb-8 cursor-help'}`}
             onMouseEnter={() => !isMobile && !isTablet && setIsSupportInfoHovered(true)}
             onMouseLeave={() => !isMobile && !isTablet && setIsSupportInfoHovered(false)}
-            style={{ pointerEvents: 'auto', zIndex: 1000, position: 'relative' }}
+            style={{ pointerEvents: 'auto', zIndex: 2000, position: 'relative' }}
           >
             <button
               type="button"
               className={`font-ria-sans font-medium text-[#767676] text-sm ${isMobile || isTablet ? 'cursor-pointer px-3 py-2 bg-transparent hover:text-white active:text-white' : ''}`}
-              onClick={() => (isMobile || isTablet) && setIsSupportInfoModalOpen(true)}
-              style={isMobile || isTablet ? { touchAction: 'manipulation', pointerEvents: 'auto', zIndex: 1001 } : undefined}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('응원이 뭔가요? clicked, isMobile:', isMobile, 'isTablet:', isTablet);
+                if (isMobile || isTablet) {
+                  setIsSupportInfoModalOpen(true);
+                }
+              }}
+              style={{
+                touchAction: 'manipulation',
+                pointerEvents: 'auto',
+                zIndex: 2001,
+                position: 'relative'
+              }}
             >
               응원이 뭔가요?
             </button>
@@ -610,12 +753,12 @@ export const RecognitionSection = (): JSX.Element => {
       </div>
 
       {/* Timeline with cards - full width without padding */}
-      <div className={`relative w-full z-10 overflow-hidden ${isTablet ? '-mt-[77px]' : '-mt-[88px]'}`}>
+      <div className={`relative w-full z-[1] overflow-hidden ${isMobile ? '-mt-[127px]' : isTablet ? '-mt-[68px]' : '-mt-[84px]'}`} style={{ pointerEvents: 'none' }}>
           {/* Cards container with horizontal scroll */}
           <div
             ref={sliderRef}
             className={`relative ${isMobile ? 'w-full overflow-x-hidden overflow-y-visible px-0' : isTablet ? 'w-[1010px] overflow-visible mx-auto' : 'w-[1720px] overflow-hidden mx-auto'}`}
-            style={isMobile ? { paddingTop: '130px' } : undefined}
+            style={isMobile ? { paddingTop: '130px', pointerEvents: 'auto' } : { pointerEvents: 'auto' }}
           >
             <div
               className={`inline-flex flex-row transition-transform duration-4000 ease-in-out ${isMobile ? 'gap-6' : 'gap-[55px]'}`}
@@ -686,8 +829,14 @@ export const RecognitionSection = (): JSX.Element => {
                       {/* Description */}
                       {isMobile ? (
                         <p
-                          className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left text-[12px] leading-[16px] mb-1.5 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] cursor-pointer transition-all duration-200 hover:text-[#21e786] hover:scale-[1.02]"
+                          className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white text-left text-[12px] leading-[16px] mb-1.5 overflow-hidden cursor-pointer transition-all duration-200 hover:text-[#21e786] hover:scale-[1.02]"
                           onClick={() => setSelectedCard(card)}
+                          style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            textOverflow: 'ellipsis'
+                          }}
                         >
                           {card.description}
                         </p>
@@ -722,62 +871,151 @@ export const RecognitionSection = (): JSX.Element => {
                           <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#888888] text-[10px] overflow-hidden text-ellipsis whitespace-nowrap max-w-[80px]">
                             {card.period.split('·')[1]?.trim() || ''}
                           </p>
-                          <div className="relative group">
-                            <button
-                              onClick={() => handleButtonClick(card)}
-                              className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out active:scale-95 font-ria-sans cursor-pointer w-[40px] h-[40px] text-[11px] ${
-                                clickedButtons[card.id]
-                                  ? 'bg-[#FFF802] text-[#040B11] scale-105'
-                                  : 'bg-[#040B11] text-white border border-white/30 scale-100'
-                              }`}
-                              style={
-                                clickedButtons[card.id]
-                                  ? {
-                                      boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
-                                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
-                                    }
-                                  : {
-                                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
-                                    }
-                              }
-                            >
-                              {card.badge}
-                            </button>
+                          <div className="relative group flex items-center gap-1.5">
+                            {user?.id === card.user_id ? (
+                              // 본인 카드: "나의 카드" 텍스트만 표시
+                              <div className="flex items-center justify-center cursor-not-allowed w-[40px] h-[40px]">
+                                <svg
+                                  width="40"
+                                  height="40"
+                                  viewBox="0 0 42 42"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <rect
+                                    x="1"
+                                    y="1"
+                                    width="40"
+                                    height="40"
+                                    rx="20"
+                                    fill="#000000"
+                                  />
+                                  <rect
+                                    x="1"
+                                    y="1"
+                                    width="40"
+                                    height="40"
+                                    rx="20"
+                                    stroke="#FFFFFF"
+                                    strokeOpacity="0.5"
+                                    strokeWidth="1.5"
+                                  />
+                                  <text
+                                    x="21"
+                                    y="18"
+                                    textAnchor="middle"
+                                    fill="#FFFFFF"
+                                    fontSize="10"
+                                    fontWeight="bold"
+                                    fontFamily="Pretendard"
+                                  >
+                                    나의
+                                  </text>
+                                  <text
+                                    x="21"
+                                    y="30"
+                                    textAnchor="middle"
+                                    fill="#FFFFFF"
+                                    fontSize="10"
+                                    fontWeight="bold"
+                                    fontFamily="Pretendard"
+                                  >
+                                    카드
+                                  </text>
+                                </svg>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="font-ria-sans font-bold whitespace-nowrap text-[11px]">
+                                  <span className="text-white">{card.receivedCount || 0}</span>
+                                  <span className="text-[#AAAAAA]">/5</span>
+                                </span>
+                                <button
+                                  onClick={() => handleButtonClick(card)}
+                                  disabled={card.receivedCount >= 5}
+                                  className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out font-ria-sans w-[40px] h-[40px] text-[11px] ${
+                                    card.receivedCount >= 5
+                                      ? 'bg-[#2a2a2a] text-[#666666] border border-[#666666]/30 cursor-not-allowed opacity-50'
+                                      : clickedButtons[card.id]
+                                      ? 'bg-[#FFF802] text-[#040B11] scale-105 cursor-pointer active:scale-95'
+                                      : 'bg-[#040B11] text-white border border-white/30 scale-100 cursor-pointer active:scale-95'
+                                  }`}
+                                  style={
+                                    card.receivedCount >= 5
+                                      ? { transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)' }
+                                      : clickedButtons[card.id]
+                                      ? {
+                                          boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
+                                          transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        }
+                                      : {
+                                          transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        }
+                                  }
+                                >
+                                  {card.badge}
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between -mt-2">
-                          <div className="flex items-center gap-0.5">
+                          <div className={`flex items-center gap-0.5 ${user?.id === card.user_id ? 'translate-y-[5px]' : '-translate-y-[5px]'}`}>
                             {[...Array(5)].map((_, i) => (
                               <span
                                 key={i}
-                                className={`text-2xl ${i < card.stars ? 'text-white' : 'text-[#666666]'}`}
+                                className={`text-2xl leading-none ${i < card.stars ? 'text-white' : 'text-[#666666]'}`}
                               >
                                 ★
                               </span>
                             ))}
                           </div>
-                          <div className="relative group">
-                            <button
-                              onClick={() => handleButtonClick(card)}
-                              className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out hover:scale-[1.08] hover:brightness-110 active:scale-95 font-ria-sans cursor-pointer w-14 h-14 text-[16px] ${
-                                clickedButtons[card.id]
-                                  ? 'bg-[#FFF802] text-[#040B11] scale-105'
-                                  : 'bg-[#040B11] text-white border-2 border-white border-opacity-30 scale-100'
-                              }`}
-                              style={
-                                clickedButtons[card.id]
-                                  ? {
-                                      boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
-                                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
-                                    }
-                                  : {
-                                      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
-                                    }
-                              }
-                            >
-                              {card.badge}
-                            </button>
+                          <div className="relative group flex items-center gap-[10px]">
+                            {user?.id === card.user_id ? (
+                              // 본인 카드: "나의 카드" 버튼 표시
+                              <div
+                                className="rounded-full flex items-center justify-center cursor-not-allowed font-ria-sans font-bold text-[14px] text-white w-[100px] h-[40px] border translate-y-[12px]"
+                                style={{
+                                  backgroundColor: '#1a1a1a',
+                                  borderColor: 'rgba(170, 170, 170, 0.7)'
+                                }}
+                              >
+                                나의 카드
+                              </div>
+                            ) : (
+                              <>
+                                <span className="font-ria-sans font-bold whitespace-nowrap text-[16px] leading-none flex items-center">
+                                  <span className="text-white">{card.receivedCount || 0}</span>
+                                  <span className="text-[#AAAAAA]">/5</span>
+                                </span>
+                                <button
+                                  onClick={() => handleButtonClick(card)}
+                                  disabled={card.receivedCount >= 5}
+                                  className={`rounded-full flex items-center justify-center font-normal transition-all duration-150 ease-in-out font-ria-sans w-14 h-14 text-[16px] ${
+                                    card.receivedCount >= 5
+                                      ? 'bg-[#2a2a2a] text-[#666666] border-2 border-[#666666]/30 cursor-not-allowed opacity-50'
+                                      : clickedButtons[card.id]
+                                      ? 'bg-[#FFF802] text-[#040B11] scale-105 cursor-pointer hover:scale-[1.08] hover:brightness-110 active:scale-95'
+                                      : 'bg-[#040B11] text-white border-2 border-white border-opacity-30 scale-100 cursor-pointer hover:scale-[1.08] hover:brightness-110 active:scale-95'
+                                  }`}
+                                  style={
+                                    card.receivedCount >= 5
+                                      ? { transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)' }
+                                      : clickedButtons[card.id]
+                                      ? {
+                                          boxShadow: '0 4px 20px rgba(255, 248, 2, 0.5)',
+                                          transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        }
+                                      : {
+                                          transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        }
+                                  }
+                                >
+                                  {card.badge}
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       )}
@@ -903,6 +1141,67 @@ export const RecognitionSection = (): JSX.Element => {
       )}
     </section>
 
+    {/* 5번째 확인 모달 */}
+    {showFifthConfirm && pendingRecognition && (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
+        onClick={() => {
+          setShowFifthConfirm(false);
+          setPendingRecognition(null);
+        }}
+      >
+        <div
+          className="relative bg-[#1a1a1a] border-2 border-[#FFED00] shadow-[0_0_30px_rgba(255,237,0,0.3)] rounded-2xl w-full mx-4"
+          style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 448px)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => {
+              setShowFifthConfirm(false);
+              setPendingRecognition(null);
+            }}
+            className="absolute top-4 right-4 text-white hover:text-[#FFED00] transition-colors text-2xl"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
+
+          {/* Message */}
+          <div className="flex flex-col items-center mt-2" style={{ gap: 'clamp(16px, 4vw, 24px)' }}>
+            <p className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-center mb-3" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
+              이제 마지막 {pendingRecognition.type === 'review' ? '인정' : '응원'}이에요!
+            </p>
+            <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>
+              전송하시면 {pendingRecognition.type === 'review' ? '인정' : '응원'} 보내기 미션 완료!<br />
+              단, 확인을 누르면 수정이나 추가 전송은 불가해요.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => {
+                  setShowFifthConfirm(false);
+                  setPendingRecognition(null);
+                }}
+                className="flex-1 font-semibold rounded-full [font-family:'Ria'] font-ria-sans transition-all bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white border border-white/30"
+                style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+              >
+                잠깐만!
+              </button>
+              <button
+                onClick={handleConfirmFifth}
+                className="flex-1 font-semibold rounded-full [font-family:'Ria'] font-ria-sans transition-all bg-[#FFED00] hover:bg-[#FFE500] text-[#040B11]"
+                style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+              >
+                {pendingRecognition.type === 'review' ? '인정 보내기 👍' : '응원 보내기 💪'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* 인정이 뭔가요? 모달 */}
     {isRecognitionInfoModalOpen && (
       <div
@@ -925,10 +1224,13 @@ export const RecognitionSection = (): JSX.Element => {
 
           {/* Content */}
           <p className="font-ria-sans font-medium text-[#1a1a1a] text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>
-            인정은, 내가 인정할만한 아쉬움과 뿌듯함을 통해<br />
-            치열하게 성장하는 분께 드리는, 나의 '박수' 입니다.<br />
+            인정은, 내가 인정할 만한<br />
+            아쉬움과 뿌듯함을 통해<br />
+            치열하게 성장하는 분께 드리는,<br />
+            나의 '박수' 입니다.<br />
             타인의 도전 과정을 확인하며<br />
-            나의 자양분으로 삼을 수 있는 토양을 만들어봐요!
+            나의 자양분으로 삼을 수 있는<br />
+            토양을 만들어봐요!
           </p>
         </div>
       </div>
@@ -956,10 +1258,12 @@ export const RecognitionSection = (): JSX.Element => {
 
           {/* Content */}
           <p className="font-ria-sans font-medium text-[#1a1a1a] text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>
-            응원은, 나와 함께 같이 성장하는<br />
-            우리 선배/후배/동료 크루분들의 '목표'에 보내는,<br />
-            나의 '사랑'입니다. 모두의 목표들을 확인하며 그 안에서<br />
-            나도 같이 커갈 수 있는 긍정적인 자극으로 활용하자구요!
+            응원은 나와 함께 같이 성장하는<br />
+            우리 선배/후배/동료 크루분들의<br />
+            '목표'에 보내는, 나의 '사랑'입니다.<br />
+            모두의 목표들을 확인하며<br />
+            그 안에서 나도 같이 커갈 수 있는<br />
+            긍정적인 자극으로 활용하자구요!
           </p>
         </div>
       </div>

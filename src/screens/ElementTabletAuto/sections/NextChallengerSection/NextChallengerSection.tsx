@@ -7,10 +7,21 @@ import decoImage from "../../../../assets/deco.png";
 import paginationImage from "../../../../assets/pagenation.png";
 import buttonApplause from "../../../../icons/buttonApplause.png";
 import buttonApplauseChecked from "../../../../icons/buttonApplauseChecked.png";
+import newBgImage from "../../../../assets/new -bg.png";
+import newBg02Image from "../../../../assets/new -bg02.png";
+import newBtnImage from "../../../../assets/new -btn -ss -d.png";
+import newBtnFaImage from "../../../../assets/new -btn -fa -d.png";
+import crownIcon from "../../../../icons/bgSub.png";
+import cloudIcon from "../../../../icons/cloud01.png";
+import cloudBigIcon from "../../../../icons/cloudbig.png";
+import cloudBigIcon2 from "../../../../icons/cloudbig2.png";
+import iconWrapper from "../../../../icons/iconWrapper.png";
+import iconWrapperActive from "../../../../icons/icon.png";
 import { AlertModal } from "../../../../components/AlertModal";
 import { LoginModal } from "../../../../components/LoginModal";
 import { sendApplause, cancelApplause, getUserSentApplause } from "../../../../lib/services/applauseService";
 import { getNextChallengerCards, NextChallengerCard } from "../../../../lib/services/nextChallengerService";
+import { createClient } from "../../../../lib/supabase/client";
 
 const challengerCards = [
   {
@@ -205,7 +216,7 @@ export const NextChallengerSection = (): JSX.Element => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
-  const [applauseClicks, setApplauseClicks] = useState<Record<number, number>>({});
+  const [applauseClicks, setApplauseClicks] = useState<Record<string, number>>({});
   const [isPaused, setIsPaused] = useState(false);
   const [alertModal, setAlertModal] = useState<{ isOpen: boolean; message: string }>({
     isOpen: false,
@@ -216,6 +227,10 @@ export const NextChallengerSection = (): JSX.Element => {
   const [challengerCards, setChallengerCards] = useState<NextChallengerCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hoveredCard, setHoveredCard] = useState<string | number | null>(null);
+  const [showFifthConfirm, setShowFifthConfirm] = useState(false);
+  const [isApplauseLocked, setIsApplauseLocked] = useState(false);
+  const [pendingApplause, setPendingApplause] = useState<{ judgmentId: string; toUserId: string } | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   const cardsPerPage = isMobile ? 4 : isTablet ? 4 : 6;
   const totalPages = Math.max(1, Math.ceil(challengerCards.length / cardsPerPage));
@@ -230,15 +245,20 @@ export const NextChallengerSection = (): JSX.Element => {
     const loadData = async () => {
       setIsLoading(true);
       try {
+        // Get current user
+        const supabase = createClient();
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        setUser(currentUser);
+
         // DB에서 실제 데이터 로드
         const cards = await getNextChallengerCards();
         setChallengerCards(cards);
 
         // 박수 데이터 로드
         const sentApplause = await getUserSentApplause();
-        const clicks: Record<number, number> = {};
+        const clicks: Record<string, number> = {};
         sentApplause.forEach((applause: any) => {
-          clicks[applause.challenger_id] = 1;
+          clicks[applause.judgment_id] = 1;
         });
         setApplauseClicks(clicks);
       } catch (error) {
@@ -249,6 +269,18 @@ export const NextChallengerSection = (): JSX.Element => {
     };
     loadData();
 
+    // 테스트 모달 이벤트 리스너
+    const handleTestModal = (e: CustomEvent) => {
+      const { type, section } = e.detail;
+      if (section !== 'challenger') return;
+
+      setPendingApplause({
+        judgmentId: challengerCards[0]?.judgment_id || 'test',
+        toUserId: challengerCards[0]?.userId || 'test'
+      });
+      setShowFifthConfirm(true);
+    };
+
     // 판정 업데이트 이벤트 리스너
     const handleJudgmentUpdate = () => {
       console.log('Judgment updated! Refreshing next challenger cards...');
@@ -256,24 +288,62 @@ export const NextChallengerSection = (): JSX.Element => {
     };
 
     window.addEventListener('judgmentUpdated', handleJudgmentUpdate);
+    window.addEventListener('testFifthModal', handleTestModal as EventListener);
     return () => {
       window.removeEventListener('judgmentUpdated', handleJudgmentUpdate);
+      window.removeEventListener('testFifthModal', handleTestModal as EventListener);
     };
-  }, []);
+  }, [challengerCards]);
 
-  const handleApplauseClick = async (cardId: string | number) => {
-    const numericId = typeof cardId === 'string' ? parseInt(cardId, 10) : cardId;
-    const isCurrentlyClicked = (applauseClicks[numericId] || 0) > 0;
+  const handleApplauseClick = async (judgmentId: string, toUserId: string, currentCount: number) => {
+    // 로그인 체크
+    if (!user) {
+      setAlertModal({
+        isOpen: true,
+        message: '로그인이 필요합니다.',
+      });
+      return;
+    }
 
-    // Find the card to get its userId
-    const card = challengerCards.find(c => c.id === cardId);
-    if (!card) return;
+    // 5개 이상이면 클릭 불가
+    if (currentCount >= 5) {
+      setAlertModal({
+        isOpen: true,
+        message: '이미 최대 5개의 표현을 받았습니다.',
+      });
+      return;
+    }
+
+    const isCurrentlyClicked = (applauseClicks[judgmentId] || 0) > 0;
+
+    // Count how many applause the user has sent
+    const userSentCount = Object.values(applauseClicks).filter(v => v > 0).length;
+
+    // If locked and trying to send a new applause, prevent it
+    if (isApplauseLocked && !isCurrentlyClicked) {
+      setAlertModal({
+        isOpen: true,
+        message: '더이상 표현을 보낼 수 없습니다.',
+      });
+      return;
+    }
+
+    // If about to send 5th applause, show confirmation
+    if (userSentCount === 4 && !isCurrentlyClicked) {
+      setPendingApplause({ judgmentId, toUserId });
+      setShowFifthConfirm(true);
+      return;
+    }
 
     try {
       if (isCurrentlyClicked) {
         // Cancel applause
-        await cancelApplause(numericId);
-        setApplauseClicks((prev) => ({ ...prev, [numericId]: 0 }));
+        await cancelApplause(judgmentId);
+        setApplauseClicks((prev) => ({ ...prev, [judgmentId]: 0 }));
+
+        // Reload data to update count
+        const cards = await getNextChallengerCards();
+        setChallengerCards(cards);
 
         // Show cancel toast
         setShowCancelToast(true);
@@ -281,9 +351,18 @@ export const NextChallengerSection = (): JSX.Element => {
           setShowCancelToast(false);
         }, 3000);
       } else {
-        // Send applause - FIXED: correct parameter order (challengerId, toUserId)
-        await sendApplause(numericId, card.userId);
-        setApplauseClicks((prev) => ({ ...prev, [numericId]: 1 }));
+        // Send applause
+        await sendApplause(judgmentId, toUserId);
+        setApplauseClicks((prev) => ({ ...prev, [judgmentId]: 1 }));
+
+        // Update local count immediately
+        setChallengerCards((prevData) =>
+          prevData.map((card) =>
+            card.judgment_id === judgmentId
+              ? { ...card, receivedRecognitionsCount: (card.receivedRecognitionsCount || 0) + 1 }
+              : card
+          )
+        );
       }
     } catch (error: any) {
       // Show error modal
@@ -291,6 +370,37 @@ export const NextChallengerSection = (): JSX.Element => {
         isOpen: true,
         message: error.message || '오류가 발생했습니다.',
       });
+    }
+  };
+
+  const handleConfirmFifthApplause = async () => {
+    if (!pendingApplause) return;
+
+    try {
+      // Send the 5th applause
+      await sendApplause(pendingApplause.judgmentId, pendingApplause.toUserId);
+      setApplauseClicks((prev) => ({ ...prev, [pendingApplause.judgmentId]: 1 }));
+
+      // Update local count immediately
+      setChallengerCards((prevData) =>
+        prevData.map((card) =>
+          card.judgment_id === pendingApplause.judgmentId
+            ? { ...card, receivedRecognitionsCount: (card.receivedRecognitionsCount || 0) + 1 }
+            : card
+        )
+      );
+
+      // Lock further applause
+      setIsApplauseLocked(true);
+      setShowFifthConfirm(false);
+      setPendingApplause(null);
+    } catch (error: any) {
+      setAlertModal({
+        isOpen: true,
+        message: error.message || '오류가 발생했습니다.',
+      });
+      setShowFifthConfirm(false);
+      setPendingApplause(null);
     }
   };
 
@@ -459,31 +569,124 @@ export const NextChallengerSection = (): JSX.Element => {
 
                       {/* Badge icon on right - positioned at bottom-right with click effect */}
                       <div
-                        className="absolute group"
+                        className="absolute"
                         style={{
-                          bottom: (applauseClicks[card.id] || 0) > 0 ? '-41px' : '-38px',
-                          right: (applauseClicks[card.id] || 0) > 0 ? '-41px' : '-38px'
+                          bottom: '10px',
+                          right: '8px'
                         }}
-                        onMouseEnter={() => setHoveredCard(card.id)}
-                        onMouseLeave={() => setHoveredCard(null)}
                       >
-                        <img
-                          className="object-contain cursor-pointer transition-all duration-300 ease-out hover:scale-105 hover:brightness-125 active:scale-95"
-                          style={{
-                            width: (applauseClicks[card.id] || 0) > 0 ? 'clamp(132.3px, 33.075vw, 176.4px)' : 'clamp(126px, 31.5vw, 168px)',
-                            height: (applauseClicks[card.id] || 0) > 0 ? 'clamp(132.3px, 33.075vw, 176.4px)' : 'clamp(126px, 31.5vw, 168px)',
-                          }}
-                          alt="Badge"
-                          src={(applauseClicks[card.id] || 0) > 0 ? buttonApplauseChecked.src : "/buttonApplause.png"}
-                          onClick={() => handleApplauseClick(card.id)}
-                        />
-                        {hoveredCard === card.id && (
-                          <div className="absolute bottom-full right-0 mb-2 px-4 py-2 bg-[#1a1a1a] border-2 border-[#E52B50] rounded-lg shadow-[0_0_20px_rgba(229,43,80,0.3)] whitespace-nowrap z-50">
-                            <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-sm">
-                              박수 : 당신의 목표는 달성되지 못했지만, 시도와 도전에 충분히 박수드리고 싶습니다! 다음 기회를 또 노려보자구요!
-                            </p>
-                            <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[#E52B50]"></div>
+                        {user?.id === card.userId ? (
+                          // 본인 카드: "나의 카드" 텍스트만 표시
+                          <div className="flex items-center justify-center cursor-not-allowed" style={{ width: '40px', height: '40px' }}>
+                            <svg
+                              width="40"
+                              height="40"
+                              viewBox="0 0 42 42"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <rect
+                                x="1"
+                                y="1"
+                                width="40"
+                                height="40"
+                                rx="20"
+                                fill="#000000"
+                              />
+                              <rect
+                                x="1"
+                                y="1"
+                                width="40"
+                                height="40"
+                                rx="20"
+                                stroke="#FFFFFF"
+                                strokeOpacity="0.5"
+                                strokeWidth="1.5"
+                              />
+                              <text
+                                x="21"
+                                y="18"
+                                textAnchor="middle"
+                                fill="#FFFFFF"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fontFamily="Pretendard"
+                              >
+                                나의
+                              </text>
+                              <text
+                                x="21"
+                                y="30"
+                                textAnchor="middle"
+                                fill="#FFFFFF"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fontFamily="Pretendard"
+                              >
+                                카드
+                              </text>
+                            </svg>
                           </div>
+                        ) : (
+                          <>
+                            {/* Count display above badge - fixed position */}
+                            <div
+                              className="absolute translate-y-[-120%] translate-x-[10%]"
+                              style={{
+                                top: '0px',
+                                right: '0px',
+                                marginRight: '5px'
+                              }}
+                            >
+                              <span className="font-ria-sans font-bold whitespace-nowrap" style={{
+                                fontSize: 'clamp(10px, 2.5vw, 12px)',
+                                color: '#FFFFFF'
+                              }}>
+                                <span style={{ color: '#FFFFFF' }}>{card.receivedRecognitionsCount || 0}</span>
+                                <span style={{ color: '#AAAAAA' }}>/5</span>
+                              </span>
+                            </div>
+
+                            <div
+                              className={`relative flex items-center justify-center ${(card.receivedRecognitionsCount || 0) >= 5 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'}`}
+                              onClick={() => card.judgment_id && handleApplauseClick(card.judgment_id, card.userId, card.receivedRecognitionsCount || 0)}
+                            >
+                              <svg
+                                width="40"
+                                height="40"
+                                viewBox="0 0 42 42"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <rect
+                                  x="1"
+                                  y="1"
+                                  width="40"
+                                  height="40"
+                                  rx="20"
+                                  fill={(applauseClicks[card.judgment_id || ''] || 0) > 0 ? "#53121F" : "#040B11"}
+                                />
+                                <rect
+                                  x="1"
+                                  y="1"
+                                  width="40"
+                                  height="40"
+                                  rx="20"
+                                  stroke={(applauseClicks[card.judgment_id || ''] || 0) > 0 ? "#E52B50" : "#D9D9D9"}
+                                  strokeOpacity={(applauseClicks[card.judgment_id || ''] || 0) > 0 ? "1" : "0.5"}
+                                  strokeWidth="1"
+                                />
+                                <image
+                                  href="/thunder.png"
+                                  x="12.2"
+                                  y="12.2"
+                                  width="17.6"
+                                  height="17.6"
+                                  opacity={(applauseClicks[card.judgment_id || ''] || 0) > 0 ? "1" : "0.5"}
+                                />
+                              </svg>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
@@ -509,70 +712,117 @@ export const NextChallengerSection = (): JSX.Element => {
                   </div>
                 </div>
               ) : (
-                <Card
-                  className={`relative w-full h-[235px] bg-transparent border-0 shadow-none outline-none`}
-                >
-                <CardContent className="p-0 h-[235px] border-0 shadow-none outline-none">
-                  <div className="flex flex-col w-full h-[215px] items-start gap-2.5 pt-[37px] pb-[30px] px-[30px] absolute top-5 left-0">
-                    <img
-                      className="absolute w-[100.00%] h-full top-0 left-0"
-                      alt="Background"
-                      src={card.bgImage}
-                    />
+                <div className={`relative w-[482px] h-[240px] ${hoveredCard === card.judgment_id ? 'z-[100000]' : 'z-0'}`}>
+                  {/* Background image with cutout */}
+                  <img
+                    className="absolute top-[25px] left-0 w-[482px] h-[215px] object-fill"
+                    alt="Card background"
+                    src={newBg02Image.src}
+                  />
 
-                    <div className="flex flex-col w-full max-w-[422px] h-[148px] items-start gap-6 relative">
-                      <div className="flex h-[52px] items-end gap-[13px] w-full">
+                  {/* Card content */}
+                  <div className="relative pt-[55px] pb-[30px] px-[30px] h-full flex flex-col z-10">
+                      {/* Top section: Profile + Title/Name */}
+                      <div className="flex items-start gap-3 pr-[95px]">
+                        {/* Profile image on left */}
                         <img
-                          className="w-[51px] h-[51px] mb-[-0.50px] ml-[-0.50px] aspect-[1] object-cover"
+                          className="w-[55px] h-[55px] rounded-full object-cover flex-shrink-0"
                           alt="Profile"
                           src={card.profileImage}
                         />
 
-                        <div className="inline-flex items-center justify-end gap-[38px]">
-                          <div className="flex flex-col w-full max-w-[359px] h-[52px] items-start gap-[3.3px] pt-0 pb-px px-0 relative">
-                            <h3 className="flex items-center justify-center self-stretch mt-[-1.00px] [font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-surface-main text-[22px] tracking-[-0.66px] leading-[26.4px]">
-                              {card.title}
-                            </h3>
-
-                            <p className="flex items-center justify-center w-fit [font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-base tracking-[-0.48px] leading-[19.2px] whitespace-nowrap">
-                              {card.crewName}
-                            </p>
-
-                            <img
-                              className="absolute -top-0.5 left-[285px] w-[74px] h-[74px] object-cover"
-                              alt="Background decoration"
-                              src={card.bgSubImage}
-                            />
-                          </div>
+                        {/* Title and crew name */}
+                        <div className="flex flex-col gap-1 flex-1">
+                          <h3 className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-white text-[20px] tracking-[-0.6px] leading-[24px]">
+                            {card.title}
+                          </h3>
+                          <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#999999] text-[14px] tracking-[-0.42px] leading-[16.8px]">
+                            {card.crewName}
+                          </p>
                         </div>
                       </div>
 
-                      <p className="w-[334px] h-[72px] [font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base tracking-[-0.48px] leading-6 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical]">
-                        {card.description}
-                      </p>
-                    </div>
+                      {/* Bottom section: Description */}
+                      <div className="mt-4 pr-[95px]">
+                        <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-white/90 text-[14px] tracking-[-0.42px] leading-[21px] overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical]">
+                          {card.description}
+                        </p>
+                      </div>
 
-                    <div className="absolute top-[89px] left-[362px] w-[190px] h-48 flex items-center justify-center">
-                      <div className="relative">
-                        <img
-                          className="w-[200px] h-[200px] mix-blend-multiply transition-all duration-300 ease-out pointer-events-none"
-                          alt="Applause button"
-                          src={(applauseClicks[card.id] || 0) > 0 ? buttonApplauseChecked.src : buttonApplause.src}
-                          style={{ objectFit: 'contain' }}
-                        />
+                      {/* Crown Icon on right */}
+                      <img
+                        className="absolute top-[55px] right-[25px] w-[65px] h-[65px] object-contain opacity-50"
+                        alt="Crown decoration"
+                        src={crownIcon.src}
+                      />
+
+                      {/* Recognition badge with new button design - inside card on right bottom */}
+                      <div
+                        className="absolute group"
+                        style={{
+                          bottom: '10px',
+                          right: '5px'
+                        }}
+                        onMouseEnter={() => setHoveredCard(card.judgment_id || '')}
+                        onMouseLeave={() => setHoveredCard(null)}
+                      >
                         <div
-                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60px] h-[60px] rounded-full cursor-pointer transition-all duration-300"
-                          onClick={() => handleApplauseClick(card.id)}
-                          onMouseEnter={() => setHoveredCard(card.id)}
-                          onMouseLeave={() => setHoveredCard(null)}
-                        />
-                        {hoveredCard === card.id && (
+                          className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-150 ease-in-out ${
+                            user?.id === card.userId
+                              ? 'cursor-not-allowed'
+                              : (card.receivedRecognitionsCount || 0) >= 5
+                                ? 'cursor-not-allowed opacity-50'
+                                : 'cursor-pointer hover:scale-105 hover:brightness-125 active:scale-95'
+                          }`}
+                          onClick={() => {
+                            if (user?.id !== card.userId && card.judgment_id) {
+                              handleApplauseClick(card.judgment_id, card.userId, card.receivedRecognitionsCount || 0);
+                            }
+                          }}
+                          style={{
+                            width: '100px',
+                            height: '47px',
+                            backgroundColor: user?.id === card.userId
+                              ? '#1a1a1a'
+                              : (applauseClicks[card.judgment_id || ''] || 0) > 0
+                                ? '#54121F'
+                                : '#1a1a1a',
+                            border: `1px solid ${
+                              user?.id === card.userId
+                                ? 'rgba(170, 170, 170, 0.7)'
+                                : (applauseClicks[card.judgment_id || ''] || 0) > 0
+                                  ? '#E33357'
+                                  : 'rgba(208, 208, 208, 0.5)'
+                            }`,
+                          }}
+                        >
+                          {user?.id === card.userId ? (
+                            <span className="font-ria-sans font-bold text-[14px] text-white">
+                              나의 카드
+                            </span>
+                          ) : (
+                            <>
+                              <span className="font-ria-sans font-bold text-[16px]">
+                                <span className="text-white">{card.receivedRecognitionsCount || 0}</span>
+                                <span className="text-[#AAAAAA]">/5</span>
+                              </span>
+                              <img
+                                className="w-[24px] h-[24px] object-contain"
+                                alt="Badge icon"
+                                src={(applauseClicks[card.judgment_id || ''] || 0) > 0 ? cloudBigIcon2.src : cloudBigIcon.src}
+                                style={{ transform: 'scale(2) translateY(2px)' }}
+                              />
+                            </>
+                          )}
+                        </div>
+                        {/* Hover Tooltip - 본인 카드가 아닐 때만 표시 */}
+                        {hoveredCard === card.judgment_id && user?.id !== card.userId && (
                           <div
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#E52B50]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(229,43,80,0.7),0_0_80px_rgba(229,43,80,0.3)] z-50 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
-                            style={{ marginBottom: '-55px', minWidth: '350px' }}
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#E52B50]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(229,43,80,0.7),0_0_80px_rgba(229,43,80,0.3)] z-[99999] pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
+                            style={{ marginBottom: '10px', minWidth: '350px' }}
                           >
-                            <p className="font-ria-sans font-medium text-[#1a1a1a] text-sm text-center">
-                              박수 : 당신의 목표는 달성되지 못했지만,<br />
+                            <p className="font-ria-sans font-medium text-[#1a1a1a] text-[12px] text-center">
+                              당신의 목표는 달성되지 못했지만,<br />
                               시도와 도전에 충분히 박수드리고 싶습니다!<br />
                               다음 기회를 또 노려보자구요!
                             </p>
@@ -580,27 +830,25 @@ export const NextChallengerSection = (): JSX.Element => {
                           </div>
                         )}
                       </div>
-                    </div>
                   </div>
 
-                  {/* 다음 기회에... badge at top center - skewed rectangle */}
-                  <div className="absolute left-1/2 -translate-x-1/2 top-[-1px] z-50">
-                    <div className="inline-flex items-center justify-center bg-[#2d1a1f] border border-[#E52B50] shadow-[0px_0px_20px_#E52B5066] rounded-md" style={{
-                      padding: '7px 14px',
+                  {/* 다음 기회에... badge at top center */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
+                    <div className="inline-flex items-center justify-center gap-2 rounded-md border border-[#E52B50] shadow-[0px_0px_15px_rgba(229,43,80,0.4)]" style={{
+                      width: '145px',
+                      height: '43px',
+                      background: '#040B11',
                       transform: 'skewX(-10deg)'
                     }}>
-                      <span className="font-bold leading-[normal] whitespace-nowrap font-ria-sans" style={{
-                        fontSize: '15px',
-                        transform: 'skewX(10deg)',
-                        display: 'inline-block',
-                        color: '#E52B50'
+                      <span className="text-[#E52B50] leading-[normal] whitespace-nowrap font-ria-sans text-[16px]" style={{
+                        fontWeight: 700,
+                        transform: 'skewX(10deg)'
                       }}>
                         다음 기회에...
                       </span>
                     </div>
                   </div>
-                </CardContent>
-                </Card>
+                </div>
               )}
             </article>
           ))}
@@ -651,6 +899,67 @@ export const NextChallengerSection = (): JSX.Element => {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
       />
+
+      {/* 5th Applause Confirmation Modal */}
+      {showFifthConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
+          onClick={() => {
+            setShowFifthConfirm(false);
+            setPendingApplause(null);
+          }}
+        >
+          <div
+            className="relative bg-[#1a1a1a] border-2 border-[#E52B50] shadow-[0_0_30px_rgba(229,43,80,0.3)] rounded-2xl w-full mx-4"
+            style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 448px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowFifthConfirm(false);
+                setPendingApplause(null);
+              }}
+              className="absolute top-4 right-4 text-white hover:text-[#E52B50] transition-colors text-2xl"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+
+            {/* Message */}
+            <div className="flex flex-col items-center mt-2" style={{ gap: 'clamp(16px, 4vw, 24px)' }}>
+              <p className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-center mb-3" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
+                이제 마지막 박수에요!
+              </p>
+              <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>
+                전송하시면 박수 보내기 미션 완료!<br />
+                단, 확인을 누르면 수정이나 추가 전송은 불가해요.
+              </p>
+
+              {/* Buttons */}
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => {
+                    setShowFifthConfirm(false);
+                    setPendingApplause(null);
+                  }}
+                  className="flex-1 font-semibold rounded-full [font-family:'Ria'] font-ria-sans transition-all bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white border border-white/30"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  잠깐만!
+                </button>
+                <button
+                  onClick={handleConfirmFifthApplause}
+                  className="flex-1 font-semibold rounded-full [font-family:'Ria'] font-ria-sans transition-all bg-[#E52B50] hover:bg-[#d12546] text-white"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  박수 보내기 👏
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
 
     {/* 취소 완료 토스트 - Portal로 body에 렌더링 */}

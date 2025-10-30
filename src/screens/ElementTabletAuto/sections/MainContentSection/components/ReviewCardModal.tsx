@@ -10,7 +10,7 @@ import selectButton05 from "../../../../../assets/selectButton05.png";
 import selectButton00 from "../../../../../assets/00.png";
 // Notice modal images now loaded from public folder
 import { useWindowWidth } from "../../../../../breakpoints";
-import { createReview } from "../../../../../lib/services/reviewService";
+import { createReview, updateReview } from "../../../../../lib/services/reviewService";
 
 // Custom scrollbar styles
 const scrollbarStyles = `
@@ -36,6 +36,12 @@ interface ReviewCardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete?: () => void;
+  initialData?: {
+    id: string;
+    activity: string;
+    review_text: string;
+    rating: number;
+  } | null;
 }
 
 const activityOptions = [
@@ -53,7 +59,7 @@ const activityOptions = [
   "멘토링 세션",
 ];
 
-export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClose, onComplete }) => {
+export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClose, onComplete, initialData }) => {
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
@@ -70,8 +76,15 @@ export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClos
   useEffect(() => {
     if (isOpen) {
       setIsAnimating(true);
+      // 수정 모드인 경우 초기 데이터 설정
+      if (initialData) {
+        setSelectedActivity(initialData.activity);
+        setReviewText(initialData.review_text);
+        setRating(initialData.rating);
+        setStep(2); // 바로 내용 작성 화면으로
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   // Request B 화면에 진입하면 하단 버튼으로 자동 스크롤
   useEffect(() => {
@@ -132,12 +145,22 @@ export const ReviewCardModal: React.FC<ReviewCardModalProps> = ({ isOpen, onClos
     }
 
     try {
-      // Supabase에 리뷰 저장
-      await createReview({
-        activity: selectedActivity,
-        review_text: reviewText,
-        rating: rating
-      });
+      // 수정 모드인지 생성 모드인지 확인
+      if (initialData?.id) {
+        // 기존 리뷰 수정
+        await updateReview(initialData.id, {
+          activity: selectedActivity,
+          review_text: reviewText,
+          rating: rating
+        });
+      } else {
+        // 새 리뷰 생성
+        await createReview({
+          activity: selectedActivity,
+          review_text: reviewText,
+          rating: rating
+        });
+      }
 
       setShowNotice(true);
 

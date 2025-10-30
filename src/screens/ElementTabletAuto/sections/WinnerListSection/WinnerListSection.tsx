@@ -200,6 +200,18 @@ export const WinnerListSection = (): JSX.Element => {
     };
     loadWinnerData();
 
+    // 테스트 모달 이벤트 리스너
+    const handleTestModal = (e: CustomEvent) => {
+      const { type, section } = e.detail;
+      if (section !== 'winner') return;
+
+      setPendingRecognition({
+        judgmentId: winnerData[0]?.judgment_id || 'test',
+        toUserId: winnerData[0]?.userId || 'test'
+      });
+      setShowFifthConfirm(true);
+    };
+
     // 판정 업데이트 이벤트 리스너
     const handleJudgmentUpdate = () => {
       console.log('Judgment updated! Refreshing winner cards...');
@@ -207,10 +219,12 @@ export const WinnerListSection = (): JSX.Element => {
     };
 
     window.addEventListener('judgmentUpdated', handleJudgmentUpdate);
+    window.addEventListener('testFifthModal', handleTestModal as EventListener);
     return () => {
       window.removeEventListener('judgmentUpdated', handleJudgmentUpdate);
+      window.removeEventListener('testFifthModal', handleTestModal as EventListener);
     };
-  }, []);
+  }, [winnerData]);
 
   const handleInspireClick = async (judgmentId: string, toUserId: string, currentCount: number) => {
     // 로그인 체크
@@ -517,63 +531,119 @@ export const WinnerListSection = (): JSX.Element => {
                           right: '8px'
                         }}
                       >
-                        {/* Count display above badge - fixed position */}
-                        <div
-                          className="absolute translate-y-[-120%] translate-x-[10%]"
-                          style={{
-                            top: '0px',
-                            right: '0px',
-                            marginRight: '5px'
-                          }}
-                        >
-                          <span className="font-ria-sans font-bold whitespace-nowrap" style={{
-                            fontSize: 'clamp(10px, 2.5vw, 12px)',
-                            color: '#FFFFFF'
-                          }}>
-                            <span style={{ color: '#FFFFFF' }}>{winner.receivedRecognitionsCount || 0}</span>
-                            <span style={{ color: '#AAAAAA' }}>/5</span>
-                          </span>
-                        </div>
+                        {user?.id === winner.userId ? (
+                          // 본인 카드: "나의 카드" 텍스트만 표시
+                          <div className="flex items-center justify-center cursor-not-allowed" style={{ width: '40px', height: '40px' }}>
+                            <svg
+                              width="40"
+                              height="40"
+                              viewBox="0 0 42 42"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <rect
+                                x="1"
+                                y="1"
+                                width="40"
+                                height="40"
+                                rx="20"
+                                fill="#000000"
+                              />
+                              <rect
+                                x="1"
+                                y="1"
+                                width="40"
+                                height="40"
+                                rx="20"
+                                stroke="#FFFFFF"
+                                strokeOpacity="0.5"
+                                strokeWidth="1.5"
+                              />
+                              <text
+                                x="21"
+                                y="18"
+                                textAnchor="middle"
+                                fill="#FFFFFF"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fontFamily="Pretendard"
+                              >
+                                나의
+                              </text>
+                              <text
+                                x="21"
+                                y="30"
+                                textAnchor="middle"
+                                fill="#FFFFFF"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fontFamily="Pretendard"
+                              >
+                                카드
+                              </text>
+                            </svg>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Count display above badge - fixed position */}
+                            <div
+                              className="absolute translate-y-[-120%] translate-x-[10%]"
+                              style={{
+                                top: '0px',
+                                right: '0px',
+                                marginRight: '5px'
+                              }}
+                            >
+                              <span className="font-ria-sans font-bold whitespace-nowrap" style={{
+                                fontSize: 'clamp(10px, 2.5vw, 12px)',
+                                color: '#FFFFFF'
+                              }}>
+                                <span style={{ color: '#FFFFFF' }}>{winner.receivedRecognitionsCount || 0}</span>
+                                <span style={{ color: '#AAAAAA' }}>/5</span>
+                              </span>
+                            </div>
 
-                        <div
-                          className={`relative flex items-center justify-center ${(winner.receivedRecognitionsCount || 0) >= 5 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'}`}
-                          onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId, winner.receivedRecognitionsCount || 0)}
-                        >
-                          <svg
-                            width="40"
-                            height="40"
-                            viewBox="0 0 42 42"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="1"
-                              y="1"
-                              width="40"
-                              height="40"
-                              rx="20"
-                              fill={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "#795D40" : "#040B11"}
-                            />
-                            <rect
-                              x="1"
-                              y="1"
-                              width="40"
-                              height="40"
-                              rx="20"
-                              stroke={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "#FF9E42" : "#D9D9D9"}
-                              strokeOpacity={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "1" : "0.5"}
-                              strokeWidth="1"
-                            />
-                            <image
-                              href="/inspire-icon.png"
-                              x="12.2"
-                              y="12.2"
-                              width="17.6"
-                              height="17.6"
-                              opacity={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "1" : "0.5"}
-                            />
-                          </svg>
-                        </div>
+                            <div
+                              className={`relative flex items-center justify-center ${(winner.receivedRecognitionsCount || 0) >= 5 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'}`}
+                              onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId, winner.receivedRecognitionsCount || 0)}
+                            >
+                              <svg
+                                width="40"
+                                height="40"
+                                viewBox="0 0 42 42"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <rect
+                                  x="1"
+                                  y="1"
+                                  width="40"
+                                  height="40"
+                                  rx="20"
+                                  fill={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "#795D40" : "#040B11"}
+                                />
+                                <rect
+                                  x="1"
+                                  y="1"
+                                  width="40"
+                                  height="40"
+                                  rx="20"
+                                  stroke={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "#FF9E42" : "#D9D9D9"}
+                                  strokeOpacity={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "1" : "0.5"}
+                                  strokeWidth="1"
+                                />
+                                <image
+                                  href="/inspire-icon.png"
+                                  x="12.2"
+                                  y="12.2"
+                                  width="17.6"
+                                  height="17.6"
+                                  opacity={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? "1" : "0.5"}
+                                />
+                              </svg>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -592,7 +662,7 @@ export const WinnerListSection = (): JSX.Element => {
 
                 </div>
               ) : (
-                <div className={`relative w-[482px] h-[240px] ${hoveredWinner === winner.judgment_id ? 'z-[10000]' : 'z-0'}`}>
+                <div className={`relative w-[482px] h-[240px] ${hoveredWinner === winner.judgment_id ? 'z-[100000]' : 'z-0'}`}>
                   {/* Background image as card */}
                   <img
                     className="absolute top-[25px] left-0 w-[482px] h-[215px] object-fill"
@@ -647,29 +717,57 @@ export const WinnerListSection = (): JSX.Element => {
                         onMouseLeave={() => setHoveredWinner(null)}
                       >
                         <div
-                          className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-150 ease-in-out ${(winner.receivedRecognitionsCount || 0) >= 5 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:scale-105 hover:brightness-125 active:scale-95'}`}
-                          onClick={() => winner.judgment_id && handleInspireClick(winner.judgment_id, winner.userId, winner.receivedRecognitionsCount || 0)}
+                          className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-150 ease-in-out ${
+                            user?.id === winner.userId
+                              ? 'cursor-not-allowed'
+                              : (winner.receivedRecognitionsCount || 0) >= 5
+                                ? 'cursor-not-allowed opacity-50'
+                                : 'cursor-pointer hover:scale-105 hover:brightness-125 active:scale-95'
+                          }`}
+                          onClick={() => {
+                            if (user?.id !== winner.userId && winner.judgment_id) {
+                              handleInspireClick(winner.judgment_id, winner.userId, winner.receivedRecognitionsCount || 0);
+                            }
+                          }}
                           style={{
                             width: '100px',
                             height: '47px',
-                            backgroundColor: (inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '#795D40' : '#1a1a1a',
-                            border: `1px solid ${(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? '#FF9E42' : 'rgba(208, 208, 208, 0.5)'}`,
+                            backgroundColor: user?.id === winner.userId
+                              ? '#1a1a1a'
+                              : (inspireClicks[winner.judgment_id || ''] || 0) > 0
+                                ? '#795D40'
+                                : '#1a1a1a',
+                            border: `1px solid ${
+                              user?.id === winner.userId
+                                ? 'rgba(170, 170, 170, 0.7)'
+                                : (inspireClicks[winner.judgment_id || ''] || 0) > 0
+                                  ? '#FF9E42'
+                                  : 'rgba(208, 208, 208, 0.5)'
+                            }`,
                           }}
                         >
-                          <span className="font-ria-sans font-bold text-[16px]">
-                            <span className="text-white">{winner.receivedRecognitionsCount || 0}</span>
-                            <span className="text-[#AAAAAA]">/5</span>
-                          </span>
-                          <img
-                            className="w-[24px] h-[24px] object-contain"
-                            alt="Badge icon"
-                            src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? iconWrapperActive.src : iconWrapper.src}
-                          />
+                          {user?.id === winner.userId ? (
+                            <span className="font-ria-sans font-bold text-[14px] text-white">
+                              나의 카드
+                            </span>
+                          ) : (
+                            <>
+                              <span className="font-ria-sans font-bold text-[16px]">
+                                <span className="text-white">{winner.receivedRecognitionsCount || 0}</span>
+                                <span className="text-[#AAAAAA]">/5</span>
+                              </span>
+                              <img
+                                className="w-[24px] h-[24px] object-contain"
+                                alt="Badge icon"
+                                src={(inspireClicks[winner.judgment_id || ''] || 0) > 0 ? iconWrapperActive.src : iconWrapper.src}
+                              />
+                            </>
+                          )}
                         </div>
-                        {/* Hover Tooltip */}
-                        {hoveredWinner === winner.judgment_id && (
+                        {/* Hover Tooltip - 본인 카드가 아닐 때만 표시 */}
+                        {hoveredWinner === winner.judgment_id && user?.id !== winner.userId && (
                           <div
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#21e786]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(33,231,134,0.7),0_0_80px_rgba(33,231,134,0.3)] z-[9999] pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 px-4 py-3 bg-[#21e786]/95 backdrop-blur-md border-2 border-[#1a1a1a] rounded-lg shadow-[0_0_40px_rgba(33,231,134,0.7),0_0_80px_rgba(33,231,134,0.3)] z-[99999] pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200"
                             style={{ marginBottom: '10px', minWidth: '350px' }}
                           >
                             <p className="font-ria-sans font-medium text-[#1a1a1a] text-sm text-center">
@@ -705,7 +803,7 @@ export const WinnerListSection = (): JSX.Element => {
                           }}
                         />
                       </div>
-                      <span className="text-[#76FFBC] leading-[normal] whitespace-nowrap font-ria-sans text-[16px]" style={{ fontWeight: 500, textShadow: '0 0 40px #B1FFD9' }}>
+                      <span className="text-[#76FFBC] leading-[normal] whitespace-nowrap font-ria-sans text-[16px]" style={{ fontWeight: 700, textShadow: '0 0 40px #B1FFD9' }}>
                         목표 달성!
                       </span>
                     </div>
@@ -788,20 +886,34 @@ export const WinnerListSection = (): JSX.Element => {
 
             {/* Message */}
             <div className="flex flex-col items-center mt-2" style={{ gap: 'clamp(16px, 4vw, 24px)' }}>
-              <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
-                5번째 '귀감'이 전송됩니다!<br />
-                확인을 누르시면 더이상 수정할 수 없습니다.<br />
-                제출할까요?
+              <p className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-center mb-3" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
+                이제 마지막 귀감이에요!
+              </p>
+              <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}>
+                전송하시면 귀감 보내기 미션 완료!<br />
+                단, 확인을 누르면 수정이나 추가 전송은 불가해요.
               </p>
 
-              {/* Confirm Button */}
-              <button
-                onClick={handleConfirmFifthRecognition}
-                className="w-full font-semibold rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-all bg-[#21e786] hover:bg-[#1bc876] text-black"
-                style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
-              >
-                확인
-              </button>
+              {/* Buttons */}
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => {
+                    setShowFifthConfirm(false);
+                    setPendingRecognition(null);
+                  }}
+                  className="flex-1 font-semibold rounded-full [font-family:'Ria'] font-ria-sans transition-all bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white border border-white/30"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  잠깐만!
+                </button>
+                <button
+                  onClick={handleConfirmFifthRecognition}
+                  className="flex-1 font-semibold rounded-full [font-family:'Ria'] font-ria-sans transition-all bg-[#21e786] hover:bg-[#1bc876] text-[#040B11]"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  귀감 보내기 💌
+                </button>
+              </div>
             </div>
           </div>
         </div>

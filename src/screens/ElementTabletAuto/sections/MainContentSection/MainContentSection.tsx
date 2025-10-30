@@ -8,9 +8,9 @@ import { LoginModal } from "../../../../components/LoginModal";
 import { AlertModal } from "../../../../components/AlertModal";
 import { useState, useEffect, useCallback } from "react";
 import { canWriteReview, canWriteGoal, canWriteJudgment, getCurrentWeekMonday, getCurrentWeekSunday, formatDateWithDay } from "../../../../lib/utils/dateUtils";
-import { hasWrittenReviewThisWeek, getLatestReview, Review } from "../../../../lib/services/reviewService";
-import { getLatestJudgment, Judgment } from "../../../../lib/services/judgmentService";
-import { getLatestGoal, Goal } from "../../../../lib/services/goalService";
+import { hasWrittenReviewThisWeek, getLatestReview, Review, deleteReview } from "../../../../lib/services/reviewService";
+import { getLatestJudgment, Judgment, deleteJudgment } from "../../../../lib/services/judgmentService";
+import { getLatestGoal, Goal, deleteGoal } from "../../../../lib/services/goalService";
 import { getReceivedApplauseCount } from "../../../../lib/services/applauseService";
 import { getReceivedRecognitionCount } from "../../../../lib/services/recognitionJudgmentService";
 import { useAuth } from "../../../../contexts/AuthContext";
@@ -52,6 +52,15 @@ export const MainContentSection = (): JSX.Element => {
   const [latestJudgment, setLatestJudgment] = useState<Judgment | null>(null);
   const [latestGoal, setLatestGoal] = useState<Goal | null>(null);
   const [receivedReactionsCount, setReceivedReactionsCount] = useState<number>(0);
+  const [showReviewKebabMenu, setShowReviewKebabMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditingReview, setIsEditingReview] = useState(false);
+  const [showJudgmentKebabMenu, setShowJudgmentKebabMenu] = useState(false);
+  const [showJudgmentDeleteConfirm, setShowJudgmentDeleteConfirm] = useState(false);
+  const [isEditingJudgment, setIsEditingJudgment] = useState(false);
+  const [showGoalKebabMenu, setShowGoalKebabMenu] = useState(false);
+  const [showGoalDeleteConfirm, setShowGoalDeleteConfirm] = useState(false);
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
 
   // 현재 요일 기반으로 작성 가능 기간 업데이트
   const updatePeriodBasedOnDay = useCallback(() => {
@@ -267,7 +276,10 @@ export const MainContentSection = (): JSX.Element => {
     }
     setIsGoalModalOpen(true);
   };
-  const closeGoalModal = () => setIsGoalModalOpen(false);
+  const closeGoalModal = () => {
+    setIsGoalModalOpen(false);
+    setIsEditingGoal(false);
+  };
 
   const openJudgmentModal = () => {
     // 로그인 체크
@@ -277,7 +289,10 @@ export const MainContentSection = (): JSX.Element => {
     }
     setIsJudgmentModalOpen(true);
   };
-  const closeJudgmentModal = () => setIsJudgmentModalOpen(false);
+  const closeJudgmentModal = () => {
+    setIsJudgmentModalOpen(false);
+    setIsEditingJudgment(false);
+  };
 
   const handleReviewComplete = async () => {
     console.log('Review completed!');
@@ -308,6 +323,57 @@ export const MainContentSection = (): JSX.Element => {
     // 목표 제출 후 최신 목표 데이터 다시 가져오기
     const goal = await getLatestGoal();
     setLatestGoal(goal);
+  };
+
+  const handleDeleteReview = async () => {
+    if (!latestReview) return;
+
+    try {
+      await deleteReview(latestReview.id);
+      // 삭제 후 상태 업데이트
+      setLatestReview(null);
+      setIsReviewCompleted(false);
+      setShowDeleteConfirm(false);
+      console.log('Review deleted successfully');
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert('리뷰 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleDeleteJudgment = async () => {
+    if (!latestJudgment) return;
+
+    try {
+      await deleteJudgment(latestJudgment.id);
+      // 삭제 후 상태 업데이트
+      setLatestJudgment(null);
+      setIsJudgmentCompleted(false);
+      setShowJudgmentDeleteConfirm(false);
+      console.log('Judgment deleted successfully');
+
+      // Winner/NextChallenger 섹션에 새로고침 이벤트 발생
+      window.dispatchEvent(new CustomEvent('judgmentUpdated'));
+    } catch (error) {
+      console.error('Error deleting judgment:', error);
+      alert('판정 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleDeleteGoal = async () => {
+    if (!latestGoal) return;
+
+    try {
+      await deleteGoal(latestGoal.id);
+      // 삭제 후 상태 업데이트
+      setLatestGoal(null);
+      setIsGoalCompleted(false);
+      setShowGoalDeleteConfirm(false);
+      console.log('Goal deleted successfully');
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      alert('목표 삭제에 실패했습니다.');
+    }
   };
 
   return (
@@ -510,20 +576,66 @@ export const MainContentSection = (): JSX.Element => {
                                 지난주 리뷰
                               </h2>
                             </div>
-                            <svg
-                              className="w-5 h-5 flex-shrink-0 transform rotate-180"
-                              viewBox="0 0 20 20"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M5 7.5L10 12.5L15 7.5"
-                                stroke="white"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
+                            <div className="flex items-center gap-2">
+                              {/* 케밥 메뉴 버튼 */}
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowReviewKebabMenu(!showReviewKebabMenu);
+                                  }}
+                                  className="p-1 hover:bg-white/10 rounded transition-colors"
+                                >
+                                  <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <circle cx="10" cy="4" r="1.5" />
+                                    <circle cx="10" cy="10" r="1.5" />
+                                    <circle cx="10" cy="16" r="1.5" />
+                                  </svg>
+                                </button>
+
+                                {/* 드롭다운 메뉴 */}
+                                {showReviewKebabMenu && (
+                                  <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-50 min-w-[120px]">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowReviewKebabMenu(false);
+                                        setIsReviewModalOpen(true);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    >
+                                      수정하기
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowReviewKebabMenu(false);
+                                        setShowDeleteConfirm(true);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    >
+                                      삭제하기
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* 화살표 아이콘 */}
+                              <svg
+                                className="w-5 h-5 flex-shrink-0 transform rotate-180"
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M5 7.5L10 12.5L15 7.5"
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
                           </div>
 
                           {/* Divider */}
@@ -665,14 +777,14 @@ export const MainContentSection = (): JSX.Element => {
                         <>
                           {/* Header with icon, title and arrow */}
                           <div className="flex items-center justify-between mb-3" style={{ transform: 'translateY(-18px)' }}>
-                            <div className="flex items-center gap-0">
+                            <div className="flex items-center gap-0 flex-nowrap overflow-hidden">
                               <img
                                 src="/iconScoop.png"
                                 alt="Scoop icon"
-                                className="scale-[1.5] mr-[2px]"
+                                className="scale-[1.5] mr-[2px] flex-shrink-0"
                                 style={{ width: 'clamp(40px, 10vw, 52px)', height: 'clamp(37px, 9.2vw, 48px)' }}
                               />
-                              <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
+                              <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white whitespace-nowrap flex-shrink-0" style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>
                                 지난주 판정
                               </h2>
                               {isJudgmentCompleted === 'success' ? (
@@ -691,20 +803,67 @@ export const MainContentSection = (): JSX.Element => {
                                 />
                               )}
                             </div>
-                            <svg
-                              className="w-5 h-5 flex-shrink-0 transform rotate-180"
-                              viewBox="0 0 20 20"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M5 7.5L10 12.5L15 7.5"
-                                stroke="white"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
+                            <div className="flex items-center gap-2">
+                              {/* 케밥 메뉴 버튼 */}
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowJudgmentKebabMenu(!showJudgmentKebabMenu);
+                                  }}
+                                  className="p-1 hover:bg-white/10 rounded transition-colors"
+                                >
+                                  <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <circle cx="10" cy="4" r="1.5" />
+                                    <circle cx="10" cy="10" r="1.5" />
+                                    <circle cx="10" cy="16" r="1.5" />
+                                  </svg>
+                                </button>
+
+                                {/* 드롭다운 메뉴 */}
+                                {showJudgmentKebabMenu && (
+                                  <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-50 min-w-[120px]">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowJudgmentKebabMenu(false);
+                                        setIsEditingJudgment(true);
+                                        setIsJudgmentModalOpen(true);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    >
+                                      수정하기
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowJudgmentKebabMenu(false);
+                                        setShowJudgmentDeleteConfirm(true);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    >
+                                      삭제하기
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* 화살표 아이콘 */}
+                              <svg
+                                className="w-5 h-5 flex-shrink-0 transform rotate-180"
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M5 7.5L10 12.5L15 7.5"
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
                           </div>
 
                           {/* Divider */}
@@ -853,20 +1012,67 @@ export const MainContentSection = (): JSX.Element => {
                                 다음주 목표
                               </h2>
                             </div>
-                            <svg
-                              className="w-5 h-5 flex-shrink-0 transform rotate-180"
-                              viewBox="0 0 20 20"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M5 7.5L10 12.5L15 7.5"
-                                stroke="white"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
+                            <div className="flex items-center gap-2">
+                              {/* 케밥 메뉴 버튼 */}
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowGoalKebabMenu(!showGoalKebabMenu);
+                                  }}
+                                  className="p-1 hover:bg-white/10 rounded transition-colors"
+                                >
+                                  <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <circle cx="10" cy="4" r="1.5" />
+                                    <circle cx="10" cy="10" r="1.5" />
+                                    <circle cx="10" cy="16" r="1.5" />
+                                  </svg>
+                                </button>
+
+                                {/* 드롭다운 메뉴 */}
+                                {showGoalKebabMenu && (
+                                  <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-50 min-w-[120px]">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowGoalKebabMenu(false);
+                                        setIsEditingGoal(true);
+                                        setIsGoalModalOpen(true);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    >
+                                      수정하기
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowGoalKebabMenu(false);
+                                        setShowGoalDeleteConfirm(true);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                    >
+                                      삭제하기
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* 화살표 아이콘 */}
+                              <svg
+                                className="w-5 h-5 flex-shrink-0 transform rotate-180"
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M5 7.5L10 12.5L15 7.5"
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
                           </div>
 
                           {/* Divider */}
@@ -1108,20 +1314,66 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Header with icon and title */}
-                          <div className="flex items-center gap-2 mb-5 mt-[13px]">
-                            <img
-                              src="https://c.animaapp.com/O1XpzcZm/img/group-30-1@2x.png"
-                              alt="Chat icon"
-                              className="w-8 h-8"
-                            />
-                            <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[24px]">
-                              지난주 리뷰
-                            </h2>
+                          <div className="flex items-center justify-between mb-5 mt-[13px]">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src="https://c.animaapp.com/O1XpzcZm/img/group-30-1@2x.png"
+                                alt="Chat icon"
+                                className="w-8 h-8"
+                              />
+                              <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[24px]">
+                                지난주 리뷰
+                              </h2>
+                            </div>
+
+                            {/* 케밥 메뉴 버튼 */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowReviewKebabMenu(!showReviewKebabMenu);
+                                }}
+                                className="p-1 hover:bg-white/10 rounded transition-colors"
+                              >
+                                <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <circle cx="10" cy="4" r="1.5" />
+                                  <circle cx="10" cy="10" r="1.5" />
+                                  <circle cx="10" cy="16" r="1.5" />
+                                </svg>
+                              </button>
+
+                              {/* 드롭다운 메뉴 */}
+                              {showReviewKebabMenu && (
+                                <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-50 min-w-[120px]">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowReviewKebabMenu(false);
+                                      setIsEditingReview(true);
+                                      setIsReviewModalOpen(true);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                  >
+                                    수정하기
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowReviewKebabMenu(false);
+                                      setShowDeleteConfirm(true);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                  >
+                                    삭제하기
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Divider */}
                           <div
-                            className="h-[1px] mb-5 -mx-6"
+                            className="h-[1px] mb-[10px] -mx-6"
                             style={{
                               width: '330px',
                               background: 'linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0) 100%)'
@@ -1129,7 +1381,7 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Activity */}
-                          <div className="flex flex-col gap-1 mb-[20px]">
+                          <div className="flex flex-col gap-1 mb-[20px]" style={{ transform: 'translateY(10px)' }}>
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                               활동
                             </p>
@@ -1139,7 +1391,7 @@ export const MainContentSection = (): JSX.Element => {
                           </div>
 
                           {/* Review */}
-                          <div className="flex flex-col gap-[5px]">
+                          <div className="flex flex-col gap-[5px]" style={{ transform: 'translateY(10px)' }}>
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                               나의 멘트
                             </p>
@@ -1275,7 +1527,7 @@ export const MainContentSection = (): JSX.Element => {
                     <>
                       {isJudgmentCompleted === 'success' ? (
                         // 작성 완료 (성공) 상태
-                        <div className="flex flex-col w-full h-full px-6 pt-[5px] pb-6 relative z-10">
+                        <div className="flex flex-col w-full h-full px-6 pt-[5px] pb-6 relative z-10 overflow-visible">
                           {/* Border decorations */}
                           <img
                             src={borderSmall.src}
@@ -1289,33 +1541,79 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Header with icon, title and badge */}
-                          <div className="flex items-center justify-center mb-4 -mx-6 pl-[22px] pr-6">
-                            {/* Icon Scoop */}
-                            <div className="w-[60px] h-[60px] flex items-center justify-center flex-shrink-0 overflow-visible">
+                          <div className="flex items-center justify-between mb-4 -mx-6 pl-[22px] pr-3" style={{ transform: 'translateY(14px)' }}>
+                            <div className="flex items-center justify-center flex-1 min-w-0">
+                              {/* Icon Scoop */}
+                              <div className="w-[60px] h-[60px] flex items-center justify-center flex-shrink-0" style={{ transform: 'translateX(6px)' }}>
+                                <img
+                                  className="w-full h-full object-contain scale-[1.354]"
+                                  alt="Icon Scoop"
+                                  src="/iconScoop.png"
+                                />
+                              </div>
+
+                              {/* Title */}
+                              <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[24px] tracking-[0] leading-[normal] whitespace-nowrap -ml-2" style={{ transform: 'translateX(6px)' }}>
+                                지난주 판정
+                              </h2>
+
+                              {/* Badge */}
                               <img
-                                className="w-full h-full object-contain scale-[1.07]"
-                                alt="Icon Scoop"
-                                src="/iconScoop.png"
+                                src="/badge02.png"
+                                alt="목표 달성!"
+                                className="h-auto flex-shrink-0 ml-1"
+                                style={{ width: '132px' }}
                               />
                             </div>
 
-                            {/* Title */}
-                            <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[24px] tracking-[0] leading-[normal] whitespace-nowrap -ml-2">
-                              지난주 판정
-                            </h2>
+                            {/* 케밥 메뉴 버튼 */}
+                            <div className="relative z-[100] flex-shrink-0 ml-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowJudgmentKebabMenu(!showJudgmentKebabMenu);
+                                }}
+                                className="p-1 hover:bg-white/10 rounded transition-colors"
+                              >
+                                <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <circle cx="10" cy="4" r="1.5" />
+                                  <circle cx="10" cy="10" r="1.5" />
+                                  <circle cx="10" cy="16" r="1.5" />
+                                </svg>
+                              </button>
 
-                            {/* Badge */}
-                            <img
-                              src="/badge02.png"
-                              alt="목표 달성!"
-                              className="h-auto flex-shrink-0 ml-1"
-                              style={{ width: '150px' }}
-                            />
+                              {/* 드롭다운 메뉴 */}
+                              {showJudgmentKebabMenu && (
+                                <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-[70] min-w-[120px]">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowJudgmentKebabMenu(false);
+                                      setIsEditingJudgment(true);
+                                      setIsJudgmentModalOpen(true);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                  >
+                                    수정하기
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowJudgmentKebabMenu(false);
+                                      setShowJudgmentDeleteConfirm(true);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                  >
+                                    삭제하기
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Divider */}
                           <div
-                            className="h-[1px] mb-[30px] -mt-[20px] -mx-6"
+                            className="h-[1px] mb-[10px] mt-[3px] -mx-6"
                             style={{
                               width: '330px',
                               background: 'linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0) 100%)'
@@ -1323,7 +1621,7 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Activity section */}
-                          <div className="flex flex-col gap-1 mb-[20px]">
+                          <div className="flex flex-col gap-1 mb-[20px]" style={{ transform: 'translateY(10px)' }}>
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                               활동
                             </p>
@@ -1333,7 +1631,7 @@ export const MainContentSection = (): JSX.Element => {
                           </div>
 
                           {/* Confidence message section */}
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1" style={{ transform: 'translateY(10px)' }}>
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                               나의 멘트
                             </p>
@@ -1356,7 +1654,7 @@ export const MainContentSection = (): JSX.Element => {
                         </div>
                       ) : isJudgmentCompleted === 'fail' ? (
                         // 작성 완료 (실패) 상태
-                        <div className="flex flex-col w-full h-full px-6 pt-[10px] pb-6 relative z-10">
+                        <div className="flex flex-col w-full h-full px-6 pt-[10px] pb-6 relative z-10 overflow-visible">
                           {/* Border decorations */}
                           <img
                             src={borderSmall.src}
@@ -1370,33 +1668,79 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Header with icon, title and badge */}
-                          <div className="flex items-center justify-center mb-4 -mx-6">
-                            {/* Icon Scoop */}
-                            <div className="w-[60px] h-[60px] flex items-center justify-center flex-shrink-0 overflow-visible">
+                          <div className="flex items-center justify-between mb-4 -mx-6 pl-[22px] pr-3" style={{ transform: 'translateY(12px)' }}>
+                            <div className="flex items-center justify-center flex-1 min-w-0">
+                              {/* Icon Scoop */}
+                              <div className="w-[60px] h-[60px] flex items-center justify-center flex-shrink-0">
+                                <img
+                                  className="w-full h-full object-contain scale-[1.33]"
+                                  alt="Icon Scoop"
+                                  src="/iconScoop.png"
+                                />
+                              </div>
+
+                              {/* Title */}
+                              <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[24px] tracking-[0] leading-[normal] whitespace-nowrap -ml-2">
+                                지난주 판정
+                              </h2>
+
+                              {/* Badge - 실패 버전 */}
                               <img
-                                className="w-full h-full object-contain scale-[1.33]"
-                                alt="Icon Scoop"
-                                src="/iconScoop.png"
+                                src={bodyBadge.src}
+                                alt="다음 기회에..."
+                                className="h-auto flex-shrink-0 ml-1"
+                                style={{ width: '120px' }}
                               />
                             </div>
 
-                            {/* Title */}
-                            <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[24px] tracking-[0] leading-[normal] whitespace-nowrap -ml-2">
-                              지난주 판정
-                            </h2>
+                            {/* 케밥 메뉴 버튼 */}
+                            <div className="relative z-[100] flex-shrink-0 ml-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowJudgmentKebabMenu(!showJudgmentKebabMenu);
+                                }}
+                                className="p-1 hover:bg-white/10 rounded transition-colors"
+                              >
+                                <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <circle cx="10" cy="4" r="1.5" />
+                                  <circle cx="10" cy="10" r="1.5" />
+                                  <circle cx="10" cy="16" r="1.5" />
+                                </svg>
+                              </button>
 
-                            {/* Badge - 실패 버전 */}
-                            <img
-                              src={bodyBadge.src}
-                              alt="다음 기회에..."
-                              className="h-auto flex-shrink-0 ml-1"
-                              style={{ width: '150px' }}
-                            />
+                              {/* 드롭다운 메뉴 */}
+                              {showJudgmentKebabMenu && (
+                                <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-[70] min-w-[120px]">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowJudgmentKebabMenu(false);
+                                      setIsEditingJudgment(true);
+                                      setIsJudgmentModalOpen(true);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                  >
+                                    수정하기
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowJudgmentKebabMenu(false);
+                                      setShowJudgmentDeleteConfirm(true);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                  >
+                                    삭제하기
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Divider */}
                           <div
-                            className="h-[1px] mb-[30px] -mt-[11px] -mx-1"
+                            className="h-[1px] mb-[10px] mt-[4px] -mx-6"
                             style={{
                               width: '330px',
                               background: 'linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0) 100%)'
@@ -1404,7 +1748,7 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Activity section */}
-                          <div className="flex flex-col gap-1 mb-[20px]">
+                          <div className="flex flex-col gap-1 mb-[20px]" style={{ transform: 'translateY(10px)' }}>
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                               활동
                             </p>
@@ -1414,7 +1758,7 @@ export const MainContentSection = (): JSX.Element => {
                           </div>
 
                           {/* Regret message section */}
-                          <div className="flex flex-col gap-[5px]">
+                          <div className="flex flex-col gap-[5px]" style={{ transform: 'translateY(10px)' }}>
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                               나의 멘트
                             </p>
@@ -1510,9 +1854,9 @@ export const MainContentSection = (): JSX.Element => {
                             {/* Scoop Icon */}
                             <div className="relative w-[80px] h-[74px] flex items-center justify-center overflow-visible">
                               <img
-                                className="w-full h-full object-contain"
+                                className="w-full h-full object-contain scale-[1.58] -translate-x-[4px] translate-y-0"
                                 alt="Scoop icon"
-                                src="/iconScoop.png"
+                                src="/bigiconScoop.png"
                               />
                             </div>
 
@@ -1563,20 +1907,66 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Header with icon and title */}
-                          <div className="flex items-center gap-2 mb-5 mt-[13px]">
-                            <img
-                              src="/iconHeart.png"
-                              alt="Heart icon"
-                              className="w-8 h-8 scale-[2.5]"
-                            />
-                            <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[24px]">
-                              다음주 목표
-                            </h2>
+                          <div className="flex items-center justify-between mb-5 mt-[13px] -mx-6 px-6">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src="/iconHeart.png"
+                                alt="Heart icon"
+                                className="w-8 h-8 scale-[2.5]"
+                              />
+                              <h2 className="[font-family:'Pretendard-Bold',Helvetica] font-bold text-white text-[24px]">
+                                다음주 목표
+                              </h2>
+                            </div>
+
+                            {/* 케밥 메뉴 버튼 */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowGoalKebabMenu(!showGoalKebabMenu);
+                                }}
+                                className="p-1 hover:bg-white/10 rounded transition-colors"
+                              >
+                                <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <circle cx="10" cy="4" r="1.5" />
+                                  <circle cx="10" cy="10" r="1.5" />
+                                  <circle cx="10" cy="16" r="1.5" />
+                                </svg>
+                              </button>
+
+                              {/* 드롭다운 메뉴 */}
+                              {showGoalKebabMenu && (
+                                <div className="absolute right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-xl border border-[#3a3a3a] overflow-hidden z-50 min-w-[120px]">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowGoalKebabMenu(false);
+                                      setIsEditingGoal(true);
+                                      setIsGoalModalOpen(true);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-white hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                  >
+                                    수정하기
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowGoalKebabMenu(false);
+                                      setShowGoalDeleteConfirm(true);
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#3a3a3a] transition-colors flex items-center gap-2 text-sm [font-family:'Pretendard-Medium',Helvetica] font-medium"
+                                  >
+                                    삭제하기
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Divider */}
                           <div
-                            className="h-[1px] mb-5 -mx-6"
+                            className="h-[1px] mb-[10px] -mx-6"
                             style={{
                               width: '330px',
                               background: 'linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0) 100%)'
@@ -1584,7 +1974,7 @@ export const MainContentSection = (): JSX.Element => {
                           />
 
                           {/* Activity */}
-                          <div className="flex flex-col gap-1 mb-[20px]">
+                          <div className="flex flex-col gap-1 mb-[20px]" style={{ transform: 'translateY(10px)' }}>
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                               활동
                             </p>
@@ -1594,7 +1984,7 @@ export const MainContentSection = (): JSX.Element => {
                           </div>
 
                           {/* Goal */}
-                          <div className="flex flex-col gap-[5px]">
+                          <div className="flex flex-col gap-[5px]" style={{ transform: 'translateY(10px)' }}>
                             <p className="[font-family:'Pretendard-Regular',Helvetica] font-normal text-[#aaaaaa] text-[12px] tracking-[0] leading-[normal]">
                               나의 멘트
                             </p>
@@ -1635,16 +2025,16 @@ export const MainContentSection = (): JSX.Element => {
 
                           <div className="flex flex-col items-center gap-6">
                             {/* Heart Icon */}
-                            <div className="relative w-[80px] h-[74px]">
+                            <div className="relative w-[120px] h-[111px] flex items-center justify-center -translate-y-[10px]">
                               <img
-                                className="w-full h-full object-contain"
+                                className="w-full h-full object-contain scale-[1.65]"
                                 alt="Heart icon"
                                 src="/iconHeart.png"
                               />
                             </div>
 
                             {/* Badge and Title */}
-                            <div className="flex flex-col items-center gap-3">
+                            <div className="flex flex-col items-center gap-3 -translate-y-[37px]">
                               <Badge
                                 variant="outline"
                                 className={`inline-flex items-center justify-center gap-2.5 px-4 py-1.5 rounded-full border border-solid ${currentPeriod === 'mon-wed' ? 'border-[#767676] bg-transparent' : 'border-white bg-transparent'} hover:bg-transparent`}
@@ -1659,19 +2049,19 @@ export const MainContentSection = (): JSX.Element => {
                             </div>
                           </div>
 
-                          {/* 33px gap */}
-                          <div className="h-[33px]" />
+                          {/* 80px gap (33px + 10px icon + 37px text translate) */}
+                          <div className="h-[80px]" />
 
                           {/* Button or Disabled message */}
                           {currentPeriod === 'mon-wed' ? (
-                            <div className="w-full max-w-[180px] px-6 py-3.5 bg-[#2a2a2a] h-auto rounded-md flex items-center justify-center">
+                            <div className="w-full max-w-[180px] px-6 py-3.5 bg-[#2a2a2a] h-auto rounded-md flex items-center justify-center -translate-y-[13px]">
                               <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#767676] text-base tracking-[-0.48px] leading-[normal] whitespace-nowrap">
-                                작성 가간이 아닙니다.
+                                작성 기간이 아닙니다.
                               </span>
                             </div>
                           ) : (
                             <Button
-                              className="w-full max-w-[180px] px-6 py-3.5 bg-[#21e786] hover:bg-[#1bc970] h-auto rounded-md"
+                              className="w-full max-w-[180px] px-6 py-3.5 bg-[#21e786] hover:bg-[#1bc970] h-auto rounded-md -translate-y-[13px]"
                               onClick={openGoalModal}
                             >
                               <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold text-[#111111] text-base tracking-[-0.48px] leading-[normal] whitespace-nowrap">
@@ -1720,9 +2110,40 @@ export const MainContentSection = (): JSX.Element => {
         </div>
       </div>
 
-      <ReviewCardModal isOpen={isReviewModalOpen} onClose={closeReviewModal} onComplete={handleReviewComplete} />
-      <GoalCardModal isOpen={isGoalModalOpen} onClose={closeGoalModal} onComplete={handleGoalComplete} />
-      <JudgmentCardModal isOpen={isJudgmentModalOpen} onClose={closeJudgmentModal} onComplete={handleJudgmentComplete} type={judgmentModalType} />
+      <ReviewCardModal
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          closeReviewModal();
+          setIsEditingReview(false);
+        }}
+        onComplete={handleReviewComplete}
+        initialData={isEditingReview && latestReview ? {
+          id: latestReview.id,
+          activity: latestReview.activity,
+          review_text: latestReview.review_text,
+          rating: latestReview.rating
+        } : null}
+      />
+      <GoalCardModal
+        isOpen={isGoalModalOpen}
+        onClose={closeGoalModal}
+        onComplete={handleGoalComplete}
+        initialData={isEditingGoal && latestGoal ? {
+          activity: latestGoal.activity,
+          goal_text: latestGoal.goal_text,
+          rating: latestGoal.rating
+        } : null}
+      />
+      <JudgmentCardModal
+        isOpen={isJudgmentModalOpen}
+        onClose={closeJudgmentModal}
+        onComplete={handleJudgmentComplete}
+        type={judgmentModalType}
+        initialData={isEditingJudgment && latestJudgment ? {
+          achieved: latestJudgment.achieved,
+          comment: latestJudgment.comment
+        } : null}
+      />
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
 
       {/* Alert Modals */}
@@ -1743,6 +2164,153 @@ export const MainContentSection = (): JSX.Element => {
       />
 
       {/* 성공/실패 팝업 - JudgmentCardModal 내부에서 처리됨 */}
+
+      {/* 리뷰 삭제 확인 모달 */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            className="relative bg-[#1a1a1a] border-2 border-red-500 rounded-2xl w-full mx-4 shadow-[0_0_30px_rgba(239,68,68,0.3)]"
+            style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 448px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="absolute top-4 right-4 text-white hover:text-red-500 transition-colors text-2xl"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+
+            {/* Message */}
+            <div className="flex flex-col items-center mt-2" style={{ gap: 'clamp(16px, 4vw, 24px)' }}>
+              <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
+                리뷰를 삭제하시겠습니까?<br />
+                삭제된 내용은 복구할 수 없습니다.
+              </p>
+
+              {/* Buttons */}
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 font-semibold rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-all bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleDeleteReview}
+                  className="flex-1 font-semibold rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-all bg-red-600 hover:bg-red-700 text-white"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 판정 삭제 확인 모달 */}
+      {showJudgmentDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
+          onClick={() => setShowJudgmentDeleteConfirm(false)}
+        >
+          <div
+            className="relative bg-[#1a1a1a] border-2 border-red-500 rounded-2xl w-full mx-4 shadow-[0_0_30px_rgba(239,68,68,0.3)]"
+            style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 448px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowJudgmentDeleteConfirm(false)}
+              className="absolute top-4 right-4 text-white hover:text-red-500 transition-colors text-2xl"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+
+            {/* Message */}
+            <div className="flex flex-col items-center mt-2" style={{ gap: 'clamp(16px, 4vw, 24px)' }}>
+              <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
+                판정을 삭제하시겠습니까?<br />
+                삭제된 내용은 복구할 수 없습니다.
+              </p>
+
+              {/* Buttons */}
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowJudgmentDeleteConfirm(false)}
+                  className="flex-1 font-semibold rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-all bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleDeleteJudgment}
+                  className="flex-1 font-semibold rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-all bg-red-600 hover:bg-red-700 text-white"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 목표 삭제 확인 모달 */}
+      {showGoalDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md"
+          onClick={() => setShowGoalDeleteConfirm(false)}
+        >
+          <div
+            className="relative bg-[#1a1a1a] border-2 border-red-500 rounded-2xl w-full mx-4 shadow-[0_0_30px_rgba(239,68,68,0.3)]"
+            style={{ padding: 'clamp(20px, 5vw, 32px)', maxWidth: 'min(90%, 448px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowGoalDeleteConfirm(false)}
+              className="absolute top-4 right-4 text-white hover:text-red-500 transition-colors text-2xl"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+
+            {/* Message */}
+            <div className="flex flex-col items-center mt-2" style={{ gap: 'clamp(16px, 4vw, 24px)' }}>
+              <p className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-center leading-relaxed" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
+                목표를 삭제하시겠습니까?<br />
+                삭제된 내용은 복구할 수 없습니다.
+              </p>
+
+              {/* Buttons */}
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowGoalDeleteConfirm(false)}
+                  className="flex-1 font-semibold rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-all bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleDeleteGoal}
+                  className="flex-1 font-semibold rounded-full [font-family:'Pretendard-SemiBold',Helvetica] transition-all bg-red-600 hover:bg-red-700 text-white"
+                  style={{ padding: 'clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 24px)', fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 디버그 패널 - 개발용 */}
       <div className="fixed bottom-4 right-4 z-[9999] mb-10">

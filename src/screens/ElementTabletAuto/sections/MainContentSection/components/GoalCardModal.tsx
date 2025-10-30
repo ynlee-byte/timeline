@@ -37,6 +37,11 @@ interface GoalCardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete?: () => void;
+  initialData?: {
+    activity: string;
+    goal_text: string;
+    rating: number;
+  } | null;
 }
 
 const activityOptions = [
@@ -54,7 +59,7 @@ const activityOptions = [
   "멘토링 세션",
 ];
 
-export const GoalCardModal: React.FC<GoalCardModalProps> = ({ isOpen, onClose, onComplete }) => {
+export const GoalCardModal: React.FC<GoalCardModalProps> = ({ isOpen, onClose, onComplete, initialData }) => {
   const screenWidth = useWindowWidth();
   const isMobile = screenWidth > 0 && screenWidth >= 320 && screenWidth < 768;
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
@@ -69,6 +74,27 @@ export const GoalCardModal: React.FC<GoalCardModalProps> = ({ isOpen, onClose, o
   const requestBButtonRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+
+  // initialData가 있으면 수정 모드로 시작
+  useEffect(() => {
+    if (initialData) {
+      setSelectedActivity(initialData.activity);
+      setReviewText(initialData.goal_text);
+      setRating(initialData.rating);
+      // 수정 모드일 때는 바로 내용 작성 화면으로 이동
+      if (initialData.activity === '목표 설정 포기') {
+        setStep(3);
+      } else {
+        setStep(2);
+      }
+    } else {
+      // 새로 작성할 때는 초기화
+      setSelectedActivity("");
+      setReviewText("");
+      setRating(0);
+      setStep(1);
+    }
+  }, [initialData, isOpen]);
 
   useEffect(() => {
     if (isOpen) {

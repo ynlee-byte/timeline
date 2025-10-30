@@ -8,6 +8,7 @@ import { MainContentSection } from "./sections/MainContentSection";
 import { NextChallengerSection } from "./sections/NextChallengerSection";
 import { RecognitionSection } from "./sections/RecognitionSection";
 import { WinnerListSection } from "./sections/WinnerListSection";
+import { ExpectationRanking } from "@/components/ExpectationRanking";
 
 export const ElementTabletAuto = (): JSX.Element => {
   const screenWidth = useWindowWidth();
@@ -20,6 +21,7 @@ export const ElementTabletAuto = (): JSX.Element => {
       <div className="flex flex-col w-full">
         <HeaderSection />
         <CalendarSection />
+        <ExpectationRanking />
         <MainContentSection />
         <WinnerListSection />
         <NextChallengerSection />

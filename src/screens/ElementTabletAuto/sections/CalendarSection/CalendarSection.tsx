@@ -5,7 +5,7 @@ import { useWindowWidth } from "../../../../breakpoints";
 import { ConfirmedBadge } from "../../../../components/ConfirmedBadge";
 import { PendingBadge } from "../../../../components/PendingBadge";
 import { useAuth } from "../../../../contexts/AuthContext";
-import { confirmCalendar, hasConfirmedCalendarThisWeek } from "../../../../lib/services/calendarService";
+import { confirmCalendar, hasConfirmedCalendarThisWeek, getYesterdayExpectationCount } from "../../../../lib/services/calendarService";
 import { canWriteReview } from "../../../../lib/utils/dateUtils";
 
 // 전체 이벤트 리스트 (여러 날에 걸친 이벤트)
@@ -107,7 +107,10 @@ export const CalendarSection = (): JSX.Element => {
   const [showToast, setShowToast] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showMaxAlert, setShowMaxAlert] = useState(false);
+  const [showCancelAlert, setShowCancelAlert] = useState(false); // 표현 취소 팝업
   const [canShowFooter, setCanShowFooter] = useState(true); // 초기값 true로 hydration 에러 방지
+  const [yesterdayExpectationCount, setYesterdayExpectationCount] = useState(6); // 테스트용 더미 데이터
+  const [hoveredEvent, setHoveredEvent] = useState<{text: string, x: number, y: number} | null>(null);
 
   // 동적으로 캘린더 데이터 생성
   const calendarData = generateCalendarData(currentYear, currentMonth);
@@ -163,6 +166,19 @@ export const CalendarSection = (): JSX.Element => {
     checkConfirmation();
   }, [user]);
 
+  // 어제 받은 기대 표현 개수 불러오기 (현재 테스트용으로 비활성화)
+  // useEffect(() => {
+  //   const fetchYesterdayCount = async () => {
+  //     if (user) {
+  //       const count = await getYesterdayExpectationCount();
+  //       setYesterdayExpectationCount(count);
+  //     } else {
+  //       setYesterdayExpectationCount(0);
+  //     }
+  //   };
+  //   fetchYesterdayCount();
+  // }, [user]);
+
   const handleEventClick = (eventId: number) => {
     // 해당 이벤트 찾기
     const event = events.find(e => e.id === eventId);
@@ -175,8 +191,13 @@ export const CalendarSection = (): JSX.Element => {
     setSelectedEvents(prev => {
       const newSet = new Set(prev);
       if (newSet.has(eventId)) {
-        // 이미 선택된 경우 선택 해제
+        // 이미 선택된 경우 선택 해제 -> 표현 취소 팝업 표시
         newSet.delete(eventId);
+        setShowCancelAlert(true);
+        // 2초 후 자동으로 팝업 닫기
+        setTimeout(() => {
+          setShowCancelAlert(false);
+        }, 2000);
       } else {
         // 선택되지 않은 경우
         if (newSet.size < 3) {
@@ -224,6 +245,36 @@ export const CalendarSection = (): JSX.Element => {
     }
   };
 
+  // 전역 이벤트 행 계산 - 모든 주에 걸쳐 일관된 행 번호 유지 (데스크톱/태블릿용)
+  const globalEventRows = new Map();
+  if (!isMobile) {
+    const globalRowOccupancy: Array<number> = [];
+
+    // 모든 이벤트를 날짜순으로 정렬
+    const sortedEvents = [...events]
+      .map(event => ({
+        ...event,
+        length: event.endDate - event.startDate + 1
+      }))
+      .sort((a, b) => {
+        if (a.startDate !== b.startDate) return a.startDate - b.startDate;
+        return b.length - a.length;
+      });
+
+    // 각 이벤트에 행 번호 할당
+    sortedEvents.forEach(event => {
+      let row = 0;
+      while (true) {
+        if (globalRowOccupancy[row] === undefined || globalRowOccupancy[row] < event.startDate) {
+          globalRowOccupancy[row] = event.endDate;
+          globalEventRows.set(event.id, row);
+          break;
+        }
+        row++;
+      }
+    });
+  }
+
   return (
     <section className={`flex flex-col items-center ${isMobile ? 'px-3 pt-[90px] pb-5' : isTablet ? 'px-10 py-20' : 'px-[120px] py-20'} w-full bg-[#040b11] relative`}>
       <div className="w-full max-w-[1680px] mx-auto relative">
@@ -255,68 +306,70 @@ export const CalendarSection = (): JSX.Element => {
             )}
           </div>
         ) : isTablet ? (
-          <div className="relative flex items-center justify-between mb-8 max-w-[686px] mx-auto">
-            {/* 왼쪽: 날짜 선택기 */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#141b22] rounded-lg border-2 border-[#ffffff4c]">
-              <button className="w-5 h-5" onClick={handlePrevMonth}>
-                <img
-                  alt="Previous month"
-                  src="https://c.animaapp.com/O1XpzcZm/img/frame-3.svg"
-                />
-              </button>
+          <div className="relative flex flex-col items-center mb-8 max-w-[686px] mx-auto">
+            <div className="flex items-center justify-between w-full">
+              {/* 왼쪽: 날짜 선택기 */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-[#141b22] rounded-lg border-2 border-[#ffffff4c]">
+                <button className="w-5 h-5" onClick={handlePrevMonth}>
+                  <img
+                    alt="Previous month"
+                    src="https://c.animaapp.com/O1XpzcZm/img/frame-3.svg"
+                  />
+                </button>
 
-              <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
-                {displayDate}
-              </span>
+                <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
+                  {displayDate}
+                </span>
 
-              <button className="w-5 h-5" onClick={handleNextMonth}>
-                <img
-                  alt="Next month"
-                  src="https://c.animaapp.com/O1XpzcZm/img/frame-4.svg"
-                />
-              </button>
+                <button className="w-5 h-5" onClick={handleNextMonth}>
+                  <img
+                    alt="Next month"
+                    src="https://c.animaapp.com/O1XpzcZm/img/frame-4.svg"
+                  />
+                </button>
+              </div>
+
+              {/* 오른쪽: 배지 */}
+              {isConfirmed ? (
+                <ConfirmedBadge width={140} className="cursor-pointer" />
+              ) : (
+                <PendingBadge width={140} className="cursor-pointer" />
+              )}
             </div>
-
-            {/* 오른쪽: 배지 */}
-            {isConfirmed ? (
-              <ConfirmedBadge width={140} className="cursor-pointer" />
-            ) : (
-              <PendingBadge width={140} className="cursor-pointer" />
-            )}
           </div>
         ) : (
+          <div className="relative flex flex-col items-center mb-8 pt-[37px] px-[48px]">
+            <div className="relative flex items-center justify-between w-full">
+              <h2 className="font-bold text-white text-[32px] tracking-[0] leading-[normal] [font-family:'Ria']">
+                캘린더
+              </h2>
 
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-[#141b22] rounded-lg border-2 border-[#ffffff4c]">
+                <button className="w-5 h-5" onClick={handlePrevMonth}>
+                  <img
+                    alt="Previous month"
+                    src="https://c.animaapp.com/O1XpzcZm/img/frame-3.svg"
+                  />
+                </button>
 
-          <div className="relative flex items-center justify-between mb-8 pt-[37px] px-[48px]">
-            <h2 className="font-bold text-white text-[32px] tracking-[0] leading-[normal] [font-family:'Ria']">
-              캘린더
-            </h2>
+                <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
+                  {displayDate}
+                </span>
 
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-[#141b22] rounded-lg border-2 border-[#ffffff4c]">
-              <button className="w-5 h-5" onClick={handlePrevMonth}>
-                <img
-                  alt="Previous month"
-                  src="https://c.animaapp.com/O1XpzcZm/img/frame-3.svg"
-                />
-              </button>
+                <button className="w-5 h-5" onClick={handleNextMonth}>
+                  <img
+                    alt="Next month"
+                    src="https://c.animaapp.com/O1XpzcZm/img/frame-4.svg"
+                  />
+                </button>
+              </div>
 
-              <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-white text-base px-4">
-                {displayDate}
-              </span>
-
-              <button className="w-5 h-5" onClick={handleNextMonth}>
-                <img
-                  alt="Next month"
-                  src="https://c.animaapp.com/O1XpzcZm/img/frame-4.svg"
-                />
-              </button>
+              {isConfirmed ? (
+                <ConfirmedBadge width={184} className="cursor-pointer" />
+              ) : (
+                <PendingBadge width={184} className="cursor-pointer" />
+              )}
             </div>
-
-            {isConfirmed ? (
-              <ConfirmedBadge width={184} className="cursor-pointer" />
-            ) : (
-              <PendingBadge width={184} className="cursor-pointer" />
-            )}
           </div>
         )}
 
@@ -634,15 +687,77 @@ export const CalendarSection = (): JSX.Element => {
                                       }
                                     }}
                                   >
-                                    <span className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-[10px] leading-tight ${isSelected ? 'whitespace-nowrap overflow-hidden text-ellipsis' : 'truncate'}`}>
-                                      {event.icon} {event.text}
+                                    <span className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-[14px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis`}>
+                                      {event.text}
                                     </span>
-                                    {isSelected && (
+                                    {/* 비활성화된 일정들 - 기대 표현 개수와 불꽃 표시 */}
+                                    {event.id === 1 && (
+                                      <span className="ml-auto pl-1 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                        {[...Array(2)].map((_, i) => (
+                                          <img
+                                            key={i}
+                                            src="/icons/iconFireCalendar.png"
+                                            alt="Fire"
+                                            className="w-3 h-3 flex-shrink-0"
+                                          />
+                                        ))}
+                                        35
+                                      </span>
+                                    )}
+                                    {event.id === 5 && (
+                                      <span className="ml-auto pl-1 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                        {[...Array(3)].map((_, i) => (
+                                          <img
+                                            key={i}
+                                            src="/icons/iconFireCalendar.png"
+                                            alt="Fire"
+                                            className="w-3 h-3 flex-shrink-0"
+                                          />
+                                        ))}
+                                        32
+                                      </span>
+                                    )}
+                                    {event.id === 6 && (
+                                      <span className="ml-auto pl-1 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                        <img
+                                          src="/icons/iconFireCalendar.png"
+                                          alt="Fire"
+                                          className="w-3 h-3 flex-shrink-0"
+                                        />
+                                        5
+                                      </span>
+                                    )}
+                                    {/* 활성화된 일정들 */}
+                                    {isSelected && event.id !== 7 && event.id !== 8 && !isDisabled && (
                                       <img
                                         src="/icons/iconFireCalendar.png"
                                         alt="Selected"
-                                        className="w-3 h-3 ml-1 flex-shrink-0"
+                                        className="w-3 h-3 ml-auto mr-1 flex-shrink-0"
                                       />
+                                    )}
+                                    {event.id === 7 && (
+                                      <span className="ml-auto pl-1 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                        {isSelected && (
+                                          <img
+                                            src="/icons/iconFireCalendar.png"
+                                            alt="Selected"
+                                            className="w-3 h-3 flex-shrink-0"
+                                          />
+                                        )}
+                                        12
+                                      </span>
+                                    )}
+                                    {event.id === 8 && (
+                                      <span className="ml-auto pl-1 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                        {isSelected && (
+                                          <img
+                                            src="/icons/iconFireCalendar.png"
+                                            alt="Selected"
+                                            className="w-3 h-3 flex-shrink-0"
+                                          />
+                                        )}
+                                        5
+                                      </span>
                                     )}
                                   </div>
                                 );
@@ -675,7 +790,7 @@ export const CalendarSection = (): JSX.Element => {
                 desktopCellHeight = 249;
               }
 
-              // 이 주에 해당하는 이벤트 필터링하고 길이 순으로 정렬 (긴 것부터)
+              // 이 주에 해당하는 이벤트 필터링
               const weekEvents = events
                 .filter(event =>
                   (event.startDate >= weekStartDate && event.startDate <= weekEndDate) ||
@@ -685,47 +800,7 @@ export const CalendarSection = (): JSX.Element => {
                 .map(event => ({
                   ...event,
                   length: event.endDate - event.startDate + 1
-                }))
-                .sort((a, b) => {
-                  // 시작 날짜가 다르면 빠른 것부터
-                  if (a.startDate !== b.startDate) return a.startDate - b.startDate;
-                  // 시작 날짜가 같으면 긴 것부터
-                  return b.length - a.length;
-                }); // 날짜 순으로 배치
-
-              // 각 이벤트의 행(row) 계산
-              const eventRows = new Map();
-              const rowOccupancy: Array<Array<{start: number, end: number}>> = [];
-
-              weekEvents.forEach(event => {
-                const eventStart = Math.max(event.startDate, weekStartDate);
-                const eventEnd = Math.min(event.endDate, weekEndDate);
-
-                let row = 0;
-                // 사용 가능한 행 찾기
-                while (true) {
-                  // 이 행이 존재하지 않으면 초기화
-                  if (!rowOccupancy[row]) {
-                    rowOccupancy[row] = [];
-                  }
-
-                  // 이 행에서 현재 이벤트와 겹치는 다른 이벤트가 있는지 확인
-                  const hasConflict = rowOccupancy[row].some(occupied => {
-                    // 날짜 범위가 겹치는지 확인
-                    return !(eventEnd < occupied.start || eventStart > occupied.end);
-                  });
-
-                  if (!hasConflict) {
-                    // 겹치지 않으면 이 행에 배치
-                    rowOccupancy[row].push({ start: eventStart, end: eventEnd });
-                    eventRows.set(event, row);
-                    break;
-                  }
-
-                  // 겹치면 다음 행으로
-                  row++;
-                }
-              });
+                }));
 
               return (
                 <div key={weekIndex} className="relative border-b border-[#2a2f36] last:border-b-0">
@@ -798,7 +873,7 @@ export const CalendarSection = (): JSX.Element => {
                               const endIndex = week.findIndex(d => d.date === event.endDate);
                               const spanDays = endIndex >= startIndex ? endIndex - startIndex + 1 : 1;
 
-                              const row = eventRows.get(event) ?? 0;
+                              const row = globalEventRows.get(event.id) ?? 0;
                               const eventHeight = 39; // 이벤트 높이
                               const gap = 12; // 이벤트 간격
 
@@ -852,7 +927,7 @@ export const CalendarSection = (): JSX.Element => {
                                   }}
                                   onClick={() => handleEventClick(event.id)}
                                   onMouseEnter={(e) => {
-                                    if (!isDisabled) {
+                                    if (!isDisabled && !isMobile && !isTablet) {
                                       // 배경색과 텍스트색 반전
                                       e.currentTarget.style.backgroundColor = textColor;
                                       e.currentTarget.style.color = bgColor;
@@ -865,6 +940,16 @@ export const CalendarSection = (): JSX.Element => {
                                         textSpan.style.color = bgColor;
                                         textSpan.style.fontWeight = '600';
                                       }
+                                    }
+                                  }}
+                                  onMouseMove={(e) => {
+                                    if (!isDisabled && !isMobile && !isTablet) {
+                                      // 마우스 위치 따라다니기
+                                      setHoveredEvent({
+                                        text: event.text,
+                                        x: e.clientX,
+                                        y: e.clientY
+                                      });
                                     }
                                   }}
                                   onMouseLeave={(e) => {
@@ -880,17 +965,82 @@ export const CalendarSection = (): JSX.Element => {
                                         textSpan.style.color = textColor;
                                         textSpan.style.fontWeight = '500';
                                       }
+
+                                      // 툴팁 숨기기
+                                      setHoveredEvent(null);
                                     }
                                   }}
                                 >
-                                  <span className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-base leading-tight ${isSelected ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''}`}>
-                                    {event.icon} {event.text}
+                                  <span className={`[font-family:'Pretendard-Medium',Helvetica] font-medium text-[14px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis`}>
+                                    {event.text}
                                   </span>
-                                  {isSelected && (
+                                  {/* 비활성화된 일정들 - 기대 표현 개수와 불꽃 표시 */}
+                                  {event.id === 1 && (
+                                    <span className="ml-auto pl-2 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                      {[...Array(2)].map((_, i) => (
+                                        <img
+                                          key={i}
+                                          src="/icons/iconFireCalendar.png"
+                                          alt="Fire"
+                                          className="w-4 h-4 flex-shrink-0"
+                                        />
+                                      ))}
+                                      35
+                                    </span>
+                                  )}
+                                  {event.id === 5 && (
+                                    <span className="ml-auto pl-2 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                      {[...Array(3)].map((_, i) => (
+                                        <img
+                                          key={i}
+                                          src="/icons/iconFireCalendar.png"
+                                          alt="Fire"
+                                          className="w-4 h-4 flex-shrink-0"
+                                        />
+                                      ))}
+                                      32
+                                    </span>
+                                  )}
+                                  {event.id === 6 && (
+                                    <span className="ml-auto pl-2 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                      <img
+                                        src="/icons/iconFireCalendar.png"
+                                        alt="Fire"
+                                        className="w-4 h-4 flex-shrink-0"
+                                      />
+                                      5
+                                    </span>
+                                  )}
+                                  {/* 활성화된 일정들 */}
+                                  {event.id === 7 && (
+                                    <span className="ml-auto pl-2 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                      {isSelected && (
+                                        <img
+                                          src="/icons/iconFireCalendar.png"
+                                          alt="Selected"
+                                          className="w-4 h-4 flex-shrink-0"
+                                        />
+                                      )}
+                                      12
+                                    </span>
+                                  )}
+                                  {event.id === 8 && (
+                                    <span className="ml-auto pl-2 font-bold text-[14px] flex-shrink-0 flex items-center gap-1">
+                                      {isSelected && (
+                                        <img
+                                          src="/icons/iconFireCalendar.png"
+                                          alt="Selected"
+                                          className="w-4 h-4 flex-shrink-0"
+                                        />
+                                      )}
+                                      5
+                                    </span>
+                                  )}
+                                  {isSelected && event.id !== 7 && event.id !== 8 && !isDisabled && (
                                     <img
                                       src="/icons/iconFireCalendar.png"
                                       alt="Selected"
-                                      className="w-5 h-5 mr-3 flex-shrink-0"
+                                      className="w-5 h-5 ml-auto mr-2 flex-shrink-0"
                                     />
                                   )}
                                 </div>
@@ -1038,6 +1188,30 @@ export const CalendarSection = (): JSX.Element => {
                 </div>
             </div>
         )}
+
+      {/* 표현 취소 알림 */}
+        {showCancelAlert && (
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-[#21e786] text-[#040b11] rounded-full shadow-lg animate-toast" style={{ padding: 'clamp(12px, 3vw, 16px) clamp(24px, 6vw, 32px)' }}>
+                <span className="[font-family:'Pretendard-SemiBold',Helvetica] font-semibold whitespace-nowrap" style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}>
+                    ✓ 표현 취소가 완료되었습니다
+                </span>
+            </div>
+        )}
+
+      {/* 커스텀 툴팁 (데스크톱 전용) */}
+      {hoveredEvent && !isMobile && !isTablet && (
+        <div
+          className="fixed z-[9999] pointer-events-none bg-black text-white px-3 py-2 rounded shadow-lg"
+          style={{
+            left: `${hoveredEvent.x + 15}px`,
+            top: `${hoveredEvent.y + 15}px`,
+          }}
+        >
+          <span className="[font-family:'Pretendard-Medium',Helvetica] font-medium text-sm whitespace-nowrap">
+            {hoveredEvent.text}
+          </span>
+        </div>
+      )}
 
     </section>
   );

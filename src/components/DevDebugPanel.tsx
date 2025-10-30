@@ -207,11 +207,60 @@ export const DevDebugPanel: React.FC = () => {
           {mockDay !== null && (
             <Button
               onClick={handleClearMockDay}
-              className="w-full bg-red-600 hover:bg-red-700 text-white"
+              className="w-full bg-red-600 hover:bg-red-700 text-white mb-2"
             >
               모의 요일 초기화 (실제 요일로 복귀)
             </Button>
           )}
+
+          {/* 5번째 모달 테스트 */}
+          <div className="mt-4 mb-4">
+            <div className="text-gray-400 text-sm mb-3">5번째 확인 모달 테스트</div>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('testFifthModal', {
+                    detail: { type: 'recognition', section: 'winner' }
+                  }));
+                }}
+                className="px-3 py-2 bg-[#E52B50] hover:bg-[#d12546] text-white rounded text-xs font-semibold transition-colors"
+              >
+                귀감 5번째
+              </button>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('testFifthModal', {
+                    detail: { type: 'applause', section: 'challenger' }
+                  }));
+                }}
+                className="px-3 py-2 bg-[#E52B50] hover:bg-[#d12546] text-white rounded text-xs font-semibold transition-colors"
+              >
+                박수 5번째
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('testFifthModal', {
+                    detail: { type: 'review', section: 'recognition' }
+                  }));
+                }}
+                className="px-3 py-2 bg-[#FFED00] hover:bg-[#FFE500] text-[#040B11] rounded text-xs font-semibold transition-colors"
+              >
+                인정 5번째
+              </button>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('testFifthModal', {
+                    detail: { type: 'goal', section: 'recognition' }
+                  }));
+                }}
+                className="px-3 py-2 bg-[#FFED00] hover:bg-[#FFE500] text-[#040B11] rounded text-xs font-semibold transition-colors"
+              >
+                응원 5번째
+              </button>
+            </div>
+          </div>
 
           {/* 안내 */}
           <div className="mt-4 p-3 bg-purple-900/20 border border-purple-600/30 rounded-lg">

@@ -4,14 +4,14 @@ export interface Applause {
   id: string;
   from_user_id: string;
   to_user_id: string;
-  challenger_id: number;
+  judgment_id: string;
   created_at: string;
 }
 
 /**
- * Next Challenger에게박수 보내기
+ * Next Challenger에게 박수 보내기
  */
-export async function sendApplause(challengerId: number, toUserId: string) {
+export async function sendApplause(judgmentId: string, toUserId: string) {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -39,19 +39,26 @@ export async function sendApplause(challengerId: number, toUserId: string) {
   }
 
   // 박수 보내기
+  const insertData = {
+    from_user_id: user.id,
+    to_user_id: toUserId,
+    judgment_id: judgmentId
+  };
+
+  console.log('Attempting to insert applause:', insertData);
+
   const { data, error } = await supabase
     .from('applause')
-    .insert([{
-      from_user_id: user.id,
-      to_user_id: toUserId,
-      challenger_id: challengerId
-    }])
+    .insert([insertData])
     .select()
     .single();
 
+  console.log('Insert result:', { data, error });
+
   if (error) {
-    console.error('Supabase insert error:', error);
-    throw error;
+    console.error('Supabase insert error (full details):', error);
+    console.error('Error stringified:', JSON.stringify(error, null, 2));
+    throw new Error(error.message || 'Failed to send applause');
   }
   return data;
 }
@@ -59,7 +66,7 @@ export async function sendApplause(challengerId: number, toUserId: string) {
 /**
  * 박수 취소
  */
-export async function cancelApplause(challengerId: number) {
+export async function cancelApplause(judgmentId: string) {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -71,7 +78,7 @@ export async function cancelApplause(challengerId: number) {
     .from('applause')
     .delete()
     .eq('from_user_id', user.id)
-    .eq('challenger_id', challengerId);
+    .eq('judgment_id', judgmentId);
 
   if (error) throw error;
   return true;

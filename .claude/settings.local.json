@@ -25,7 +25,8 @@
       "Bash(vercel link:*)",
       "Bash(vercel --yes)",
       "Bash(vercel:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

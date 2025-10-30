@@ -23,10 +23,24 @@ export default function RootLayout({
 
             @font-face {
               font-family: "Ria Sans";
-              src: url("YOUR_RIA_SANS_FONT_FILE_URL.woff2") format("woff2"),
-                   url("YOUR_RIA_SANS_FONT_FILE_URL.ttf") format("truetype");
-              font-weight: normal;
+              src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/2410-1@1.0/RiaSans-Regular.woff2") format("woff2");
+              font-weight: 400;
               font-style: normal;
+              font-display: swap;
+            }
+            @font-face {
+              font-family: "Ria Sans";
+              src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/2410-1@1.0/RiaSans-Bold.woff2") format("woff2");
+              font-weight: 700;
+              font-style: normal;
+              font-display: swap;
+            }
+            @font-face {
+              font-family: "Ria Sans";
+              src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/2410-1@1.0/RiaSans-ExtraBold.woff2") format("woff2");
+              font-weight: 800;
+              font-style: normal;
+              font-display: swap;
             }
             @font-face {
               font-family: "Pretendard-Regular";

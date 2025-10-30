@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import cardModalSuccess from "../../../../../assets/cardModal-suscess.png";
 import cardModalSuccessBanner from "../../../../../assets/cardModal-suscess02.png";
 import cardModalFail from "../../../../../assets/cardModal-fail.png";
@@ -43,13 +43,18 @@ interface JudgmentCardModalProps {
   onClose: () => void;
   onComplete?: () => void;
   type: 'success' | 'fail';
+  initialData?: {
+    achieved: boolean;
+    comment: string;
+  } | null;
 }
 
 export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
   isOpen,
   onClose,
   onComplete,
-  type
+  type,
+  initialData
 }) => {
   const [reflectionText, setReflectionText] = useState("");
   const [showNotice, setShowNotice] = useState(false);
@@ -61,6 +66,18 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
   const isTablet = screenWidth > 0 && screenWidth >= 768 && screenWidth < 1280;
   const submitButtonRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+
+  // initialData가 있으면 수정 모드로 시작
+  useEffect(() => {
+    if (initialData) {
+      setAchieved(initialData.achieved);
+      setReflectionText(initialData.comment);
+    } else {
+      // 새로 작성할 때는 초기화
+      setAchieved(null);
+      setReflectionText("");
+    }
+  }, [initialData, isOpen]);
 
   if (!isOpen) return null;
 
@@ -197,7 +214,7 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
                   <img
                     src={iconScoop.src}
                     alt="Scoop"
-                    className={`w-full h-full object-contain ${isTablet ? 'scale-[1.0368]' : 'scale-[1.44]'}`}
+                    className={`w-full h-full object-contain ${isTablet ? 'scale-[1.0368]' : 'scale-[1.584]'}`}
                   />
                 </div>
               )}
@@ -375,14 +392,15 @@ export const JudgmentCardModal: React.FC<JudgmentCardModalProps> = ({
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
           onClick={handleNoticeClose}
         >
-          <div className="animate-fade-in">
+          <div className="animate-fade-in flex items-center justify-center" style={{ marginTop: !isMobile ? (achieved === false ? '30px' : '40px') : '0' }}>
             <img
               src={achieved === true
                 ? (isMobile ? noticeModalSuccessMobile.src : noticeModalSuccess.src)
                 : (isMobile ? noticeModalFailMobile.src : noticeModalFail.src)
               }
               alt="판정 작성 완료"
-              className="max-w-[90vw] max-h-[90vh] object-contain cursor-pointer"
+              className="max-w-[90vw] max-h-[90vh] object-contain cursor-pointer mx-auto"
+              style={{ transform: !isMobile && achieved === true ? 'scale(1.1)' : 'none' }}
               onClick={handleNoticeClose}
             />
           </div>
