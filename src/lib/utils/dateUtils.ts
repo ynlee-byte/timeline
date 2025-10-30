@@ -5,27 +5,38 @@
 const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
 const MOCK_DAY_KEY = 'mock_day_of_week';
 
+// 디버깅용 로그
+if (typeof window !== 'undefined') {
+  console.log('[dateUtils] DEV_MODE:', DEV_MODE);
+  console.log('[dateUtils] NEXT_PUBLIC_DEV_MODE:', process.env.NEXT_PUBLIC_DEV_MODE);
+}
+
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0=일요일, 1=월요일, ..., 6=토요일
 
 /**
- * 현재 요일 가져오기 (개발 모드에서는 모의 요일 사용 가능)
+ * 현재 요일 가져오기 (모의 요일 사용 가능)
  */
 export function getCurrentDayOfWeek(): DayOfWeek {
-  if (DEV_MODE && typeof window !== 'undefined') {
+  // 항상 localStorage를 확인하도록 수정
+  if (typeof window !== 'undefined') {
     const mockDay = localStorage.getItem(MOCK_DAY_KEY);
     if (mockDay !== null) {
+      console.log('[dateUtils] Using mock day:', mockDay);
       return parseInt(mockDay) as DayOfWeek;
     }
   }
 
-  return new Date().getDay() as DayOfWeek;
+  const realDay = new Date().getDay() as DayOfWeek;
+  console.log('[dateUtils] Using real day:', realDay);
+  return realDay;
 }
 
 /**
- * 모의 요일 설정 (개발 모드에서만 동작)
+ * 모의 요일 설정
  */
 export function setMockDayOfWeek(day: DayOfWeek): void {
-  if (DEV_MODE && typeof window !== 'undefined') {
+  if (typeof window !== 'undefined') {
+    console.log('[dateUtils] Setting mock day to:', day);
     localStorage.setItem(MOCK_DAY_KEY, day.toString());
   }
 }
